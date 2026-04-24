@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,6 +19,7 @@ type Config struct {
 	QdrantURL         string
 	QdrantCollection  string
 	ChromemPath       string
+	ConfigSource      string // path to the config file that was loaded, or "" if none
 }
 
 // fileConfig mirrors Config but uses yaml tags and pointer fields so we can
@@ -41,9 +43,14 @@ func FromEnv() *Config {
 	homeDir, _ := os.UserHomeDir()
 
 	defaultConfigPath := filepath.Join(homeDir, ".claude-context", "config.yaml")
-	configPath := getEnvOrDefault("CONFIG_FILE", defaultConfigPath)
+	configPath := expandHome(getEnvOrDefault("CONFIG_FILE", defaultConfigPath), homeDir)
 
-	file := loadFileConfig(expandHome(configPath, homeDir))
+	file, fileLoaded := loadFileConfig(configPath)
+
+	configSource := ""
+	if fileLoaded {
+		configSource = configPath
+	}
 
 	return &Config{
 		EmbeddingAPIKey:   resolve(os.Getenv("EMBEDDING_API_KEY"), file.EmbeddingAPIKey, ""),
@@ -55,6 +62,7 @@ func FromEnv() *Config {
 		QdrantURL:         resolve(os.Getenv("QDRANT_URL"), file.QdrantURL, "http://localhost:6333"),
 		QdrantCollection:  resolve(os.Getenv("QDRANT_COLLECTION"), file.QdrantCollection, "claude-context"),
 		ChromemPath:       expandHome(resolve(os.Getenv("CHROMEM_PATH"), file.ChromemPath, filepath.Join(homeDir, ".claude-context", "chromem")), homeDir),
+		ConfigSource:      configSource,
 	}
 }
 
@@ -70,16 +78,19 @@ func resolve(envVal string, fileVal *string, defaultVal string) string {
 	return defaultVal
 }
 
-func loadFileConfig(path string) fileConfig {
+// loadFileConfig reads and parses the YAML config file.
+// Returns (config, true) on success, (empty, false) if file is missing or malformed.
+func loadFileConfig(path string) (fileConfig, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return fileConfig{} // missing file is not an error
+		return fileConfig{}, false // missing file is not an error
 	}
 	var fc fileConfig
 	if err := yaml.Unmarshal(data, &fc); err != nil {
-		return fileConfig{} // malformed file: fall back to defaults
+		fmt.Fprintf(os.Stderr, "claude-context: warning: malformed config file %s: %v (using defaults)\n", path, err)
+		return fileConfig{}, false
 	}
-	return fc
+	return fc, true
 }
 
 func getEnvOrDefault(key, defaultValue string) string {
