@@ -63,11 +63,16 @@ func main() {
 
 	embeddingClient := embedding.NewCachedClient(provider)
 	codeSplitter := splitter.NewSplitter()
-	indexer := ctxpkg.NewIndexer(store, embeddingClient, codeSplitter)
+	indexer := ctxpkg.NewIndexer(store, embeddingClient, codeSplitter, cfg.EmbeddingModel)
 	searcher := ctxpkg.NewSearcher(store, embeddingClient)
-	server := mcp.NewMCPServer(indexer, searcher)
+	server := mcp.NewMCPServer(indexer, searcher, embeddingClient)
 
-	mlog.Infof("Claude Context MCP Server started (provider=%s, backend=%s)", cfg.EmbeddingProvider, cfg.DBBackend)
+	keyHint := ""
+	if len(cfg.EmbeddingAPIKey) > 10 {
+		keyHint = cfg.EmbeddingAPIKey[:10] + "..."
+	}
+	mlog.Infof("Claude Context MCP Server started: provider=%s model=%s backend=%s key=%s",
+		cfg.EmbeddingProvider, cfg.EmbeddingModel, cfg.DBBackend, keyHint)
 
 	if err := server.Start(); err != nil {
 		mlog.Fatalf("Server error: %v", err)

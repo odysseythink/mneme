@@ -29,6 +29,14 @@ func (s *ASTSplitter) Split(filePath string, language string) ([]pkg.Vector, err
 		chunks = s.splitPython(filePath, string(content))
 	case "js", "ts":
 		chunks = s.splitJavaScript(filePath, string(content))
+	case "java":
+		chunks = s.splitJava(filePath, string(content))
+	case "rust":
+		chunks = s.splitRust(filePath, string(content))
+	case "cpp":
+		chunks = s.splitCpp(filePath, string(content))
+	case "csharp":
+		chunks = s.splitCSharp(filePath, string(content))
 	default:
 		chunks = s.splitByLines(filePath, string(content), language)
 	}
@@ -252,6 +260,315 @@ func (s *ASTSplitter) splitByLines(filePath string, content string, language str
 			Text:      strings.Join(lines[i:endIdx], "\n"),
 		}
 		chunks = append(chunks, chunk)
+	}
+
+	return chunks
+}
+
+func (s *ASTSplitter) splitJava(filePath string, content string) []pkg.Vector {
+	lines := strings.Split(content, "\n")
+	var chunks []pkg.Vector
+
+	var currentChunk []string
+	var startLine int
+	inMethod := false
+	braceCount := 0
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		// Look for method declarations: contains ( and ) with access modifiers or return type
+		isMethodStart := false
+		if !inMethod && strings.Contains(trimmed, "(") && strings.Contains(trimmed, ")") {
+			// Check for method declaration patterns
+			if strings.HasPrefix(trimmed, "public ") ||
+				strings.HasPrefix(trimmed, "private ") ||
+				strings.HasPrefix(trimmed, "protected ") ||
+				strings.HasPrefix(trimmed, "static ") {
+				// Avoid matching class declarations and constructors are methods
+				if !strings.HasPrefix(trimmed, "public class ") &&
+					!strings.HasPrefix(trimmed, "private class ") &&
+					!strings.HasPrefix(trimmed, "protected class ") {
+					isMethodStart = true
+				}
+			}
+		}
+
+		if isMethodStart {
+			if len(currentChunk) > 0 {
+				chunks = append(chunks, pkg.Vector{
+					FilePath:  filePath,
+					Language:  "java",
+					StartLine: startLine + 1,
+					EndLine:   i,
+					Text:      strings.Join(currentChunk, "\n"),
+				})
+			}
+			currentChunk = []string{line}
+			startLine = i
+			inMethod = true
+			braceCount = strings.Count(line, "{") - strings.Count(line, "}")
+		} else if inMethod {
+			currentChunk = append(currentChunk, line)
+			braceCount += strings.Count(line, "{") - strings.Count(line, "}")
+			if braceCount == 0 {
+				chunks = append(chunks, pkg.Vector{
+					FilePath:  filePath,
+					Language:  "java",
+					StartLine: startLine + 1,
+					EndLine:   i + 1,
+					Text:      strings.Join(currentChunk, "\n"),
+				})
+				currentChunk = nil
+				inMethod = false
+			}
+		} else if !inMethod && len(trimmed) > 0 {
+			if len(currentChunk) == 0 {
+				startLine = i
+			}
+			currentChunk = append(currentChunk, line)
+		}
+	}
+
+	if len(currentChunk) > 0 {
+		chunks = append(chunks, pkg.Vector{
+			FilePath:  filePath,
+			Language:  "java",
+			StartLine: startLine + 1,
+			EndLine:   len(lines),
+			Text:      strings.Join(currentChunk, "\n"),
+		})
+	}
+
+	return chunks
+}
+
+func (s *ASTSplitter) splitRust(filePath string, content string) []pkg.Vector {
+	lines := strings.Split(content, "\n")
+	var chunks []pkg.Vector
+
+	var currentChunk []string
+	var startLine int
+	inFunc := false
+	braceCount := 0
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		// Look for function declarations: starts with fn, pub fn, pub(crate) fn, async fn, pub async fn
+		isFuncStart := false
+		if !inFunc {
+			if strings.HasPrefix(trimmed, "fn ") ||
+				strings.HasPrefix(trimmed, "pub fn ") ||
+				strings.HasPrefix(trimmed, "pub(crate) fn ") ||
+				strings.HasPrefix(trimmed, "async fn ") ||
+				strings.HasPrefix(trimmed, "pub async fn ") ||
+				strings.HasPrefix(trimmed, "unsafe fn ") ||
+				strings.HasPrefix(trimmed, "pub unsafe fn ") {
+				isFuncStart = true
+			}
+		}
+
+		if isFuncStart {
+			if len(currentChunk) > 0 {
+				chunks = append(chunks, pkg.Vector{
+					FilePath:  filePath,
+					Language:  "rust",
+					StartLine: startLine + 1,
+					EndLine:   i,
+					Text:      strings.Join(currentChunk, "\n"),
+				})
+			}
+			currentChunk = []string{line}
+			startLine = i
+			inFunc = true
+			braceCount = strings.Count(line, "{") - strings.Count(line, "}")
+		} else if inFunc {
+			currentChunk = append(currentChunk, line)
+			braceCount += strings.Count(line, "{") - strings.Count(line, "}")
+			if braceCount == 0 {
+				chunks = append(chunks, pkg.Vector{
+					FilePath:  filePath,
+					Language:  "rust",
+					StartLine: startLine + 1,
+					EndLine:   i + 1,
+					Text:      strings.Join(currentChunk, "\n"),
+				})
+				currentChunk = nil
+				inFunc = false
+			}
+		} else if !inFunc && len(trimmed) > 0 {
+			if len(currentChunk) == 0 {
+				startLine = i
+			}
+			currentChunk = append(currentChunk, line)
+		}
+	}
+
+	if len(currentChunk) > 0 {
+		chunks = append(chunks, pkg.Vector{
+			FilePath:  filePath,
+			Language:  "rust",
+			StartLine: startLine + 1,
+			EndLine:   len(lines),
+			Text:      strings.Join(currentChunk, "\n"),
+		})
+	}
+
+	return chunks
+}
+
+func (s *ASTSplitter) splitCpp(filePath string, content string) []pkg.Vector {
+	lines := strings.Split(content, "\n")
+	var chunks []pkg.Vector
+
+	var currentChunk []string
+	var startLine int
+	inFunc := false
+	braceCount := 0
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		// Look for function definitions: contains ( and ) and followed by { or has { on same line
+		// Skip control structures like if, for, while, switch
+		isFuncStart := false
+		if !inFunc && strings.Contains(trimmed, "(") && strings.Contains(trimmed, ")") {
+			// Check if this looks like a function definition (not a control structure)
+			if !strings.HasPrefix(trimmed, "if") &&
+				!strings.HasPrefix(trimmed, "for") &&
+				!strings.HasPrefix(trimmed, "while") &&
+				!strings.HasPrefix(trimmed, "switch") &&
+				!strings.HasPrefix(trimmed, "catch") &&
+				!strings.Contains(trimmed, "?") { // ternary operator
+				isFuncStart = true
+			}
+		}
+
+		if isFuncStart {
+			if len(currentChunk) > 0 {
+				chunks = append(chunks, pkg.Vector{
+					FilePath:  filePath,
+					Language:  "cpp",
+					StartLine: startLine + 1,
+					EndLine:   i,
+					Text:      strings.Join(currentChunk, "\n"),
+				})
+			}
+			currentChunk = []string{line}
+			startLine = i
+			inFunc = true
+			braceCount = strings.Count(line, "{") - strings.Count(line, "}")
+		} else if inFunc {
+			currentChunk = append(currentChunk, line)
+			braceCount += strings.Count(line, "{") - strings.Count(line, "}")
+			if braceCount == 0 {
+				chunks = append(chunks, pkg.Vector{
+					FilePath:  filePath,
+					Language:  "cpp",
+					StartLine: startLine + 1,
+					EndLine:   i + 1,
+					Text:      strings.Join(currentChunk, "\n"),
+				})
+				currentChunk = nil
+				inFunc = false
+			}
+		} else if !inFunc && len(trimmed) > 0 {
+			if len(currentChunk) == 0 {
+				startLine = i
+			}
+			currentChunk = append(currentChunk, line)
+		}
+	}
+
+	if len(currentChunk) > 0 {
+		chunks = append(chunks, pkg.Vector{
+			FilePath:  filePath,
+			Language:  "cpp",
+			StartLine: startLine + 1,
+			EndLine:   len(lines),
+			Text:      strings.Join(currentChunk, "\n"),
+		})
+	}
+
+	return chunks
+}
+
+func (s *ASTSplitter) splitCSharp(filePath string, content string) []pkg.Vector {
+	lines := strings.Split(content, "\n")
+	var chunks []pkg.Vector
+
+	var currentChunk []string
+	var startLine int
+	inMethod := false
+	braceCount := 0
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		// Look for method declarations: contains ( and ) with access modifiers or return type
+		isMethodStart := false
+		if !inMethod && strings.Contains(trimmed, "(") && strings.Contains(trimmed, ")") {
+			// Check for method declaration patterns
+			if strings.HasPrefix(trimmed, "public ") ||
+				strings.HasPrefix(trimmed, "private ") ||
+				strings.HasPrefix(trimmed, "protected ") ||
+				strings.HasPrefix(trimmed, "internal ") ||
+				strings.HasPrefix(trimmed, "static ") {
+				// Avoid matching class declarations
+				if !strings.HasPrefix(trimmed, "public class ") &&
+					!strings.HasPrefix(trimmed, "private class ") &&
+					!strings.HasPrefix(trimmed, "protected class ") &&
+					!strings.HasPrefix(trimmed, "internal class ") {
+					isMethodStart = true
+				}
+			}
+		}
+
+		if isMethodStart {
+			if len(currentChunk) > 0 {
+				chunks = append(chunks, pkg.Vector{
+					FilePath:  filePath,
+					Language:  "csharp",
+					StartLine: startLine + 1,
+					EndLine:   i,
+					Text:      strings.Join(currentChunk, "\n"),
+				})
+			}
+			currentChunk = []string{line}
+			startLine = i
+			inMethod = true
+			braceCount = strings.Count(line, "{") - strings.Count(line, "}")
+		} else if inMethod {
+			currentChunk = append(currentChunk, line)
+			braceCount += strings.Count(line, "{") - strings.Count(line, "}")
+			if braceCount == 0 {
+				chunks = append(chunks, pkg.Vector{
+					FilePath:  filePath,
+					Language:  "csharp",
+					StartLine: startLine + 1,
+					EndLine:   i + 1,
+					Text:      strings.Join(currentChunk, "\n"),
+				})
+				currentChunk = nil
+				inMethod = false
+			}
+		} else if !inMethod && len(trimmed) > 0 {
+			if len(currentChunk) == 0 {
+				startLine = i
+			}
+			currentChunk = append(currentChunk, line)
+		}
+	}
+
+	if len(currentChunk) > 0 {
+		chunks = append(chunks, pkg.Vector{
+			FilePath:  filePath,
+			Language:  "csharp",
+			StartLine: startLine + 1,
+			EndLine:   len(lines),
+			Text:      strings.Join(currentChunk, "\n"),
+		})
 	}
 
 	return chunks

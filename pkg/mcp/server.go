@@ -5,23 +5,29 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 	"sync"
 
+	"github.com/odysseythink/mlog"
 	"github.com/ranwei/claude-context/pkg"
+	"github.com/ranwei/claude-context/pkg/embedding"
 )
 
 type Server struct {
-	indexer  pkg.Indexer
-	searcher pkg.Searcher
-	mu       sync.Mutex
-	nextID   int
+	indexer   pkg.Indexer
+	searcher  pkg.Searcher
+	embedding *embedding.CachedClient
+	mu        sync.Mutex
+	nextID    int
 }
 
-func NewMCPServer(indexer pkg.Indexer, searcher pkg.Searcher) *Server {
+func NewMCPServer(indexer pkg.Indexer, searcher pkg.Searcher, emb *embedding.CachedClient) *Server {
 	return &Server{
-		indexer:  indexer,
-		searcher: searcher,
+		indexer:   indexer,
+		searcher:  searcher,
+		embedding: emb,
 	}
 }
 
@@ -31,120 +37,231 @@ func (s *Server) Start() error {
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
 			return fmt.Errorf("read error: %w", err)
+		}
+
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
 		}
 
 		var req MCPRequest
 		if err := json.Unmarshal([]byte(line), &req); err != nil {
-			s.sendError(req.ID, -32700, "Parse error")
+			mlog.Warningf("parse error on input: %v", err)
+			s.sendError(nil, -32700, "Parse error")
 			continue
 		}
 
+		// Notifications have no id and expect no response
+		if req.Method == "notifications/initialized" {
+			mlog.V(2).Infof("received notification: %s", req.Method)
+			continue
+		}
+
+		mlog.V(2).Infof("request id=%d method=%s", req.ID, req.Method)
 		go s.handleRequest(req)
 	}
 }
 
-func (s *Server) handleRequest(req MCPRequest) {
+func (s *Server) HandleRequest(req MCPRequest) MCPResponse {
 	var resp MCPResponse
 	resp.JsonRpc = "2.0"
-	resp.ID = req.ID
+	resp.ID = req.ID // echo the raw ID back unchanged
 
 	ctx := context.Background()
 
 	switch req.Method {
+	case "initialize":
+		resp.Result = s.handleInitialize()
+	case "ping":
+		resp.Result = map[string]interface{}{}
+	case "tools/list":
+		resp.Result = s.handleToolList()
+	case "tools/call":
+		resp.Result = s.handleToolCall(ctx, req.Params)
 	case "resources/read":
 		resp.Result = s.handleResourceRead(ctx, req.Params)
 	case "resources/list":
 		resp.Result = s.handleResourceList()
 	default:
+		mlog.Warningf("unknown method: %s", req.Method)
 		resp.Error = &MCPError{Code: -32601, Message: "Method not found"}
 	}
 
+	return resp
+}
+
+func (s *Server) handleRequest(req MCPRequest) {
+	resp := s.HandleRequest(req)
 	s.sendResponse(resp)
 }
 
-func (s *Server) handleResourceRead(ctx context.Context, params json.RawMessage) interface{} {
-	var req struct {
-		URI string `json:"uri"`
-	}
-	if err := json.Unmarshal(params, &req); err != nil {
-		return nil
-	}
-
-	if req.URI == "codebase://index" {
-		return s.handleIndex(ctx, params)
-	} else if len(req.URI) >= 16 && req.URI[:16] == "codebase://search" {
-		return s.handleSearch(ctx, params)
-	}
-
-	return nil
-}
-
-func (s *Server) handleIndex(ctx context.Context, params json.RawMessage) interface{} {
-	var idxReq IndexRequest
-	if err := json.Unmarshal(params, &idxReq); err != nil {
-		return nil
-	}
-
-	result, err := s.indexer.Index(ctx, idxReq.CodebasePath)
-	if err != nil {
-		return map[string]interface{}{"error": err.Error()}
-	}
-
+func (s *Server) handleInitialize() interface{} {
 	return map[string]interface{}{
-		"files_processed": result.FilesProcessed,
-		"vectors_stored":  result.VectorsStored,
-		"duration_ms":     result.Duration.Milliseconds(),
-		"embedding_model": result.EmbeddingModel,
+		"protocolVersion": "2024-11-05",
+		"capabilities": map[string]interface{}{
+			"tools": map[string]interface{}{},
+			"resources": map[string]interface{}{
+				"subscribe":   false,
+				"listChanged": false,
+			},
+		},
+		"serverInfo": map[string]interface{}{
+			"name":    "claude-context",
+			"version": "1.0.0",
+		},
 	}
 }
 
-func (s *Server) handleSearch(ctx context.Context, params json.RawMessage) interface{} {
-	var searchReq SearchRequest
-	if err := json.Unmarshal(params, &searchReq); err != nil {
-		return nil
-	}
-
-	if searchReq.TopK <= 0 {
-		searchReq.TopK = 5
-	}
-
-	results, err := s.searcher.Search(ctx, searchReq.Query, searchReq.TopK)
-	if err != nil {
-		return map[string]interface{}{"error": err.Error()}
-	}
-
+func (s *Server) handleToolList() interface{} {
 	return map[string]interface{}{
-		"results": results,
-		"count":   len(results),
-	}
-}
-
-func (s *Server) handleResourceList() interface{} {
-	return map[string]interface{}{
-		"resources": []map[string]interface{}{
+		"tools": []map[string]interface{}{
 			{
-				"uri":         "codebase://index",
-				"name":        "Index Codebase",
-				"description": "Index a codebase for semantic search",
-				"mimeType":    "application/json",
+				"name":        "index_codebase",
+				"description": "Index a codebase directory for semantic search. Use the primary working directory from your system context as codebase_path unless the user specifies a different path. Subsequent calls on an already-indexed codebase are incremental — only changed files are re-embedded.",
+				"inputSchema": map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"codebase_path": map[string]interface{}{
+							"type":        "string",
+							"description": "Absolute path to the codebase directory to index. Use the primary working directory from system context if not otherwise specified.",
+						},
+					},
+					"required": []string{"codebase_path"},
+				},
 			},
 			{
-				"uri":         "codebase://search",
-				"name":        "Search Codebase",
-				"description": "Search indexed codebase semantically",
-				"mimeType":    "application/json",
+				"name":        "search_codebase",
+				"description": "Semantically search an indexed codebase for code relevant to a query. Always set codebase_path to the primary working directory from your system context so the search is scoped to the current project. If the result is empty, the codebase is likely not indexed yet — call index_codebase with the same path first, then retry the search.",
+				"inputSchema": map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"query": map[string]interface{}{
+							"type":        "string",
+							"description": "Natural language description of what you are looking for",
+						},
+						"codebase_path": map[string]interface{}{
+							"type":        "string",
+							"description": "Absolute path to the codebase to search. Use the primary working directory from system context to scope results to the current project. Omit only when explicitly searching across all indexed codebases.",
+						},
+						"top_k": map[string]interface{}{
+							"type":        "integer",
+							"description": "Number of results to return (default: 5)",
+						},
+					},
+					"required": []string{"query"},
+				},
+			},
+			{
+				"name":        "ping_embedding",
+				"description": "Test the embedding API with a single call. Returns the embedding dimension on success, or the exact API error on failure. Use this to diagnose embedding configuration issues.",
+				"inputSchema": map[string]interface{}{
+					"type":       "object",
+					"properties": map[string]interface{}{},
+				},
 			},
 		},
 	}
 }
 
+func (s *Server) handleToolCall(ctx context.Context, params json.RawMessage) interface{} {
+	var req ToolCallRequest
+	if err := json.Unmarshal(params, &req); err != nil {
+		return toolError("invalid params: " + err.Error())
+	}
+
+	switch req.Name {
+	case "index_codebase":
+		return s.callIndexCodbase(ctx, req.Arguments)
+	case "search_codebase":
+		return s.callSearchCodebase(ctx, req.Arguments)
+	case "ping_embedding":
+		return s.callPingEmbedding(ctx)
+	default:
+		return toolError("unknown tool: " + req.Name)
+	}
+}
+
+func (s *Server) callPingEmbedding(ctx context.Context) interface{} {
+	if s.embedding == nil {
+		return toolError("embedding client not initialized")
+	}
+	emb, err := s.embedding.GenerateEmbedding(ctx, "hello world")
+	if err != nil {
+		return toolError(fmt.Sprintf("embedding API error: %v", err))
+	}
+	return ToolCallResult{Content: []ToolContent{{Type: "text", Text: fmt.Sprintf("OK: embedding API works, dim=%d", len(emb))}}}
+}
+
+func (s *Server) callIndexCodbase(ctx context.Context, args json.RawMessage) interface{} {
+	var req IndexRequest
+	if err := json.Unmarshal(args, &req); err != nil {
+		return toolError("invalid arguments: " + err.Error())
+	}
+	if req.CodebasePath == "" {
+		return toolError("codebase_path is required")
+	}
+
+	result, err := s.indexer.Index(ctx, req.CodebasePath)
+	if err != nil {
+		return toolError(err.Error())
+	}
+
+	if result.VectorsStored == 0 && result.FilesProcessed > result.FilesSkipped {
+		msg := fmt.Sprintf(
+			"ERROR: Indexed %d files but stored 0 vectors. Model: %s. First error: %s",
+			result.FilesProcessed-result.FilesSkipped, result.EmbeddingModel, result.LastError,
+		)
+		return toolError(msg)
+	}
+
+	text := fmt.Sprintf(
+		"Indexed %d files (%d skipped, unchanged), stored %d vectors in %dms (model: %s, failed: %d)",
+		result.FilesProcessed-result.FilesSkipped, result.FilesSkipped, result.VectorsStored,
+		result.Duration.Milliseconds(), result.EmbeddingModel, len(result.FailedFiles),
+	)
+	return ToolCallResult{Content: []ToolContent{{Type: "text", Text: text}}}
+}
+
+func (s *Server) callSearchCodebase(ctx context.Context, args json.RawMessage) interface{} {
+	var req SearchRequest
+	if err := json.Unmarshal(args, &req); err != nil {
+		return toolError("invalid arguments: " + err.Error())
+	}
+	if req.Query == "" {
+		return toolError("query is required")
+	}
+	if req.TopK <= 0 {
+		req.TopK = 5
+	}
+
+	results, err := s.searcher.Search(ctx, req.Query, req.TopK, req.CodebasePath)
+	if err != nil {
+		return toolError(err.Error())
+	}
+
+	data, _ := json.MarshalIndent(results, "", "  ")
+	return ToolCallResult{Content: []ToolContent{{Type: "text", Text: string(data)}}}
+}
+
+func toolError(msg string) ToolCallResult {
+	return ToolCallResult{
+		Content: []ToolContent{{Type: "text", Text: msg}},
+		IsError: true,
+	}
+}
+
 func (s *Server) sendResponse(resp MCPResponse) {
 	data, _ := json.Marshal(resp)
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	fmt.Println(string(data))
 }
 
-func (s *Server) sendError(id int, code int, message string) {
+func (s *Server) sendError(id json.RawMessage, code int, message string) {
 	resp := MCPResponse{
 		JsonRpc: "2.0",
 		ID:      id,

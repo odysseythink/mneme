@@ -11,7 +11,7 @@ import (
 
 type MockSearchStore struct{}
 
-func (m *MockSearchStore) Search(ctx context.Context, embedding []float32, topK int) ([]pkg.Vector, error) {
+func (m *MockSearchStore) Search(ctx context.Context, embedding []float32, topK int, _ string) ([]pkg.Vector, error) {
 	return []pkg.Vector{
 		{
 			FilePath:  "test.go",
@@ -36,6 +36,14 @@ func (m *MockSearchStore) Close() error {
 	return nil
 }
 
+func (m *MockSearchStore) GetFileHashes(_ context.Context, _ string) (map[string]string, error) {
+	return map[string]string{}, nil
+}
+
+func (m *MockSearchStore) DeleteByFilePath(_ context.Context, _ string, _ string) error {
+	return nil
+}
+
 func TestSearcherSearch(t *testing.T) {
 	mockStore := &MockSearchStore{}
 	mockProvider := &MockEmbeddingProvider{}
@@ -43,7 +51,7 @@ func TestSearcherSearch(t *testing.T) {
 	searcher := ctxpkg.NewSearcher(mockStore, embedding.NewCachedClient(mockProvider))
 
 	ctx := context.Background()
-	results, err := searcher.Search(ctx, "test query", 5)
+	results, err := searcher.Search(ctx, "test query", 5, "")
 
 	if err != nil {
 		t.Fatalf("Search failed: %v", err)

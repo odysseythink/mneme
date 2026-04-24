@@ -41,7 +41,7 @@ func TestChromemStoreInsertAndSearch(t *testing.T) {
 		t.Fatalf("InsertVector failed: %v", err)
 	}
 
-	results, err := store.Search(ctx, emb, 5)
+	results, err := store.Search(ctx, emb, 5, "")
 	if err != nil {
 		t.Fatalf("Search failed: %v", err)
 	}
@@ -79,7 +79,7 @@ func TestChromemStoreSearchFiltersLowSimilarity(t *testing.T) {
 	}
 
 	// Search with an orthogonal query (similarity = 0)
-	results, err := store.Search(ctx, []float32{0.0, 1.0, 0.0, 0.0}, 5)
+	results, err := store.Search(ctx, []float32{0.0, 1.0, 0.0, 0.0}, 5, "")
 	if err != nil {
 		t.Fatalf("Search failed: %v", err)
 	}

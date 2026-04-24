@@ -25,7 +25,7 @@ func TestEndToEndIndexAndSearch(t *testing.T) {
 	embeddingClient := embedding.NewCachedClient(mockProvider)
 	codeSplitter := splitter.NewSplitter()
 
-	indexer := ctxpkg.NewIndexer(store, embeddingClient, codeSplitter)
+	indexer := ctxpkg.NewIndexer(store, embeddingClient, codeSplitter, "test-model")
 	searcher := ctxpkg.NewSearcher(store, embeddingClient)
 
 	ctx := context.Background()
@@ -39,7 +39,7 @@ func TestEndToEndIndexAndSearch(t *testing.T) {
 		t.Log("Expected vectors to be stored, but got 0 (may be normal for /tmp)")
 	}
 
-	results, err := searcher.Search(ctx, "test query", 5)
+	results, err := searcher.Search(ctx, "test query", 5, "")
 	if err != nil {
 		t.Fatalf("Search failed: %v", err)
 	}

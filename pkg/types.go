@@ -14,15 +14,19 @@ type Vector struct {
 	StartLine    int
 	EndLine      int
 	CodebaseHash string
+	FileHash     string // MD5 of the source file content, used for incremental updates
 	IndexedAt    time.Time
 }
 
 type IndexResult struct {
 	FilesProcessed int
+	FilesSkipped   int // files skipped because content hash is unchanged
 	VectorsStored  int
 	Duration       time.Duration
 	EmbeddingModel string
 	CodebasePath   string
+	FailedFiles    []string
+	LastError      string // first embedding/storage error seen during indexing, for diagnostics
 }
 
 type SearchResult struct {
@@ -37,18 +41,24 @@ type Indexer interface {
 }
 
 type Searcher interface {
-	Search(ctx context.Context, query string, topK int) ([]SearchResult, error)
+	Search(ctx context.Context, query string, topK int, codebasePath string) ([]SearchResult, error)
 }
 
 type EmbeddingProvider interface {
 	GenerateEmbedding(ctx context.Context, text string) ([]float32, error)
+	BatchGenerateEmbedding(ctx context.Context, texts []string) ([][]float32, error)
 }
 
 type Store interface {
 	Initialize(dbPath string) error
 	InsertVector(ctx context.Context, vec Vector) error
-	Search(ctx context.Context, embedding []float32, topK int) ([]Vector, error)
+	// Search queries vectors. codebaseHash="" searches all indexed codebases.
+	Search(ctx context.Context, embedding []float32, topK int, codebaseHash string) ([]Vector, error)
 	Close() error
+	// GetFileHashes returns filePath→fileHash for all files indexed under the given codebaseHash.
+	GetFileHashes(ctx context.Context, codebaseHash string) (map[string]string, error)
+	// DeleteByFilePath removes all vectors for the given file within the given codebase.
+	DeleteByFilePath(ctx context.Context, filePath string, codebaseHash string) error
 }
 
 type Splitter interface {

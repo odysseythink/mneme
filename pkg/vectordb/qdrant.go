@@ -163,6 +163,7 @@ func (s *QdrantStore) InsertVector(ctx context.Context, vec pkg.Vector) error {
 		"start_line":    qdrant.NewValueInt(int64(vec.StartLine)),
 		"end_line":      qdrant.NewValueInt(int64(vec.EndLine)),
 		"codebase_hash": qdrant.NewValueString(vec.CodebaseHash),
+		"file_hash":     qdrant.NewValueString(vec.FileHash),
 		"indexed_at":    qdrant.NewValueString(vec.IndexedAt.Format(time.RFC3339)),
 	}
 
@@ -188,7 +189,7 @@ func (s *QdrantStore) InsertVector(ctx context.Context, vec pkg.Vector) error {
 	return nil
 }
 
-func (s *QdrantStore) Search(ctx context.Context, embedding []float32, topK int) ([]pkg.Vector, error) {
+func (s *QdrantStore) Search(ctx context.Context, embedding []float32, topK int, codebaseHash string) ([]pkg.Vector, error) {
 	s.mu.Lock()
 	if !s.ready || s.client == nil {
 		s.mu.Unlock()
@@ -209,6 +210,14 @@ func (s *QdrantStore) Search(ctx context.Context, embedding []float32, topK int)
 		Limit:          ptrUint64(uint64(topK)),
 		ScoreThreshold: &scoreThreshold,
 		WithVectors:    qdrant.NewWithVectors(true),
+	}
+
+	if codebaseHash != "" {
+		req.Filter = &qdrant.Filter{
+			Must: []*qdrant.Condition{
+				qdrant.NewMatch("codebase_hash", codebaseHash),
+			},
+		}
 	}
 
 	// Execute query
@@ -268,6 +277,84 @@ func (s *QdrantStore) Search(ctx context.Context, embedding []float32, topK int)
 	}
 
 	return vectors, nil
+}
+
+func (s *QdrantStore) GetFileHashes(ctx context.Context, codebaseHash string) (map[string]string, error) {
+	s.mu.Lock()
+	ready := s.ready && s.client != nil
+	client := s.client
+	collection := s.collection
+	s.mu.Unlock()
+
+	if !ready {
+		return map[string]string{}, nil
+	}
+
+	hashes := make(map[string]string)
+	var offset *qdrant.PointId
+
+	for {
+		req := &qdrant.ScrollPoints{
+			CollectionName: collection,
+			Filter: &qdrant.Filter{
+				Must: []*qdrant.Condition{
+					qdrant.NewMatch("codebase_hash", codebaseHash),
+				},
+			},
+			Limit:       qdrant.PtrOf(uint32(1000)),
+			WithPayload: qdrant.NewWithPayload(true),
+			WithVectors: qdrant.NewWithVectors(false),
+			Offset:      offset,
+		}
+
+		points, nextOffset, err := client.ScrollAndOffset(ctx, req)
+		if err != nil {
+			return nil, fmt.Errorf("qdrant scroll failed: %w", err)
+		}
+
+		for _, point := range points {
+			if point.Payload == nil {
+				continue
+			}
+			filePath := getStringValue(point.Payload, "file_path")
+			fileHash := getStringValue(point.Payload, "file_hash")
+			if filePath != "" {
+				hashes[filePath] = fileHash
+			}
+		}
+
+		if nextOffset == nil {
+			break
+		}
+		offset = nextOffset
+	}
+
+	return hashes, nil
+}
+
+func (s *QdrantStore) DeleteByFilePath(ctx context.Context, filePath string, codebaseHash string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.ready || s.client == nil {
+		return nil
+	}
+
+	must := []*qdrant.Condition{
+		qdrant.NewMatch("file_path", filePath),
+	}
+	if codebaseHash != "" {
+		must = append(must, qdrant.NewMatch("codebase_hash", codebaseHash))
+	}
+
+	req := &qdrant.DeletePoints{
+		CollectionName: s.collection,
+		Points:         qdrant.NewPointsSelectorFilter(&qdrant.Filter{Must: must}),
+		Wait:           ptrBool(true),
+	}
+
+	_, err := s.client.Delete(ctx, req)
+	return err
 }
 
 func (s *QdrantStore) Close() error {
