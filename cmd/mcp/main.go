@@ -1,10 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"log"
 	"os"
 
+	"github.com/odysseythink/mlog"
 	"github.com/ranwei/claude-context/pkg"
 	"github.com/ranwei/claude-context/pkg/config"
 	ctxpkg "github.com/ranwei/claude-context/pkg/context"
@@ -14,16 +15,39 @@ import (
 	"github.com/ranwei/claude-context/pkg/vectordb"
 )
 
+// initLogger configures mlog to write to stderr and sets verbosity from LOG_LEVEL.
+// Stderr is used because stdout is reserved for MCP JSON-RPC communication.
+func initLogger(logLevel string) {
+	flag.Set("logtostderr", "true")
+	if logLevel == "debug" {
+		flag.Set("v", "2")
+	}
+}
+
 func main() {
 	cfg := config.FromEnv()
+	initLogger(cfg.LogLevel)
 
-	if cfg.EmbeddingAPIKey == "" {
-		log.Fatal("EMBEDDING_API_KEY environment variable is required")
+	// Check if running in MCP health check mode (no stdin input expected)
+	stat, _ := os.Stdin.Stat()
+	if (stat.Mode() & os.ModeCharDevice) != 0 {
+		// Running in terminal (not piped), print info and exit
+		fmt.Println("Claude Context MCP Server")
+		fmt.Println("Usage: Set EMBEDDING_API_KEY and run via Claude Code MCP")
+		fmt.Printf("Provider: %s, Model: %s\n", cfg.EmbeddingProvider, cfg.EmbeddingModel)
+		os.Exit(0)
 	}
 
-	store := vectordb.NewStore()
+	if cfg.EmbeddingAPIKey == "" {
+		mlog.Fatal("EMBEDDING_API_KEY environment variable is required")
+	}
+
+	store, err := vectordb.NewStoreFromConfig(cfg)
+	if err != nil {
+		mlog.Fatalf("Invalid DB_BACKEND: %v", err)
+	}
 	if err := store.Initialize(cfg.DBPath); err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		mlog.Fatalf("Failed to initialize database: %v", err)
 	}
 	defer store.Close()
 
@@ -34,23 +58,18 @@ func main() {
 	case "qwen":
 		provider = embedding.NewQwenProvider(cfg.EmbeddingAPIKey, cfg.EmbeddingModel)
 	default:
-		log.Fatalf("Unknown embedding provider: %s", cfg.EmbeddingProvider)
+		mlog.Fatalf("Unknown embedding provider: %s", cfg.EmbeddingProvider)
 	}
 
 	embeddingClient := embedding.NewCachedClient(provider)
-
 	codeSplitter := splitter.NewSplitter()
-
 	indexer := ctxpkg.NewIndexer(store, embeddingClient, codeSplitter)
 	searcher := ctxpkg.NewSearcher(store, embeddingClient)
-
 	server := mcp.NewMCPServer(indexer, searcher)
 
-	fmt.Fprintf(os.Stderr, "Claude Context MCP Server started\n")
-	fmt.Fprintf(os.Stderr, "Embedding Provider: %s\n", cfg.EmbeddingProvider)
-	fmt.Fprintf(os.Stderr, "Database: %s\n", cfg.DBPath)
+	mlog.Infof("Claude Context MCP Server started (provider=%s, backend=%s)", cfg.EmbeddingProvider, cfg.DBBackend)
 
 	if err := server.Start(); err != nil {
-		log.Fatalf("Server error: %v", err)
+		mlog.Fatalf("Server error: %v", err)
 	}
 }
