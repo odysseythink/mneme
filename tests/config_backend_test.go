@@ -21,6 +21,9 @@ func TestConfigBackendDefaults(t *testing.T) {
 			}
 		})
 	}
+	// Point CONFIG_FILE at a nonexistent path so the user's ~/.claude-context/config.yaml
+	// does not interfere with built-in default assertions.
+	t.Setenv("CONFIG_FILE", "/nonexistent/config.yaml")
 
 	cfg := config.FromEnv()
 
