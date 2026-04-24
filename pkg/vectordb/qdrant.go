@@ -47,6 +47,9 @@ func (s *QdrantStore) Initialize(dbPath string) error {
 		Port: port,
 	}
 
+	if s.client != nil {
+		s.client.Close()
+	}
 	client, err := qdrant.NewClient(config)
 	if err != nil {
 		return fmt.Errorf("failed to create Qdrant client: %w", err)
@@ -191,6 +194,8 @@ func (s *QdrantStore) Search(ctx context.Context, embedding []float32, topK int)
 		s.mu.Unlock()
 		return nil, nil
 	}
+	client := s.client
+	collection := s.collection
 	s.mu.Unlock()
 
 	// Build query with vector
@@ -199,7 +204,7 @@ func (s *QdrantStore) Search(ctx context.Context, embedding []float32, topK int)
 
 	// Build QueryPoints request with with_vectors enabled
 	req := &qdrant.QueryPoints{
-		CollectionName: s.collection,
+		CollectionName: collection,
 		Query:          query,
 		Limit:          ptrUint64(uint64(topK)),
 		ScoreThreshold: &scoreThreshold,
@@ -207,7 +212,7 @@ func (s *QdrantStore) Search(ctx context.Context, embedding []float32, topK int)
 	}
 
 	// Execute query
-	results, err := s.client.Query(ctx, req)
+	results, err := client.Query(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query: %w", err)
 	}
