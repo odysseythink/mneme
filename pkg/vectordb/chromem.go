@@ -82,15 +82,18 @@ func (s *ChromemStore) Search(ctx context.Context, embedding []float32, topK int
 		}
 		startLine, err := strconv.Atoi(r.Metadata["start_line"])
 		if err != nil {
-			mlog.Warningf("chromem: failed to parse start_line %q: %v", r.Metadata["start_line"], err)
+			mlog.Warningf("chromem: skipping result with unparseable start_line %q: %v", r.Metadata["start_line"], err)
+			continue
 		}
 		endLine, err := strconv.Atoi(r.Metadata["end_line"])
 		if err != nil {
-			mlog.Warningf("chromem: failed to parse end_line %q: %v", r.Metadata["end_line"], err)
+			mlog.Warningf("chromem: skipping result with unparseable end_line %q: %v", r.Metadata["end_line"], err)
+			continue
 		}
 		indexedAt, err := time.Parse(time.RFC3339, r.Metadata["indexed_at"])
 		if err != nil {
-			mlog.Warningf("chromem: failed to parse indexed_at %q: %v", r.Metadata["indexed_at"], err)
+			mlog.Warningf("chromem: skipping result with unparseable indexed_at %q: %v", r.Metadata["indexed_at"], err)
+			continue
 		}
 
 		vectors = append(vectors, pkg.Vector{
