@@ -71,8 +71,12 @@ func main() {
 	if len(cfg.EmbeddingAPIKey) > 10 {
 		keyHint = cfg.EmbeddingAPIKey[:10] + "..."
 	}
-	mlog.Infof("Claude Context MCP Server started: provider=%s model=%s backend=%s key=%s",
-		cfg.EmbeddingProvider, cfg.EmbeddingModel, cfg.DBBackend, keyHint)
+	configSrc := "defaults"
+	if cfg.ConfigSource != "" {
+		configSrc = cfg.ConfigSource
+	}
+	mlog.Infof("Claude Context MCP Server started: provider=%s model=%s backend=%s key=%s config=%s",
+		cfg.EmbeddingProvider, cfg.EmbeddingModel, cfg.DBBackend, keyHint, configSrc)
 
 	if err := server.Start(); err != nil {
 		mlog.Fatalf("Server error: %v", err)

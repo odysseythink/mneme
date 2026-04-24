@@ -208,54 +208,6 @@ func embeddingFromInterface(v interface{}) []float32 {
 	return out
 }
 
-func (s *DuckDBStore) SearchWithEmbedding(ctx context.Context, embedding []float32, topK int, codebaseHash string) ([]pkg.Vector, error) {
-	query := `SELECT id, embedding, text, file_path, language, start_line, end_line, codebase_hash, indexed_at FROM vectors`
-	var args []interface{}
-	if codebaseHash != "" {
-		query += ` WHERE codebase_hash = ?`
-		args = append(args, codebaseHash)
-	}
-
-	rows, err := s.db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("search query failed: %w", err)
-	}
-	defer rows.Close()
-
-	type scoredVector struct {
-		vec    pkg.Vector
-		similarity float32
-	}
-
-	var scored []scoredVector
-	for rows.Next() {
-		var vec pkg.Vector
-		var embInterface interface{}
-		if err := rows.Scan(&vec.ID, &embInterface, &vec.Text, &vec.FilePath, &vec.Language, &vec.StartLine, &vec.EndLine, &vec.CodebaseHash, &vec.IndexedAt); err != nil {
-			return nil, err
-		}
-
-		vec.Embedding = embeddingFromInterface(embInterface)
-		if vec.Embedding != nil {
-			sim := cosineSimilarity(embedding, vec.Embedding)
-			if sim >= 0.5 {
-				scored = append(scored, scoredVector{vec: vec, similarity: sim})
-			}
-		}
-	}
-
-	sort.Slice(scored, func(i, j int) bool {
-		return scored[i].similarity > scored[j].similarity
-	})
-
-	results := make([]pkg.Vector, 0, topK)
-	for i := 0; i < len(scored) && i < topK; i++ {
-		results = append(results, scored[i].vec)
-	}
-
-	return results, nil
-}
-
 func (s *DuckDBStore) Close() error {
 	if s.db != nil {
 		return s.db.Close()
