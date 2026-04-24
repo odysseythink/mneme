@@ -8,10 +8,19 @@ import (
 )
 
 func TestConfigBackendDefaults(t *testing.T) {
-	os.Unsetenv("DB_BACKEND")
-	os.Unsetenv("QDRANT_URL")
-	os.Unsetenv("QDRANT_COLLECTION")
-	os.Unsetenv("CHROMEM_PATH")
+	// Save and restore any pre-existing values
+	for _, key := range []string{"DB_BACKEND", "QDRANT_URL", "QDRANT_COLLECTION", "CHROMEM_PATH"} {
+		key := key
+		orig, exists := os.LookupEnv(key)
+		os.Unsetenv(key)
+		t.Cleanup(func() {
+			if exists {
+				os.Setenv(key, orig)
+			} else {
+				os.Unsetenv(key)
+			}
+		})
+	}
 
 	cfg := config.FromEnv()
 
@@ -24,19 +33,16 @@ func TestConfigBackendDefaults(t *testing.T) {
 	if cfg.QdrantCollection != "claude-context" {
 		t.Errorf("expected QdrantCollection='claude-context', got %q", cfg.QdrantCollection)
 	}
+	if cfg.ChromemPath == "" {
+		t.Error("expected ChromemPath to be non-empty default")
+	}
 }
 
 func TestConfigBackendFromEnv(t *testing.T) {
-	os.Setenv("DB_BACKEND", "qdrant")
-	os.Setenv("QDRANT_URL", "http://myserver:6333")
-	os.Setenv("QDRANT_COLLECTION", "my-collection")
-	os.Setenv("CHROMEM_PATH", "/tmp/chromem")
-	defer func() {
-		os.Unsetenv("DB_BACKEND")
-		os.Unsetenv("QDRANT_URL")
-		os.Unsetenv("QDRANT_COLLECTION")
-		os.Unsetenv("CHROMEM_PATH")
-	}()
+	t.Setenv("DB_BACKEND", "qdrant")
+	t.Setenv("QDRANT_URL", "http://myserver:6333")
+	t.Setenv("QDRANT_COLLECTION", "my-collection")
+	t.Setenv("CHROMEM_PATH", "/tmp/chromem")
 
 	cfg := config.FromEnv()
 
@@ -45,6 +51,9 @@ func TestConfigBackendFromEnv(t *testing.T) {
 	}
 	if cfg.QdrantURL != "http://myserver:6333" {
 		t.Errorf("expected QdrantURL='http://myserver:6333', got %q", cfg.QdrantURL)
+	}
+	if cfg.QdrantCollection != "my-collection" {
+		t.Errorf("expected QdrantCollection='my-collection', got %q", cfg.QdrantCollection)
 	}
 	if cfg.ChromemPath != "/tmp/chromem" {
 		t.Errorf("expected ChromemPath='/tmp/chromem', got %q", cfg.ChromemPath)
