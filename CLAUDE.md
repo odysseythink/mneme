@@ -18,10 +18,35 @@ go test -v ./tests -run TestStoreInitialize
 LOG_LEVEL=debug ./bin/claude-context
 ```
 
-## Required Environment Variables
+## Configuration
+
+**Priority: env var > config file > built-in default**
+
+Config file is read from `~/.claude-context/config.yaml` by default.
+Override the path with `CONFIG_FILE=/path/to/config.yaml`.
+
+Example `~/.claude-context/config.yaml`:
+
+```yaml
+embedding_api_key: sk-xxx
+embedding_provider: qwen
+embedding_model: text-embedding-v4
+
+db_backend: chromem
+chromem_path: ~/.claude-context/chromem
+
+# db_path: ~/.claude-context/db.duckdb   # db_backend=duckdb
+# qdrant_url: http://localhost:6333       # db_backend=qdrant
+# qdrant_collection: claude-context
+
+log_level: info
+```
+
+Environment variables (override config file):
 
 | Variable | Default | Description |
 |---|---|---|
+| `CONFIG_FILE` | `~/.claude-context/config.yaml` | Config file path |
 | `EMBEDDING_API_KEY` | (required) | SiliconFlow or Qwen API key |
 | `EMBEDDING_PROVIDER` | `siliconflow` | `siliconflow` or `qwen` |
 | `EMBEDDING_MODEL` | `BAAI/bge-large-zh-v1.5` | Model ID |
