@@ -87,6 +87,10 @@ func (p *SiliconFlowProvider) GenerateEmbedding(ctx context.Context, text string
 	return sfResp.Data[0].Embedding, nil
 }
 
+func (p *SiliconFlowProvider) BatchGenerateEmbedding(ctx context.Context, texts []string) ([][]float32, error) {
+	return p.BatchGenerateEmbeddings(ctx, texts)
+}
+
 func (p *SiliconFlowProvider) BatchGenerateEmbeddings(ctx context.Context, texts []string) ([][]float32, error) {
 	req := SiliconFlowRequest{
 		Model:    p.model,

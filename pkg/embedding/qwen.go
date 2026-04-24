@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/odysseythink/mlog"
 )
 
 type QwenProvider struct {
@@ -50,6 +52,8 @@ type QwenResponse struct {
 }
 
 func (p *QwenProvider) GenerateEmbedding(ctx context.Context, text string) ([]float32, error) {
+	mlog.V(2).Infof("qwen GenerateEmbedding: model=%q key=%s... textLen=%d", p.model, p.apiKey[:min(10, len(p.apiKey))], len(text))
+
 	req := QwenRequest{
 		Model: p.model,
 		Input: QwenInput{
@@ -81,6 +85,21 @@ func (p *QwenProvider) GenerateEmbedding(ctx context.Context, text string) ([]fl
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
+	mlog.V(2).Infof("qwen GenerateEmbedding: status=%d", resp.StatusCode)
+
+	if resp.StatusCode != http.StatusOK {
+		mlog.Warningf("qwen GenerateEmbedding error: model=%q status=%d body=%s", p.model, resp.StatusCode, string(respBody))
+		var errResp struct {
+			Code      string `json:"code"`
+			Message   string `json:"message"`
+			RequestID string `json:"request_id"`
+		}
+		if json.Unmarshal(respBody, &errResp) == nil && errResp.Message != "" {
+			return nil, fmt.Errorf("DashScope error %s: %s", errResp.Code, errResp.Message)
+		}
+		return nil, fmt.Errorf("DashScope HTTP %d: %s", resp.StatusCode, string(respBody))
+	}
+
 	var qResp QwenResponse
 	if err := json.Unmarshal(respBody, &qResp); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
@@ -93,7 +112,13 @@ func (p *QwenProvider) GenerateEmbedding(ctx context.Context, text string) ([]fl
 	return qResp.Output.Embeddings[0].Embedding, nil
 }
 
+func (p *QwenProvider) BatchGenerateEmbedding(ctx context.Context, texts []string) ([][]float32, error) {
+	return p.BatchGenerateEmbeddings(ctx, texts)
+}
+
 func (p *QwenProvider) BatchGenerateEmbeddings(ctx context.Context, texts []string) ([][]float32, error) {
+	mlog.Infof("qwen BatchGenerateEmbeddings: model=%q batchSize=%d", p.model, len(texts))
+
 	req := QwenRequest{
 		Model: p.model,
 		Input: QwenInput{
@@ -124,6 +149,21 @@ func (p *QwenProvider) BatchGenerateEmbeddings(ctx context.Context, texts []stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
+
+	if resp.StatusCode != http.StatusOK {
+		mlog.Warningf("qwen BatchGenerateEmbeddings error: model=%q status=%d body=%s", p.model, resp.StatusCode, string(respBody))
+		var errResp struct {
+			Code      string `json:"code"`
+			Message   string `json:"message"`
+			RequestID string `json:"request_id"`
+		}
+		if json.Unmarshal(respBody, &errResp) == nil && errResp.Message != "" {
+			return nil, fmt.Errorf("DashScope error %s: %s", errResp.Code, errResp.Message)
+		}
+		return nil, fmt.Errorf("DashScope HTTP %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	mlog.V(2).Infof("qwen BatchGenerateEmbeddings: status=%d ok", resp.StatusCode)
 
 	var qResp QwenResponse
 	if err := json.Unmarshal(respBody, &qResp); err != nil {

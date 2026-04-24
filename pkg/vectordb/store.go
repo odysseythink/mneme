@@ -55,6 +55,7 @@ func (s *DuckDBStore) createTables() error {
 		start_line INTEGER,
 		end_line INTEGER,
 		codebase_hash VARCHAR,
+		file_hash VARCHAR DEFAULT '',
 		indexed_at TIMESTAMP DEFAULT now()
 	);
 	CREATE SEQUENCE IF NOT EXISTS seq_vectors START 1;
@@ -79,13 +80,23 @@ func (s *DuckDBStore) createTables() error {
 		return fmt.Errorf("failed to create metadata table: %w", err)
 	}
 
+	// Migrate existing databases: add file_hash column if missing
+	if _, err := s.db.Exec(`ALTER TABLE vectors ADD COLUMN IF NOT EXISTS file_hash VARCHAR DEFAULT ''`); err != nil {
+		return fmt.Errorf("failed to migrate vectors schema: %w", err)
+	}
+
+	// Index for efficient per-codebase filtering
+	if _, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_codebase ON vectors(codebase_hash)`); err != nil {
+		return fmt.Errorf("failed to create codebase index: %w", err)
+	}
+
 	return nil
 }
 
 func (s *DuckDBStore) InsertVector(ctx context.Context, vec pkg.Vector) error {
 	query := `
-	INSERT INTO vectors (id, embedding, text, file_path, language, start_line, end_line, codebase_hash)
-	VALUES (nextval('seq_vectors'), ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO vectors (id, embedding, text, file_path, language, start_line, end_line, codebase_hash, file_hash)
+	VALUES (nextval('seq_vectors'), ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err := s.db.ExecContext(ctx, query,
@@ -96,8 +107,41 @@ func (s *DuckDBStore) InsertVector(ctx context.Context, vec pkg.Vector) error {
 		vec.StartLine,
 		vec.EndLine,
 		vec.CodebaseHash,
+		vec.FileHash,
 	)
 
+	return err
+}
+
+func (s *DuckDBStore) GetFileHashes(ctx context.Context, codebaseHash string) (map[string]string, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT DISTINCT file_path, file_hash FROM vectors WHERE codebase_hash = ?`,
+		codebaseHash,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("GetFileHashes query failed: %w", err)
+	}
+	defer rows.Close()
+
+	hashes := make(map[string]string)
+	for rows.Next() {
+		var filePath, fileHash string
+		if err := rows.Scan(&filePath, &fileHash); err != nil {
+			return nil, err
+		}
+		hashes[filePath] = fileHash
+	}
+	return hashes, nil
+}
+
+func (s *DuckDBStore) DeleteByFilePath(ctx context.Context, filePath string, codebaseHash string) error {
+	query := `DELETE FROM vectors WHERE file_path = ?`
+	args := []interface{}{filePath}
+	if codebaseHash != "" {
+		query += ` AND codebase_hash = ?`
+		args = append(args, codebaseHash)
+	}
+	_, err := s.db.ExecContext(ctx, query, args...)
 	return err
 }
 
@@ -109,10 +153,15 @@ func floatSliceToString(f []float32) string {
 	return "[" + strings.Join(parts, ", ") + "]"
 }
 
-func (s *DuckDBStore) Search(ctx context.Context, embedding []float32, topK int) ([]pkg.Vector, error) {
-	query := `SELECT id, text, file_path, language, start_line, end_line, codebase_hash, indexed_at FROM vectors`
+func (s *DuckDBStore) Search(ctx context.Context, embedding []float32, topK int, codebaseHash string) ([]pkg.Vector, error) {
+	query := `SELECT id, embedding, text, file_path, language, start_line, end_line, codebase_hash, indexed_at FROM vectors`
+	var args []interface{}
+	if codebaseHash != "" {
+		query += ` WHERE codebase_hash = ?`
+		args = append(args, codebaseHash)
+	}
 
-	rows, err := s.db.QueryContext(ctx, query)
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("search query failed: %w", err)
 	}
@@ -121,9 +170,11 @@ func (s *DuckDBStore) Search(ctx context.Context, embedding []float32, topK int)
 	var results []pkg.Vector
 	for rows.Next() {
 		var vec pkg.Vector
-		if err := rows.Scan(&vec.ID, &vec.Text, &vec.FilePath, &vec.Language, &vec.StartLine, &vec.EndLine, &vec.CodebaseHash, &vec.IndexedAt); err != nil {
+		var embInterface interface{}
+		if err := rows.Scan(&vec.ID, &embInterface, &vec.Text, &vec.FilePath, &vec.Language, &vec.StartLine, &vec.EndLine, &vec.CodebaseHash, &vec.IndexedAt); err != nil {
 			return nil, err
 		}
+		vec.Embedding = embeddingFromInterface(embInterface)
 		results = append(results, vec)
 	}
 
@@ -138,10 +189,34 @@ func (s *DuckDBStore) Search(ctx context.Context, embedding []float32, topK int)
 	return results, nil
 }
 
-func (s *DuckDBStore) SearchWithEmbedding(ctx context.Context, embedding []float32, topK int) ([]pkg.Vector, error) {
-	query := `SELECT id, embedding, text, file_path, language, start_line, end_line, codebase_hash, indexed_at FROM vectors`
+// embeddingFromInterface converts DuckDB's []interface{} FLOAT[] result to []float32.
+// DuckDB returns float64 values even for FLOAT[] columns, so both types are handled.
+func embeddingFromInterface(v interface{}) []float32 {
+	raw, ok := v.([]interface{})
+	if !ok {
+		return nil
+	}
+	out := make([]float32, len(raw))
+	for i, elem := range raw {
+		switch f := elem.(type) {
+		case float32:
+			out[i] = f
+		case float64:
+			out[i] = float32(f)
+		}
+	}
+	return out
+}
 
-	rows, err := s.db.QueryContext(ctx, query)
+func (s *DuckDBStore) SearchWithEmbedding(ctx context.Context, embedding []float32, topK int, codebaseHash string) ([]pkg.Vector, error) {
+	query := `SELECT id, embedding, text, file_path, language, start_line, end_line, codebase_hash, indexed_at FROM vectors`
+	var args []interface{}
+	if codebaseHash != "" {
+		query += ` WHERE codebase_hash = ?`
+		args = append(args, codebaseHash)
+	}
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("search query failed: %w", err)
 	}
@@ -160,8 +235,8 @@ func (s *DuckDBStore) SearchWithEmbedding(ctx context.Context, embedding []float
 			return nil, err
 		}
 
-		if embSlice, ok := embInterface.([]float32); ok {
-			vec.Embedding = embSlice
+		vec.Embedding = embeddingFromInterface(embInterface)
+		if vec.Embedding != nil {
 			sim := cosineSimilarity(embedding, vec.Embedding)
 			if sim >= 0.5 {
 				scored = append(scored, scoredVector{vec: vec, similarity: sim})

@@ -22,7 +22,7 @@ func NewSearcher(store pkg.Store, emb *embedding.CachedClient) *Searcher {
 	}
 }
 
-func (s *Searcher) Search(ctx context.Context, query string, topK int) ([]pkg.SearchResult, error) {
+func (s *Searcher) Search(ctx context.Context, query string, topK int, codebasePath string) ([]pkg.SearchResult, error) {
 	if topK > 20 {
 		topK = 20
 	}
@@ -35,7 +35,12 @@ func (s *Searcher) Search(ctx context.Context, query string, topK int) ([]pkg.Se
 		return nil, fmt.Errorf("failed to generate query embedding: %w", err)
 	}
 
-	vectors, err := s.store.Search(ctx, queryEmbedding, 100)
+	codebaseHash := ""
+	if codebasePath != "" {
+		codebaseHash = hashPath(codebasePath)
+	}
+
+	vectors, err := s.store.Search(ctx, queryEmbedding, 100, codebaseHash)
 	if err != nil {
 		return nil, fmt.Errorf("database search failed: %w", err)
 	}
