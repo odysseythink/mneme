@@ -11,6 +11,10 @@ type Config struct {
 	EmbeddingModel    string
 	DBPath            string
 	LogLevel          string
+	DBBackend         string
+	QdrantURL         string
+	QdrantCollection  string
+	ChromemPath       string
 }
 
 func FromEnv() *Config {
@@ -22,6 +26,10 @@ func FromEnv() *Config {
 		EmbeddingModel:    getEnvOrDefault("EMBEDDING_MODEL", "BAAI/bge-large-zh-v1.5"),
 		DBPath:            getEnvOrDefault("DB_PATH", filepath.Join(homeDir, ".claude-context", "db.duckdb")),
 		LogLevel:          getEnvOrDefault("LOG_LEVEL", "info"),
+		DBBackend:         getEnvOrDefault("DB_BACKEND", "duckdb"),
+		QdrantURL:         getEnvOrDefault("QDRANT_URL", "http://localhost:6333"),
+		QdrantCollection:  getEnvOrDefault("QDRANT_COLLECTION", "claude-context"),
+		ChromemPath:       getEnvOrDefault("CHROMEM_PATH", filepath.Join(homeDir, ".claude-context", "chromem")),
 	}
 }
 
