@@ -102,3 +102,26 @@ func TestParseEvent_PostWrite(t *testing.T) {
 		t.Errorf("DurationMs expected 1")
 	}
 }
+
+func TestFeedbackFormat(t *testing.T) {
+	msg := hook.FormatStderr("hello world")
+	want := "⚡ claude-context: hello world"
+	if msg != want {
+		t.Errorf("FormatStderr = %q, want %q", msg, want)
+	}
+}
+
+func TestDebugLevelFromEnv(t *testing.T) {
+	t.Setenv("CLAUDE_CONTEXT_DEBUG", "")
+	if hook.DebugLevel() != 0 {
+		t.Error("expected level 0 when unset")
+	}
+	t.Setenv("CLAUDE_CONTEXT_DEBUG", "1")
+	if hook.DebugLevel() != 1 {
+		t.Error("expected level 1")
+	}
+	t.Setenv("CLAUDE_CONTEXT_DEBUG", "2")
+	if hook.DebugLevel() != 2 {
+		t.Error("expected level 2")
+	}
+}
