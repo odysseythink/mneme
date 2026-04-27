@@ -1,0 +1,14 @@
+{
+  "session_id": "test-session-ptu",
+  "transcript_path": "/tmp/transcript",
+  "cwd": "__PROJECT_DIR__",
+  "hook_event_name": "PostToolUse",
+  "permission_mode": "bypassPermissions",
+  "tool_name": "Write",
+  "tool_use_id": "toolu_01",
+  "tool_input": {
+    "file_path": "__PROJECT_DIR__/cmd/new_handler.go",
+    "content": "package main\n\nfunc newHandler() {}\n"
+  },
+  "tool_response": {"type": "result", "content": "File written successfully."}
+}
