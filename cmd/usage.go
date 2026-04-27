@@ -14,6 +14,7 @@ Usage:
   claude-context                   start MCP server (for claude mcp add)
   claude-context hook <event>      handle a Claude Code hook event
   claude-context init [flags]      install hooks and scaffolding
+  claude-context scan [--force]    build anatomy map for current project
   claude-context stats             show ledger counters for current project
   claude-context version           print version
 
@@ -23,6 +24,6 @@ init flags:
   --print       print final file contents to stdout
   --project     write to <project>/.claude/settings.json
   --local       write to <project>/.claude/settings.local.json
-  --no-scan     placeholder (scan is M2)
+  --no-scan     skip initial anatomy scan
   --uninstall   remove all claude-context managed entries`)
 }

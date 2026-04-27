@@ -33,7 +33,7 @@ func dispatchInit(args []string) {
 	fs.BoolVar(&opts.printMode, "print", false, "print final file contents to stdout")
 	fs.BoolVar(&opts.project, "project", false, "use project-level settings.json")
 	fs.BoolVar(&opts.local, "local", false, "use project-local settings.local.json")
-	fs.BoolVar(&opts.noScan, "no-scan", false, "placeholder; scan is M2")
+	fs.BoolVar(&opts.noScan, "no-scan", false, "skip initial anatomy scan")
 	fs.BoolVar(&opts.uninstall, "uninstall", false, "remove all managed entries")
 	if err := fs.Parse(args); err != nil {
 		os.Exit(2)

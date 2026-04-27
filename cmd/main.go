@@ -16,6 +16,8 @@ func main() {
 		dispatchHook(os.Args[2:])
 	case "init":
 		dispatchInit(os.Args[2:])
+	case "scan":
+		dispatchScan(os.Args[2:])
 	case "stats":
 		dispatchStats(os.Args[2:])
 	case "version":
