@@ -3,6 +3,7 @@ package tests
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -123,5 +124,57 @@ func TestAcquireLockTimeout(t *testing.T) {
 	_, err = state.AcquireLock(lp, 50*time.Millisecond)
 	if err == nil {
 		t.Error("expected timeout error for second lock on same path")
+	}
+}
+
+func TestLedgerIncrementOnce(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+
+	state.IncrementSafe(dir, "hook_fired.pre-read")
+
+	l, err := state.ReadLedger(dir)
+	if err != nil {
+		t.Fatalf("ReadLedger: %v", err)
+	}
+	if l.Totals.HookFired["pre-read"] != 1 {
+		t.Errorf("hook_fired.pre-read = %d, want 1", l.Totals.HookFired["pre-read"])
+	}
+}
+
+func TestLedgerIncrementRMW(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+
+	const n = 20
+	var wg sync.WaitGroup
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			state.IncrementSafe(dir, "hook_fired.pre-read")
+		}()
+	}
+	wg.Wait()
+
+	l, _ := state.ReadLedger(dir)
+	if l.Totals.HookFired["pre-read"] != n {
+		t.Errorf("concurrent increments: got %d, want %d (lost updates)", l.Totals.HookFired["pre-read"], n)
+	}
+}
+
+func TestLedgerIncrementTopLevel(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+
+	state.IncrementSafe(dir, "hook_errors")
+	state.IncrementSafe(dir, "stdin_parse_failures")
+
+	l, _ := state.ReadLedger(dir)
+	if l.Totals.HookErrors != 1 {
+		t.Errorf("hook_errors = %d, want 1", l.Totals.HookErrors)
+	}
+	if l.Totals.StdinParseFailures != 1 {
+		t.Errorf("stdin_parse_failures = %d, want 1", l.Totals.StdinParseFailures)
 	}
 }
