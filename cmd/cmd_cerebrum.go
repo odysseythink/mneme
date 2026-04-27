@@ -77,16 +77,27 @@ func cerebrumAdd(args []string) {
 		os.Exit(1)
 	}
 
-	cwd, _ := os.Getwd()
-	root, _ := state.FindProjectRoot(cwd)
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "✗ cannot get cwd:", err)
+		os.Exit(1)
+	}
+	root, ok := state.FindProjectRoot(cwd)
+	if !ok {
+		fmt.Fprintln(os.Stderr, "✗ not inside an initialized project (run: claude-context init)")
+		os.Exit(1)
+	}
 	rule := state.CerebrumRule{Comment: *comment, Pattern: *pattern, Message: *message}
 	if err := state.AppendCerebrumRule(root, rule); err != nil {
 		fmt.Fprintln(os.Stderr, "✗ write error:", err)
 		os.Exit(1)
 	}
 
-	rules, _ := state.ReadCerebrum(root)
-	fmt.Fprintf(os.Stderr, "✓ Rule added (%d rules total in .claude-context/cerebrum.md)\n", len(rules))
+	if rules, err2 := state.ReadCerebrum(root); err2 == nil {
+		fmt.Fprintf(os.Stderr, "✓ Rule added (%d rules total in .claude-context/cerebrum.md)\n", len(rules))
+	} else {
+		fmt.Fprintln(os.Stderr, "✓ Rule added to .claude-context/cerebrum.md")
+	}
 }
 
 func cerebrumList() {
