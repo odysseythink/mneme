@@ -1,0 +1,1 @@
+{"note": "captured during M1; regenerate with: go test ./tests/ -run TestMCPSearchGolden -update"}
