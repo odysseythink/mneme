@@ -15,8 +15,6 @@ import (
 	"github.com/ranwei/claude-context/pkg/vectordb"
 )
 
-// initLogger configures mlog to write to stderr and sets verbosity from LOG_LEVEL.
-// Stderr is used because stdout is reserved for MCP JSON-RPC communication.
 func initLogger(logLevel string) {
 	flag.Set("logtostderr", "true")
 	if logLevel == "debug" {
@@ -24,14 +22,12 @@ func initLogger(logLevel string) {
 	}
 }
 
-func main() {
+func runMCPServer() {
 	cfg := config.FromEnv()
 	initLogger(cfg.LogLevel)
 
-	// Check if running in MCP health check mode (no stdin input expected)
 	stat, _ := os.Stdin.Stat()
 	if (stat.Mode() & os.ModeCharDevice) != 0 {
-		// Running in terminal (not piped), print info and exit
 		fmt.Println("Claude Context MCP Server")
 		fmt.Println("Usage: Set EMBEDDING_API_KEY and run via Claude Code MCP")
 		fmt.Printf("Provider: %s, Model: %s\n", cfg.EmbeddingProvider, cfg.EmbeddingModel)
