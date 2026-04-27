@@ -95,35 +95,6 @@ func runPostWrite(stdin io.Reader) {
 	exitHook("post-write", root)
 }
 
-func runSessionStart(stdin io.Reader) {
-	defer recoverAndLog("session-start")
-	ev := parseOrExit(stdin, "session-start")
-	root, _, resolved := resolveProjectFromEvent(ev)
-	if !resolved {
-		os.Exit(0)
-	}
-	state.IncrementSafe(root, "hook_fired.session-start")
-	s := state.Session{
-		SessionID:       ev.SessionID,
-		ClaudeCodeModel: ev.Model,
-	}
-	state.UpsertSession(root, s)
-	exitHook("session-start", root)
-}
-
-func runStop(stdin io.Reader) {
-	defer recoverAndLog("stop")
-	ev := parseOrExit(stdin, "stop")
-	if ev.IsRecursiveStop() {
-		os.Exit(0)
-	}
-	root, _, resolved := resolveProjectFromEvent(ev)
-	if !resolved {
-		os.Exit(0)
-	}
-	state.IncrementSafe(root, "hook_fired.stop")
-	exitHook("stop", root)
-}
 
 // parseOrExit parses from r; on failure logs and exits 0 (never blocks Claude).
 func parseOrExit(r io.Reader, hookName string) *hook.Event {
