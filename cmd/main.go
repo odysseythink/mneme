@@ -20,6 +20,8 @@ func main() {
 		dispatchScan(os.Args[2:])
 	case "stats":
 		dispatchStats(os.Args[2:])
+	case "cerebrum":
+		dispatchCerebrum(os.Args[2:])
 	case "version":
 		printVersion()
 	case "-h", "--help", "help":
