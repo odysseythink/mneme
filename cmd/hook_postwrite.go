@@ -2,12 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/ranwei/claude-context/pkg/classifier"
 	"github.com/ranwei/claude-context/pkg/hook"
+	"github.com/ranwei/claude-context/pkg/match"
 	"github.com/ranwei/claude-context/pkg/state"
 )
 
@@ -34,6 +37,22 @@ func runPostToolUse(stdin io.Reader) {
 		LineDelta: edit.LinesAdded - edit.LinesRemoved,
 	}); err != nil {
 		hook.WriteStderr("post-tool-use: append turn edit: " + err.Error())
+	}
+
+	// M4b: auto-upsert bugfix edits to buglog
+	if cat == "bugfix" {
+		if len(match.Tokenize(edit.OldStr)) >= 5 {
+			basename := filepath.Base(edit.FilePath)
+			entry := state.BuglogEntry{
+				Source:      "auto",
+				File:        edit.FilePath,
+				Description: "possible re-introduction of bugfix in " + basename,
+				BadCode:     edit.OldStr,
+			}
+			if aerr := state.AppendBuglogEntry(root, entry); aerr != nil {
+				hook.WriteStderr(fmt.Sprintf("post-write: buglog append: %v", aerr))
+			}
+		}
 	}
 
 	exitHook("post-tool-use", root)
