@@ -23,6 +23,8 @@ func dispatchHook(args []string) {
 		runPreWrite(os.Stdin)
 	case "post-write":
 		runPostWrite(os.Stdin)
+	case "post-tool-use":
+		runPostToolUse(os.Stdin)
 	case "session-start":
 		runSessionStart(os.Stdin)
 	case "stop":
