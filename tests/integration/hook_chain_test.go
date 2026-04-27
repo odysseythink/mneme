@@ -159,3 +159,29 @@ func TestBadJSONStdinSafe(t *testing.T) {
 		t.Errorf("bad JSON should exit 0, got: %v\n%s", err, out)
 	}
 }
+
+func BenchmarkHookStubE2E(b *testing.B) {
+	home := b.TempDir()
+	project := b.TempDir()
+
+	// init a git repo + run claude-context init
+	exec.Command("git", "-C", project, "init").Run()
+	exec.Command("git", "-C", project, "config", "user.email", "b@b.com").Run()
+	exec.Command("git", "-C", project, "config", "user.name", "B").Run()
+	env := append(os.Environ(), "HOME="+home)
+	initCmd := exec.Command(binaryPath, "init", "--yes")
+	initCmd.Dir = project
+	initCmd.Env = env
+	initCmd.Run()
+
+	stopPayload := `{"session_id":"bench","transcript_path":"/tmp/t","cwd":"` + project + `","hook_event_name":"Stop","permission_mode":"bypassPermissions","stop_hook_active":false}`
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		cmd := exec.Command(binaryPath, "hook", "stop")
+		cmd.Dir = project
+		cmd.Env = env
+		cmd.Stdin = strings.NewReader(stopPayload)
+		cmd.Run()
+	}
+}
