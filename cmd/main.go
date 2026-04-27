@@ -22,6 +22,8 @@ func main() {
 		dispatchStats(os.Args[2:])
 	case "cerebrum":
 		dispatchCerebrum(os.Args[2:])
+	case "buglog":
+		dispatchBuglog(os.Args[2:])
 	case "version":
 		printVersion()
 	case "-h", "--help", "help":

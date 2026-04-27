@@ -628,3 +628,78 @@ func TestPreWriteNoCerebrumExitsZero(t *testing.T) {
 		t.Errorf("expected exit 0 (no rules), got: %v\n%s", err, out)
 	}
 }
+
+func TestBuglogListEmpty(t *testing.T) {
+	project, home := setupInitializedProject(t)
+	env := append(os.Environ(), "HOME="+home)
+
+	cmd := exec.Command(binaryPath, "buglog", "list")
+	cmd.Dir = project
+	cmd.Env = env
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("buglog list: %v\n%s", err, out)
+	}
+	if !strings.Contains(string(out), "No buglog entries") {
+		t.Errorf("expected empty message, got: %s", out)
+	}
+}
+
+func TestBuglogAddAndList(t *testing.T) {
+	project, home := setupInitializedProject(t)
+	env := append(os.Environ(), "HOME="+home)
+
+	addCmd := exec.Command(binaryPath, "buglog", "add",
+		"--description", "possible nil deref in session",
+		"--code", "session.StopCount++\nsession.Value = nil",
+	)
+	addCmd.Dir = project
+	addCmd.Env = env
+	if out, err := addCmd.CombinedOutput(); err != nil {
+		t.Fatalf("buglog add: %v\n%s", err, out)
+	}
+
+	listCmd := exec.Command(binaryPath, "buglog", "list")
+	listCmd.Dir = project
+	listCmd.Env = env
+	out, err := listCmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("buglog list: %v\n%s", err, out)
+	}
+	if !strings.Contains(string(out), "possible nil deref in session") {
+		t.Errorf("expected description in output, got: %s", out)
+	}
+	if !strings.Contains(string(out), "[manual]") {
+		t.Errorf("expected [manual] source in output, got: %s", out)
+	}
+}
+
+func TestBuglogClearWithYes(t *testing.T) {
+	project, home := setupInitializedProject(t)
+	env := append(os.Environ(), "HOME="+home)
+
+	addCmd := exec.Command(binaryPath, "buglog", "add",
+		"--description", "some old bug",
+		"--code", "badCall := session.Uninitialized()",
+	)
+	addCmd.Dir = project
+	addCmd.Env = env
+	if out, err := addCmd.CombinedOutput(); err != nil {
+		t.Fatalf("buglog add: %v\n%s", err, out)
+	}
+
+	clearCmd := exec.Command(binaryPath, "buglog", "clear", "--yes")
+	clearCmd.Dir = project
+	clearCmd.Env = env
+	if out, err := clearCmd.CombinedOutput(); err != nil {
+		t.Fatalf("buglog clear: %v\n%s", err, out)
+	}
+
+	listCmd := exec.Command(binaryPath, "buglog", "list")
+	listCmd.Dir = project
+	listCmd.Env = env
+	out, _ := listCmd.CombinedOutput()
+	if !strings.Contains(string(out), "No buglog entries") {
+		t.Errorf("expected empty after clear, got: %s", out)
+	}
+}
