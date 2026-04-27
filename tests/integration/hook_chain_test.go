@@ -3,6 +3,7 @@ package integration_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -183,5 +184,48 @@ func BenchmarkHookStubE2E(b *testing.B) {
 		cmd.Env = env
 		cmd.Stdin = strings.NewReader(stopPayload)
 		cmd.Run()
+	}
+}
+
+func TestPreReadAnatomy(t *testing.T) {
+	home := t.TempDir()
+	project := t.TempDir()
+	initGitRepo(t, project)
+
+	goContent := "package main\n\n// main is the entry point.\nfunc main() {}\n"
+	if err := os.WriteFile(filepath.Join(project, "main.go"), []byte(goContent), 0644); err != nil {
+		t.Fatalf("write main.go: %v", err)
+	}
+	exec.Command("git", "-C", project, "add", "main.go").Run()
+
+	env := append(os.Environ(), "HOME="+home)
+	initCmd := exec.Command(binaryPath, "init", "--yes")
+	initCmd.Dir = project
+	initCmd.Env = env
+	if out, err := initCmd.CombinedOutput(); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+
+	anatomyPath := filepath.Join(project, ".claude-context", "anatomy.md")
+	if _, err := os.Stat(anatomyPath); err != nil {
+		t.Fatalf("anatomy.md not created after init: %v", err)
+	}
+
+	payload := fmt.Sprintf(
+		`{"session_id":"test","transcript_path":"/tmp/t","cwd":%q,"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":%q},"permission_mode":"bypassPermissions","stop_hook_active":false}`,
+		project, filepath.Join(project, "main.go"),
+	)
+	cmd := exec.Command(binaryPath, "hook", "pre-read")
+	cmd.Dir = project
+	cmd.Env = env
+	cmd.Stdin = strings.NewReader(payload)
+	out, err := cmd.CombinedOutput()
+
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok || exitErr.ExitCode() != 1 {
+		t.Fatalf("expected exit 1 (anatomy hit), got err=%v; output: %s", err, out)
+	}
+	if !strings.Contains(string(out), "main.go") {
+		t.Errorf("stderr should contain 'main.go', got: %s", out)
 	}
 }
