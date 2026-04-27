@@ -155,3 +155,78 @@ func TestUninstallPreservesUserHooks(t *testing.T) {
 		t.Error("user hook removed during uninstall")
 	}
 }
+
+func TestRulesMDWrite(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "rules.md")
+
+	if err := installer.WriteRules(path); err != nil {
+		t.Fatalf("WriteRules: %v", err)
+	}
+	data, _ := os.ReadFile(path)
+	if len(data) == 0 {
+		t.Error("rules.md is empty")
+	}
+	if !strings.Contains(string(data), "claude-context") {
+		t.Error("rules.md should mention claude-context")
+	}
+}
+
+func TestInjectCLAUDEMD(t *testing.T) {
+	dir := t.TempDir()
+	mdPath := filepath.Join(dir, "CLAUDE.md")
+	rulesPath := filepath.Join(dir, "claude-context-rules.md")
+
+	os.WriteFile(mdPath, []byte("# existing\n"), 0644)
+
+	if err := installer.InjectCLAUDEMD(mdPath, rulesPath); err != nil {
+		t.Fatalf("InjectCLAUDEMD: %v", err)
+	}
+
+	data, _ := os.ReadFile(mdPath)
+	if !strings.Contains(string(data), "claude-context-managed BEGIN") {
+		t.Error("missing BEGIN marker")
+	}
+	if !strings.Contains(string(data), "claude-context-managed END") {
+		t.Error("missing END marker")
+	}
+	if !strings.Contains(string(data), "@") {
+		t.Error("missing @import line")
+	}
+	// existing content preserved
+	if !strings.Contains(string(data), "# existing") {
+		t.Error("existing content removed")
+	}
+}
+
+func TestInjectCLAUDEMDIdempotent(t *testing.T) {
+	dir := t.TempDir()
+	mdPath := filepath.Join(dir, "CLAUDE.md")
+	rulesPath := filepath.Join(dir, "rules.md")
+
+	installer.InjectCLAUDEMD(mdPath, rulesPath)
+	installer.InjectCLAUDEMD(mdPath, rulesPath)
+
+	data, _ := os.ReadFile(mdPath)
+	if strings.Count(string(data), "claude-context-managed BEGIN") != 1 {
+		t.Errorf("expected exactly 1 BEGIN marker, got: %s", data)
+	}
+}
+
+func TestRemoveCLAUDEMDBlock(t *testing.T) {
+	dir := t.TempDir()
+	mdPath := filepath.Join(dir, "CLAUDE.md")
+	rulesPath := filepath.Join(dir, "rules.md")
+
+	os.WriteFile(mdPath, []byte("# existing\n"), 0644)
+	installer.InjectCLAUDEMD(mdPath, rulesPath)
+	installer.RemoveCLAUDEMDBlock(mdPath)
+
+	data, _ := os.ReadFile(mdPath)
+	if strings.Contains(string(data), "claude-context-managed") {
+		t.Errorf("markers still present after removal: %s", data)
+	}
+	if !strings.Contains(string(data), "# existing") {
+		t.Error("existing content removed")
+	}
+}
