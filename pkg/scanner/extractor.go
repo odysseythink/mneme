@@ -85,7 +85,98 @@ func truncate(s string, max int) string {
 	return s[:max]
 }
 
-// Stubs replaced by Tasks 3-6.
-func extractPy(data []byte) string  { return extractFallback(data) }
-func extractJS(data []byte) string  { return extractFallback(data) }
-func extractMD(data []byte) string  { return extractFallback(data) }
+func extractPy(data []byte) string {
+	lines := strings.Split(string(data), "\n")
+	for i, line := range lines {
+		t := strings.TrimSpace(line)
+		if !strings.HasPrefix(t, "def ") && !strings.HasPrefix(t, "class ") {
+			continue
+		}
+		// Check next non-empty line for a triple-quoted docstring.
+		for j := i + 1; j < len(lines); j++ {
+			next := strings.TrimSpace(lines[j])
+			if next == "" {
+				continue
+			}
+			for _, q := range []string{`"""`, `'''`} {
+				if strings.HasPrefix(next, q) {
+					doc := strings.TrimPrefix(next, q)
+					doc = strings.TrimSpace(doc)
+					if doc != "" {
+						// Inline docstring: `"""text"""` or `"""text`
+						doc = strings.TrimSuffix(doc, q)
+						doc = strings.TrimSpace(doc)
+						return truncate(doc, 100)
+					}
+					// Docstring opens on next line
+					if j+1 < len(lines) {
+						return truncate(strings.TrimSpace(lines[j+1]), 100)
+					}
+				}
+			}
+			break
+		}
+		return truncate(t, 100)
+	}
+	return extractFallback(data)
+}
+
+func extractJS(data []byte) string {
+	lines := strings.Split(string(data), "\n")
+	for i, line := range lines {
+		t := strings.TrimSpace(line)
+		if !strings.HasPrefix(t, "export ") &&
+			!strings.HasPrefix(t, "function ") &&
+			!strings.HasPrefix(t, "class ") {
+			continue
+		}
+
+		// Look for a JSDoc block ending immediately before this line.
+		if i > 0 && strings.TrimSpace(lines[i-1]) == "*/" {
+			// Walk back to find "/**"
+			for k := i - 2; k >= 0; k-- {
+				inner := strings.TrimSpace(lines[k])
+				if strings.HasPrefix(inner, "/**") {
+					// Search the block for @description or first * content line.
+					for m := k + 1; m <= i-2; m++ {
+						c := strings.TrimSpace(lines[m])
+						if strings.Contains(c, "@description ") {
+							idx := strings.Index(c, "@description ")
+							return truncate(strings.TrimSpace(c[idx+len("@description "):]), 100)
+						}
+					}
+					for m := k + 1; m <= i-2; m++ {
+						c := strings.TrimSpace(lines[m])
+						if strings.HasPrefix(c, "* ") && !strings.HasPrefix(c, "*/") {
+							desc := strings.TrimPrefix(c, "* ")
+							if desc != "" {
+								return truncate(desc, 100)
+							}
+						}
+					}
+					break
+				}
+			}
+		}
+
+		return truncate(t, 100)
+	}
+	return extractFallback(data)
+}
+
+func extractMD(data []byte) string {
+	for _, line := range strings.Split(string(data), "\n") {
+		t := strings.TrimSpace(line)
+		if t == "" {
+			continue
+		}
+		if strings.HasPrefix(t, "#") {
+			heading := strings.TrimLeft(t, "#")
+			heading = strings.TrimSpace(heading)
+			return truncate(heading, 100)
+		}
+		// First non-empty, non-heading line
+		return truncate(t, 100)
+	}
+	return "(no description)"
+}

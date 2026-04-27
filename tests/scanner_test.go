@@ -157,3 +157,189 @@ func TestExtractGo(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractPy(t *testing.T) {
+	cases := []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{
+			name:    "def_with_docstring",
+			content: "def greet(name):\n    \"\"\"Greet the user by name.\"\"\"\n    pass\n",
+			want:    "Greet the user by name.",
+		},
+		{
+			name:    "class_with_docstring",
+			content: "class Parser:\n    \"\"\"Parses config files.\"\"\"\n    pass\n",
+			want:    "Parses config files.",
+		},
+		{
+			name:    "def_no_docstring",
+			content: "def compute():\n    return 42\n",
+			want:    "def compute():",
+		},
+		{
+			name:    "multiline_docstring_uses_first",
+			content: "def run():\n    \"\"\"Run the job.\n    Extra detail here.\n    \"\"\"\n    pass\n",
+			want:    "Run the job.",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := makeGitRepo(t)
+			os.WriteFile(filepath.Join(dir, "x.py"), []byte(tc.content), 0644)
+			exec.Command("git", "-C", dir, "add", ".").Run()
+
+			entries, _ := scanner.ExtractAll(dir, []string{"x.py"})
+			if len(entries) != 1 {
+				t.Fatalf("expected 1 entry, got %d", len(entries))
+			}
+			if entries[0].Description != tc.want {
+				t.Errorf("Description = %q, want %q", entries[0].Description, tc.want)
+			}
+			if entries[0].Language != "python" {
+				t.Errorf("Language = %q, want python", entries[0].Language)
+			}
+		})
+	}
+}
+
+func TestExtractJS(t *testing.T) {
+	cases := []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{
+			name:    "export_function",
+			content: "export function greet(name) {\n  return `Hello ${name}`;\n}\n",
+			want:    "export function greet(name) {",
+		},
+		{
+			name:    "class_declaration",
+			content: "class Parser {\n  constructor() {}\n}\n",
+			want:    "class Parser {",
+		},
+		{
+			name: "jsdoc_description_tag",
+			content: "/**\n * @description Handles user auth.\n */\nexport function login() {}\n",
+			want: "Handles user auth.",
+		},
+		{
+			name: "jsdoc_first_content_line",
+			content: "/**\n * Validates input data.\n * @param x - value\n */\nexport function validate(x) {}\n",
+			want: "Validates input data.",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := makeGitRepo(t)
+			os.WriteFile(filepath.Join(dir, "x.ts"), []byte(tc.content), 0644)
+			exec.Command("git", "-C", dir, "add", ".").Run()
+
+			entries, _ := scanner.ExtractAll(dir, []string{"x.ts"})
+			if len(entries) != 1 {
+				t.Fatalf("expected 1 entry, got %d", len(entries))
+			}
+			if entries[0].Description != tc.want {
+				t.Errorf("Description = %q, want %q", entries[0].Description, tc.want)
+			}
+			if entries[0].Language != "js" {
+				t.Errorf("Language = %q, want js", entries[0].Language)
+			}
+		})
+	}
+}
+
+func TestExtractMD(t *testing.T) {
+	cases := []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{
+			name:    "h1_heading",
+			content: "# My Project\n\nSome text.\n",
+			want:    "My Project",
+		},
+		{
+			name:    "h2_heading",
+			content: "## Configuration\n\nDetails here.\n",
+			want:    "Configuration",
+		},
+		{
+			name:    "no_heading_uses_first_line",
+			content: "This is a plain note.\n",
+			want:    "This is a plain note.",
+		},
+		{
+			name:    "heading_strips_hashes",
+			content: "### Deep Section\n",
+			want:    "Deep Section",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := makeGitRepo(t)
+			os.WriteFile(filepath.Join(dir, "x.md"), []byte(tc.content), 0644)
+			exec.Command("git", "-C", dir, "add", ".").Run()
+
+			entries, _ := scanner.ExtractAll(dir, []string{"x.md"})
+			if len(entries) != 1 {
+				t.Fatalf("expected 1 entry, got %d", len(entries))
+			}
+			if entries[0].Description != tc.want {
+				t.Errorf("Description = %q, want %q", entries[0].Description, tc.want)
+			}
+			if entries[0].Language != "markdown" {
+				t.Errorf("Language = %q, want markdown", entries[0].Language)
+			}
+		})
+	}
+}
+
+func TestScanProjectSmall(t *testing.T) {
+	dir := makeGitRepo(t)
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example\n\ngo 1.21\n"), 0644)
+	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n\n// main is the entry point.\nfunc main() {}\n"), 0644)
+	os.WriteFile(filepath.Join(dir, "README.md"), []byte("# Test Project\n\nA small test.\n"), 0644)
+	exec.Command("git", "-C", dir, "add", ".").Run()
+
+	entries, err := scanner.ScanProject(dir)
+	if err != nil {
+		t.Fatalf("ScanProject: %v", err)
+	}
+	if len(entries) != 3 {
+		t.Fatalf("expected 3 entries, got %d: %v", len(entries), entries)
+	}
+
+	byPath := make(map[string]scanner.FileEntry)
+	for _, e := range entries {
+		byPath[e.Path] = e
+	}
+
+	if byPath["go.mod"].Language != "config" {
+		t.Errorf("go.mod Language = %q, want config", byPath["go.mod"].Language)
+	}
+	if byPath["go.mod"].Description != "Go module definition" {
+		t.Errorf("go.mod Description = %q", byPath["go.mod"].Description)
+	}
+	if byPath["main.go"].Language != "go" {
+		t.Errorf("main.go Language = %q, want go", byPath["main.go"].Language)
+	}
+	if byPath["main.go"].Description != "main is the entry point." {
+		t.Errorf("main.go Description = %q", byPath["main.go"].Description)
+	}
+	if byPath["README.md"].Language != "markdown" {
+		t.Errorf("README.md Language = %q, want markdown", byPath["README.md"].Language)
+	}
+	if byPath["README.md"].Description != "Test Project" {
+		t.Errorf("README.md Description = %q, want Test Project", byPath["README.md"].Description)
+	}
+	for _, e := range entries {
+		if e.EstTokens == 0 {
+			t.Errorf("%s: EstTokens = 0, want > 0", e.Path)
+		}
+	}
+}
