@@ -396,3 +396,72 @@ func TestLedgerIncrementNewCounters(t *testing.T) {
 		t.Errorf("scan_count = %d, want 1", l.Totals.ScanCount)
 	}
 }
+
+func TestReadSessionNone(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	s, err := state.ReadSession(dir)
+	if err != nil {
+		t.Fatalf("ReadSession: %v", err)
+	}
+	if s != nil {
+		t.Errorf("expected nil session, got %+v", s)
+	}
+}
+
+func TestAppendTurnEditNoSession(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	err := state.AppendTurnEdit(dir, state.TurnEdit{File: "foo.go", Category: "feature", LineDelta: 10})
+	if err != nil {
+		t.Errorf("AppendTurnEdit with no session should not error: %v", err)
+	}
+}
+
+func TestAppendTurnEditAndRead(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	if err := state.UpsertSession(dir, state.Session{SessionID: "sess-1", ClaudeCodeModel: "claude-opus-4-7"}); err != nil {
+		t.Fatalf("UpsertSession: %v", err)
+	}
+	edit := state.TurnEdit{File: "pkg/foo.go", Category: "feature", LineDelta: 20}
+	if err := state.AppendTurnEdit(dir, edit); err != nil {
+		t.Fatalf("AppendTurnEdit: %v", err)
+	}
+	s, err := state.ReadSession(dir)
+	if err != nil {
+		t.Fatalf("ReadSession: %v", err)
+	}
+	if len(s.TurnEdits) != 1 {
+		t.Fatalf("expected 1 TurnEdit, got %d", len(s.TurnEdits))
+	}
+	if s.TurnEdits[0].File != "pkg/foo.go" {
+		t.Errorf("file = %q, want %q", s.TurnEdits[0].File, "pkg/foo.go")
+	}
+}
+
+func TestAggregateTurn(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	state.UpsertSession(dir, state.Session{SessionID: "sess-2", ClaudeCodeModel: "claude-opus-4-7"})
+	state.AppendTurnEdit(dir, state.TurnEdit{File: "a.go", Category: "bugfix", LineDelta: 3})
+	state.AppendTurnEdit(dir, state.TurnEdit{File: "b.go", Category: "test", LineDelta: 5})
+
+	if err := state.AggregateTurn(dir); err != nil {
+		t.Fatalf("AggregateTurn: %v", err)
+	}
+
+	s, _ := state.ReadSession(dir)
+	if len(s.TurnEdits) != 0 {
+		t.Errorf("TurnEdits should be cleared after aggregate, got %d", len(s.TurnEdits))
+	}
+	if len(s.TurnSummaries) != 1 {
+		t.Fatalf("expected 1 TurnSummary, got %d", len(s.TurnSummaries))
+	}
+	if len(s.TurnSummaries[0].Edits) != 2 {
+		t.Errorf("expected 2 edits in summary, got %d", len(s.TurnSummaries[0].Edits))
+	}
+	if s.StopCount != 1 {
+		t.Errorf("StopCount = %d, want 1", s.StopCount)
+	}
+}
