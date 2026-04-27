@@ -88,7 +88,7 @@ func dispatchInit(args []string) {
 	}
 
 	// Execute
-	runInit(projectRoot, settingsPath, claudeMDPath, rulesPath, binaryPath)
+	runInit(projectRoot, settingsPath, claudeMDPath, rulesPath, binaryPath, opts.noScan)
 }
 
 func resolveInitProjectRoot(cwd string) (string, bool) {
@@ -120,7 +120,7 @@ func printInitPlan(projectRoot, settingsPath, claudeMDPath, rulesPath string) {
 	fmt.Fprintln(os.Stderr, "╰────────────────────────────────────────────────────────────╯")
 }
 
-func runInit(projectRoot, settingsPath, claudeMDPath, rulesPath, binaryPath string) {
+func runInit(projectRoot, settingsPath, claudeMDPath, rulesPath, binaryPath string, noScan bool) {
 	ts := time.Now().UTC().Format("20060102T150405Z")
 
 	// Step 1: backups
@@ -156,6 +156,12 @@ func runInit(projectRoot, settingsPath, claudeMDPath, rulesPath, binaryPath stri
 		os.Exit(1)
 	}
 	fmt.Fprintf(os.Stderr, "✓ Initialized %s/.claude-context/ (project ID: %s)\n", projectRoot, id)
+
+	// Step 8: auto-scan (build anatomy map)
+	if !noScan {
+		fmt.Fprintln(os.Stderr, "Running initial scan...")
+		dispatchScan(nil)
+	}
 
 	fmt.Fprintln(os.Stderr, "\nBackups stored at *.bak."+ts)
 	fmt.Fprintln(os.Stderr, "To verify: start a new Claude Code session and run `claude-context stats` after.")

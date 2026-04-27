@@ -24,6 +24,17 @@ Claude transcript as a "Failed with non-blocking status" message.
 
 Hooks: pre-read, pre-write, post-write, session-start, stop.
 
+## Anatomy map
+
+Before reading a file, check if claude-context has already described it:
+
+- If the pre-read hook fires with `⚡ claude-context: <path> — <description> (~N tok)`,
+  that description is from the anatomy map. Use it to decide whether to read the full file.
+- If the hook says `<path> already read this session`, the file content is already in your
+  context window. Do not re-read it unless the content may have changed.
+
+To regenerate the anatomy map after large refactors: `claude-context scan`
+
 ## Privacy
 
 All collected data is local. Hooks make no network calls. State lives in:
