@@ -26,7 +26,7 @@ func WriteRules(rulesPath string) error {
 // InjectCLAUDEMD appends the 3-line boundary block to claudeMDPath.
 // Idempotent: skips if the BEGIN marker is already present.
 func InjectCLAUDEMD(claudeMDPath, rulesPath string) error {
-	data, _ := os.ReadFile(claudeMDPath)
+	data, _ := os.ReadFile(claudeMDPath) // file may not exist yet; treat as empty
 	if strings.Contains(string(data), beginMarker) {
 		return nil // already present
 	}

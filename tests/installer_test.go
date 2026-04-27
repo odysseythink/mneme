@@ -204,8 +204,12 @@ func TestInjectCLAUDEMDIdempotent(t *testing.T) {
 	mdPath := filepath.Join(dir, "CLAUDE.md")
 	rulesPath := filepath.Join(dir, "rules.md")
 
-	installer.InjectCLAUDEMD(mdPath, rulesPath)
-	installer.InjectCLAUDEMD(mdPath, rulesPath)
+	if err := installer.InjectCLAUDEMD(mdPath, rulesPath); err != nil {
+		t.Fatalf("first InjectCLAUDEMD: %v", err)
+	}
+	if err := installer.InjectCLAUDEMD(mdPath, rulesPath); err != nil {
+		t.Fatalf("second InjectCLAUDEMD: %v", err)
+	}
 
 	data, _ := os.ReadFile(mdPath)
 	if strings.Count(string(data), "claude-context-managed BEGIN") != 1 {
