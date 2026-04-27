@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Build
-go build -o ./bin/claude-context ./cmd/mcp
+go build -o ./bin/claude-context ./cmd
 
 # Run all tests
 go test -v ./...
