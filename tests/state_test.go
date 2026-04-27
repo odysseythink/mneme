@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/ranwei/claude-context/pkg/state"
 )
@@ -94,5 +95,33 @@ func TestGlobalProjectDir(t *testing.T) {
 	}
 	if !filepath.IsAbs(d) {
 		t.Errorf("expected absolute path, got %q", d)
+	}
+}
+
+func TestAcquireLockAndRelease(t *testing.T) {
+	dir := t.TempDir()
+	lp := filepath.Join(dir, "test.lock")
+
+	release, err := state.AcquireLock(lp, 100*time.Millisecond)
+	if err != nil {
+		t.Fatalf("AcquireLock: %v", err)
+	}
+	release()
+}
+
+func TestAcquireLockTimeout(t *testing.T) {
+	dir := t.TempDir()
+	lp := filepath.Join(dir, "test.lock")
+
+	release1, err := state.AcquireLock(lp, 200*time.Millisecond)
+	if err != nil {
+		t.Fatalf("first AcquireLock: %v", err)
+	}
+	defer release1()
+
+	// Second lock on same path should time out
+	_, err = state.AcquireLock(lp, 50*time.Millisecond)
+	if err == nil {
+		t.Error("expected timeout error for second lock on same path")
 	}
 }
