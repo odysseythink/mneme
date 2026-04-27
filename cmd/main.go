@@ -28,6 +28,3 @@ func main() {
 		os.Exit(2)
 	}
 }
-
-// Stubs — replaced by real implementations in subsequent tasks.
-func dispatchInit(args []string)  { os.Exit(0) }

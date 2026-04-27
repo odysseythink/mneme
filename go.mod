@@ -9,7 +9,7 @@ require (
 	github.com/odysseythink/mlog v0.0.3
 	github.com/philippgille/chromem-go v0.7.0
 	github.com/qdrant/go-client v1.17.1
-	golang.org/x/term v0.42.0
+	golang.org/x/term v0.40.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
