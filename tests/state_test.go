@@ -218,3 +218,91 @@ func TestSessionJSONUpsertIdempotent(t *testing.T) {
 		t.Errorf("expected session_id exactly once, got: %s", data)
 	}
 }
+
+func TestWriteReadAnatomy(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+
+	entries := []state.AnatomyEntry{
+		{Path: "main.go", Description: "entry point", EstTokens: 20, Language: "go"},
+		{Path: "pkg/foo.go", Description: "foo package", EstTokens: 15, Language: "go"},
+		{Path: "README.md", Description: "Project docs", EstTokens: 50, Language: "markdown"},
+	}
+	if err := state.WriteAnatomy(dir, entries); err != nil {
+		t.Fatalf("WriteAnatomy: %v", err)
+	}
+
+	got, err := state.ReadAnatomy(dir)
+	if err != nil {
+		t.Fatalf("ReadAnatomy: %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("expected 3 entries, got %d", len(got))
+	}
+	if got["main.go"].Description != "entry point" {
+		t.Errorf("main.go Description = %q", got["main.go"].Description)
+	}
+	if got["main.go"].Language != "go" {
+		t.Errorf("main.go Language = %q", got["main.go"].Language)
+	}
+	if got["main.go"].EstTokens != 20 {
+		t.Errorf("main.go EstTokens = %d, want 20", got["main.go"].EstTokens)
+	}
+	if got["pkg/foo.go"].Description != "foo package" {
+		t.Errorf("pkg/foo.go Description = %q", got["pkg/foo.go"].Description)
+	}
+	if got["README.md"].Description != "Project docs" {
+		t.Errorf("README.md Description = %q", got["README.md"].Description)
+	}
+}
+
+func TestReadAnatomyMissing(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+
+	got, err := state.ReadAnatomy(dir)
+	if err != nil {
+		t.Fatalf("ReadAnatomy on missing file: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("expected empty map, got %d entries", len(got))
+	}
+}
+
+func TestAnatomyGolden(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+
+	entries := []state.AnatomyEntry{
+		{Path: "main.go", Description: "entry point", EstTokens: 20, Language: "go"},
+		{Path: "cmd/sub.go", Description: "sub command", EstTokens: 15, Language: "go"},
+		{Path: "README.md", Description: "Project documentation", EstTokens: 100, Language: "markdown"},
+		{Path: "requirements.txt", Description: "Python dependencies", EstTokens: 10, Language: "config"},
+	}
+	if err := state.WriteAnatomy(dir, entries); err != nil {
+		t.Fatalf("WriteAnatomy: %v", err)
+	}
+
+	got, err := os.ReadFile(filepath.Join(dir, ".claude-context", "anatomy.md"))
+	if err != nil {
+		t.Fatalf("read anatomy.md: %v", err)
+	}
+
+	// Strip dynamic "<!-- generated: ... -->" line before comparing.
+	var filtered []string
+	for _, l := range strings.Split(string(got), "\n") {
+		if strings.HasPrefix(l, "<!-- generated:") {
+			continue
+		}
+		filtered = append(filtered, l)
+	}
+	actual := strings.Join(filtered, "\n")
+
+	golden, err := os.ReadFile(filepath.Join("golden", "anatomy_sample.md"))
+	if err != nil {
+		t.Fatalf("read golden: %v", err)
+	}
+	if actual != string(golden) {
+		t.Errorf("anatomy output mismatch\ngot:\n%s\nwant:\n%s", actual, string(golden))
+	}
+}
