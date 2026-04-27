@@ -485,3 +485,84 @@ func TestLedgerEditPattern(t *testing.T) {
 		t.Errorf("bugfix = %d, want 1", l.Totals.EditPatterns["bugfix"])
 	}
 }
+
+func TestAppendMemoryRowCreatesHeader(t *testing.T) {
+	home := t.TempDir()
+	row := state.MemoryRow{
+		StartedAt:     "2026-04-27T14:32:00Z",
+		TurnCount:     3,
+		FileSummary:   []state.FileStat{{File: "auth.go", Categories: []string{"bugfix×1"}}},
+		PatternCounts: map[string]int{"bugfix": 1},
+		Summary:       "Fixed 1 bug.",
+	}
+	if err := state.AppendMemoryRow(home, row); err != nil {
+		t.Fatalf("AppendMemoryRow: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(home, ".claude", "claude-context-memory.md"))
+	if err != nil {
+		t.Fatalf("memory.md not created: %v", err)
+	}
+	content := string(data)
+	if !strings.Contains(content, "<!-- claude-context memory v1 -->") {
+		t.Error("missing header")
+	}
+	if !strings.Contains(content, "## 2026-04-27T14:32:00Z (3 turns)") {
+		t.Error("missing session header line")
+	}
+	if !strings.Contains(content, "Patterns: bugfix×1") {
+		t.Error("missing patterns line")
+	}
+	if !strings.Contains(content, "Summary: Fixed 1 bug.") {
+		t.Error("missing summary line")
+	}
+}
+
+func TestAppendMemoryRowHeaderOnce(t *testing.T) {
+	home := t.TempDir()
+	row := state.MemoryRow{StartedAt: "2026-04-27T10:00:00Z", TurnCount: 1, PatternCounts: map[string]int{}}
+	state.AppendMemoryRow(home, row)
+	state.AppendMemoryRow(home, row)
+
+	data, _ := os.ReadFile(filepath.Join(home, ".claude", "claude-context-memory.md"))
+	count := strings.Count(string(data), "<!-- claude-context memory v1 -->")
+	if count != 1 {
+		t.Errorf("header appears %d times, want 1", count)
+	}
+}
+
+func TestReadMemoryParsesRows(t *testing.T) {
+	home := t.TempDir()
+	rows := []state.MemoryRow{
+		{StartedAt: "2026-04-27T10:00:00Z", TurnCount: 5, PatternCounts: map[string]int{"feature": 2, "bugfix": 1}},
+		{StartedAt: "2026-04-27T14:00:00Z", TurnCount: 3, PatternCounts: map[string]int{"refactor": 1}},
+	}
+	for _, r := range rows {
+		state.AppendMemoryRow(home, r)
+	}
+
+	got, err := state.ReadMemory(home)
+	if err != nil {
+		t.Fatalf("ReadMemory: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("expected 2 rows, got %d", len(got))
+	}
+	if got[0].TurnCount != 5 {
+		t.Errorf("row[0].TurnCount = %d, want 5", got[0].TurnCount)
+	}
+	if got[1].PatternCounts["refactor"] != 1 {
+		t.Errorf("row[1] refactor = %d, want 1", got[1].PatternCounts["refactor"])
+	}
+}
+
+func TestReadMemoryEmpty(t *testing.T) {
+	home := t.TempDir()
+	rows, err := state.ReadMemory(home)
+	if err != nil {
+		t.Fatalf("ReadMemory on missing file: %v", err)
+	}
+	if rows != nil {
+		t.Errorf("expected nil rows for missing file, got %v", rows)
+	}
+}
