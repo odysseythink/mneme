@@ -13,7 +13,7 @@ Step-by-step guide for executing the M0 spike against a real Claude Code session
 
 ```bash
 cd <go-claude-context project root>
-bash scripts/m0-probe/setup-sandbox.sh
+bash scripts/hook-protocol-probe/setup-sandbox.sh
 ```
 
 **Expected output:** `✓ Sandbox at /tmp/claude-context-m0-sandbox/` and 5 other ✓ lines, ending with `NEXT STEPS:`.
@@ -75,7 +75,7 @@ For each exit code in {0, 1, 2, 127}, swap all hooks to `exit-n.sh <code> "marke
 
 ```bash
 # In your original terminal (sandbox terminal can stay closed):
-bash scripts/m0-probe/swap-hook.sh exit-n.sh 0 "marker-zero"
+bash scripts/hook-protocol-probe/swap-hook.sh exit-n.sh 0 "marker-zero"
 ```
 
 ```bash
@@ -94,7 +94,7 @@ claude code
 
 **Repeat for codes 1, 2, 127** — each time:
 ```bash
-bash scripts/m0-probe/swap-hook.sh exit-n.sh <CODE> "marker-<CODE>"
+bash scripts/hook-protocol-probe/swap-hook.sh exit-n.sh <CODE> "marker-<CODE>"
 # new claude code session, same prompts, same observations
 ```
 
@@ -109,17 +109,17 @@ bash scripts/m0-probe/swap-hook.sh exit-n.sh <CODE> "marker-<CODE>"
 For each latency in {50, 100, 200, 500, 1000, 3000} ms, swap to `sleep-n.sh <ms>` and start a session. Read a file. Subjectively grade the interaction.
 
 ```bash
-bash scripts/m0-probe/swap-hook.sh sleep-n.sh 50
+bash scripts/hook-protocol-probe/swap-hook.sh sleep-n.sh 50
 # new Claude Code session, prompt: 'read README.md', grade
-bash scripts/m0-probe/swap-hook.sh sleep-n.sh 100
+bash scripts/hook-protocol-probe/swap-hook.sh sleep-n.sh 100
 # repeat
-bash scripts/m0-probe/swap-hook.sh sleep-n.sh 200
+bash scripts/hook-protocol-probe/swap-hook.sh sleep-n.sh 200
 # repeat
-bash scripts/m0-probe/swap-hook.sh sleep-n.sh 500
+bash scripts/hook-protocol-probe/swap-hook.sh sleep-n.sh 500
 # repeat
-bash scripts/m0-probe/swap-hook.sh sleep-n.sh 1000
+bash scripts/hook-protocol-probe/swap-hook.sh sleep-n.sh 1000
 # repeat
-bash scripts/m0-probe/swap-hook.sh sleep-n.sh 3000
+bash scripts/hook-protocol-probe/swap-hook.sh sleep-n.sh 3000
 # repeat — watch for Claude Code timing out
 ```
 
@@ -141,7 +141,7 @@ bash scripts/m0-probe/swap-hook.sh sleep-n.sh 3000
 ## Phase 4 — Cleanup (1 minute)
 
 ```bash
-bash scripts/m0-probe/cleanup.sh
+bash scripts/hook-protocol-probe/cleanup.sh
 ```
 
 **Expected output:** all ✓ marks ending with `✓ All clean.`
