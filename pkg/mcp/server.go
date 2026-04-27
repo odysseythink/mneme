@@ -163,6 +163,52 @@ func (s *Server) handleToolList() interface{} {
 					"properties": map[string]interface{}{},
 				},
 			},
+			{
+				"name":        "describe_codebase",
+				"description": "Show the anatomy (file structure with descriptions) and recent session history for the current project. Pass cwd from your system context. No embedding API required.",
+				"inputSchema": map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"cwd": map[string]interface{}{
+							"type":        "string",
+							"description": "Working directory of the current project",
+						},
+					},
+					"required": []string{"cwd"},
+				},
+			},
+			{
+				"name":        "get_project_rules",
+				"description": "Return the cerebrum rules for the current project — coding conventions Claude should follow. Pass cwd from your system context. No embedding API required.",
+				"inputSchema": map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"cwd": map[string]interface{}{
+							"type":        "string",
+							"description": "Working directory of the current project",
+						},
+					},
+					"required": []string{"cwd"},
+				},
+			},
+			{
+				"name":        "find_similar_bugs",
+				"description": "Search the project buglog for previously fixed bugs similar to the given query (code snippet or description). Pass cwd from your system context. No embedding API required.",
+				"inputSchema": map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"cwd": map[string]interface{}{
+							"type":        "string",
+							"description": "Working directory of the current project",
+						},
+						"query": map[string]interface{}{
+							"type":        "string",
+							"description": "Code snippet or description to match against known bugs",
+						},
+					},
+					"required": []string{"cwd", "query"},
+				},
+			},
 		},
 	}
 }
@@ -189,6 +235,12 @@ func (s *Server) handleToolCall(ctx context.Context, params json.RawMessage) int
 			return toolError("embedding tools unavailable: set EMBEDDING_API_KEY to use ping_embedding")
 		}
 		return s.callPingEmbedding(ctx)
+	case "describe_codebase":
+		return s.callDescribeCodebase(ctx, req.Arguments)
+	case "get_project_rules":
+		return s.callGetProjectRules(ctx, req.Arguments)
+	case "find_similar_bugs":
+		return s.callFindSimilarBugs(ctx, req.Arguments)
 	default:
 		return toolError("unknown tool: " + req.Name)
 	}
