@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const version = "0.1.0-m1"
+const version = "0.1.0-m3"
 
 func printTopUsage() {
 	fmt.Fprintln(os.Stderr, `claude-context — Claude Code context management
