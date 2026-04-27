@@ -86,7 +86,6 @@ func truncate(s string, max int) string {
 }
 
 // Stubs replaced by Tasks 3-6.
-func extractGo(data []byte) string  { return extractFallback(data) }
 func extractPy(data []byte) string  { return extractFallback(data) }
 func extractJS(data []byte) string  { return extractFallback(data) }
 func extractMD(data []byte) string  { return extractFallback(data) }

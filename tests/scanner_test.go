@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ranwei/claude-context/pkg/scanner"
@@ -102,5 +103,57 @@ func TestTokenEstimate(t *testing.T) {
 	}
 	if entries[0].EstTokens != 2 {
 		t.Errorf("EstTokens = %d, want 2", entries[0].EstTokens)
+	}
+}
+
+func TestExtractGo(t *testing.T) {
+	cases := []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{
+			name:    "comment_before_func",
+			content: "package main\n\n// main is the entry point.\nfunc main() {}\n",
+			want:    "main is the entry point.",
+		},
+		{
+			name:    "multi_comment_uses_first_line",
+			content: "package main\n\n// Package foo provides utilities.\n// See README for details.\nfunc Foo() {}\n",
+			want:    "Package foo provides utilities.",
+		},
+		{
+			name:    "no_comment_uses_decl",
+			content: "package main\n\nfunc doWork() {}\n",
+			want:    "func doWork() {}",
+		},
+		{
+			name:    "type_declaration",
+			content: "package main\n\n// Config holds settings.\ntype Config struct{}\n",
+			want:    "Config holds settings.",
+		},
+		{
+			name:    "truncates_at_100",
+			content: "package main\n\n// " + strings.Repeat("a", 110) + "\nfunc f() {}\n",
+			want:    strings.Repeat("a", 100),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := makeGitRepo(t)
+			os.WriteFile(filepath.Join(dir, "x.go"), []byte(tc.content), 0644)
+			exec.Command("git", "-C", dir, "add", ".").Run()
+
+			entries, _ := scanner.ExtractAll(dir, []string{"x.go"})
+			if len(entries) != 1 {
+				t.Fatalf("expected 1 entry, got %d", len(entries))
+			}
+			if entries[0].Description != tc.want {
+				t.Errorf("Description = %q, want %q", entries[0].Description, tc.want)
+			}
+			if entries[0].Language != "go" {
+				t.Errorf("Language = %q, want go", entries[0].Language)
+			}
+		})
 	}
 }
