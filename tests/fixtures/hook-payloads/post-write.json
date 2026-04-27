@@ -1,0 +1,38 @@
+{
+  "session_id": "<SESSION_ID>",
+  "transcript_path": "<TRANSCRIPT_PATH>",
+  "cwd": "/private/tmp/claude-context-m0-sandbox",
+  "permission_mode": "bypassPermissions",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/private/tmp/claude-context-m0-sandbox/hello.txt",
+    "old_string": "hi",
+    "new_string": "hello world",
+    "replace_all": false
+  },
+  "tool_response": {
+    "filePath": "/private/tmp/claude-context-m0-sandbox/hello.txt",
+    "oldString": "hi",
+    "newString": "hello world",
+    "originalFile": "hi",
+    "structuredPatch": [
+      {
+        "oldStart": 1,
+        "oldLines": 1,
+        "newStart": 1,
+        "newLines": 1,
+        "lines": [
+          "-hi",
+          "\\ No newline at end of file",
+          "+hello world",
+          "\\ No newline at end of file"
+        ]
+      }
+    ],
+    "userModified": false,
+    "replaceAll": false
+  },
+  "tool_use_id": "toolu_01WLgAzUcQX6zv7GLMAyZgKa",
+  "duration_ms": 1
+}
