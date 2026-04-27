@@ -746,3 +746,80 @@ func TestPostWriteAutoUpsert(t *testing.T) {
 		t.Errorf("description should contain filename, got: %q", entries[0].Description)
 	}
 }
+
+func TestPreWriteBuglogMatchWarns(t *testing.T) {
+	project, home := setupInitializedProject(t)
+	env := append(os.Environ(), "HOME="+home)
+
+	err := state.AppendBuglogEntry(project, state.BuglogEntry{
+		Source:      "manual",
+		Description: "possible nil deref in session",
+		BadCode:     "session.StopCount++\nsession.Value = nil",
+	})
+	if err != nil {
+		t.Fatalf("AppendBuglogEntry: %v", err)
+	}
+
+	payload := map[string]interface{}{
+		"session_id":      "test",
+		"cwd":             project,
+		"hook_event_name": "PreToolUse",
+		"tool_name":       "Write",
+		"tool_input": map[string]interface{}{
+			"file_path": filepath.Join(project, "main.go"),
+			"content":   "session.StopCount++\nsession.Value = session.Init()",
+		},
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	cmd := exec.Command(binaryPath, "hook", "pre-write")
+	cmd.Dir = project
+	cmd.Env = env
+	cmd.Stdin = strings.NewReader(string(payloadBytes))
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected exit 1 (warning), got exit 0\noutput: %s", out)
+	}
+	outStr := string(out)
+	if !strings.Contains(outStr, "[buglog]") {
+		t.Errorf("expected [buglog] prefix in output, got: %s", outStr)
+	}
+	if !strings.Contains(outStr, "possible nil deref in session") {
+		t.Errorf("expected description in output, got: %s", outStr)
+	}
+	if !strings.Contains(outStr, "was:") {
+		t.Errorf("expected 'was:' line in output, got: %s", outStr)
+	}
+}
+
+func TestPreWriteBuglogNoMatchExitsZero(t *testing.T) {
+	project, home := setupInitializedProject(t)
+	env := append(os.Environ(), "HOME="+home)
+
+	state.AppendBuglogEntry(project, state.BuglogEntry{
+		Source:      "manual",
+		Description: "possible nil deref",
+		BadCode:     "session.StopCount++\nsession.Value = nil",
+	})
+
+	payload := map[string]interface{}{
+		"session_id":      "test",
+		"cwd":             project,
+		"hook_event_name": "PreToolUse",
+		"tool_name":       "Write",
+		"tool_input": map[string]interface{}{
+			"file_path": filepath.Join(project, "main.go"),
+			"content":   "fmt.Println(\"hello world\")",
+		},
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	cmd := exec.Command(binaryPath, "hook", "pre-write")
+	cmd.Dir = project
+	cmd.Env = env
+	cmd.Stdin = strings.NewReader(string(payloadBytes))
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Errorf("expected exit 0, got exit 1\noutput: %s", out)
+	}
+}

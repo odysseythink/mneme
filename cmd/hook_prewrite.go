@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/ranwei/claude-context/pkg/hook"
+	"github.com/ranwei/claude-context/pkg/match"
 	"github.com/ranwei/claude-context/pkg/state"
 )
 
@@ -21,8 +22,10 @@ func runPreWrite(stdin io.Reader) {
 	}
 	state.IncrementSafe(root, "hook_fired.pre-write")
 
-	rules, err := state.ReadCerebrum(root)
-	if err != nil || len(rules) == 0 {
+	rules, _ := state.ReadCerebrum(root)
+	entries, _ := state.ReadBuglog(root)
+
+	if len(rules) == 0 && len(entries) == 0 {
 		exitHook("pre-write", root)
 	}
 
@@ -31,39 +34,80 @@ func runPreWrite(stdin io.Reader) {
 		exitHook("pre-write", root)
 	}
 
-	type matchResult struct {
-		msg  string
-		line int
+	type warnItem struct {
+		source string
+		msg    string
+		was    string
+		line   int
 	}
-	var matches []matchResult
+	var warns []warnItem
 
+	// Pass 1: cerebrum regex matching
 	for _, rule := range rules {
 		re, err := regexp.Compile(rule.Pattern)
 		if err != nil {
+			appendGlobalLog(fmt.Sprintf("pre-write: invalid regex %q: %v", rule.Pattern, err))
 			continue
 		}
-		lineNums := make([]int, 0, len(added))
-		for ln := range added {
-			lineNums = append(lineNums, ln)
-		}
-		sort.Ints(lineNums)
-		for _, ln := range lineNums {
-			if re.MatchString(added[ln]) {
-				matches = append(matches, matchResult{rule.Message, ln})
+		for _, lineNo := range sortedLineNos(added) {
+			if re.MatchString(added[lineNo]) {
+				warns = append(warns, warnItem{"cerebrum", rule.Message, "", lineNo})
 				break
 			}
 		}
 	}
 
-	if len(matches) == 0 {
+	// Pass 2: buglog token-overlap matching
+	if len(entries) > 0 {
+		addedSlice := make([]string, 0, len(added))
+		for _, lineNo := range sortedLineNos(added) {
+			addedSlice = append(addedSlice, added[lineNo])
+		}
+		newTokens := match.Tokenize(strings.Join(addedSlice, "\n"))
+
+		for _, entry := range entries {
+			badTokens := match.Tokenize(entry.BadCode)
+			if match.TokenOverlap(newTokens, badTokens) < 3 {
+				continue
+			}
+			firstLine := 0
+			for _, lineNo := range sortedLineNos(added) {
+				if match.TokenOverlap(match.Tokenize(added[lineNo]), badTokens) >= 1 {
+					firstLine = lineNo
+					break
+				}
+			}
+			firstLineOfBad := entry.BadCode
+			if i := strings.Index(firstLineOfBad, "\n"); i >= 0 {
+				firstLineOfBad = firstLineOfBad[:i]
+			}
+			warns = append(warns, warnItem{"buglog", entry.Description, firstLineOfBad, firstLine})
+		}
+	}
+
+	if len(warns) == 0 {
 		exitHook("pre-write", root)
 	}
 
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "⚠️ %d cerebrum rule(s) matched:\n", len(matches))
-	for _, m := range matches {
-		fmt.Fprintf(&sb, "  • %s (line %d)\n", m.msg, m.line)
+	fmt.Fprintf(&sb, "⚡ claude-context: ⚠️ %d rule(s)/match(es):\n", len(warns))
+	for _, w := range warns {
+		if w.was != "" {
+			fmt.Fprintf(&sb, "  • [%s] %s (line %d)\n    was: %s\n", w.source, w.msg, w.line, w.was)
+		} else {
+			fmt.Fprintf(&sb, "  • [%s] %s (line %d)\n", w.source, w.msg, w.line)
+		}
 	}
 	hook.WriteStderr(sb.String())
 	os.Exit(1)
+}
+
+// sortedLineNos returns the integer keys of m in ascending order.
+func sortedLineNos(m map[int]string) []int {
+	keys := make([]int, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+	return keys
 }
