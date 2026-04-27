@@ -229,3 +229,97 @@ func TestPreReadAnatomy(t *testing.T) {
 		t.Errorf("stderr should contain 'main.go', got: %s", out)
 	}
 }
+
+func TestPreReadRepeat(t *testing.T) {
+	home := t.TempDir()
+	project := t.TempDir()
+	initGitRepo(t, project)
+
+	os.WriteFile(filepath.Join(project, "main.go"),
+		[]byte("package main\n\nfunc main() {}\n"), 0644)
+
+	env := append(os.Environ(), "HOME="+home)
+	// --no-scan: anatomy.md stays empty so repeat_reads path can fire
+	initCmd := exec.Command(binaryPath, "init", "--yes", "--no-scan")
+	initCmd.Dir = project
+	initCmd.Env = env
+	if out, err := initCmd.CombinedOutput(); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+
+	// Fire session-start so AppendSessionRead has a _session.json to write to.
+	sessionPayload := fmt.Sprintf(
+		`{"session_id":"repeat-test","transcript_path":"/tmp/t","cwd":%q,"hook_event_name":"SessionStart","source":"human","model":"claude-opus-4-7"}`,
+		project,
+	)
+	sessionCmd := exec.Command(binaryPath, "hook", "session-start")
+	sessionCmd.Dir = project
+	sessionCmd.Env = env
+	sessionCmd.Stdin = strings.NewReader(sessionPayload)
+	sessionCmd.Run()
+
+	mainGoPath := filepath.Join(project, "main.go")
+	makePayload := func() string {
+		return fmt.Sprintf(
+			`{"session_id":"repeat-test","transcript_path":"/tmp/t","cwd":%q,"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":%q},"permission_mode":"bypassPermissions","stop_hook_active":false}`,
+			project, mainGoPath,
+		)
+	}
+
+	// First pre-read: not in anatomy, not yet read → exit 0 (silent)
+	cmd1 := exec.Command(binaryPath, "hook", "pre-read")
+	cmd1.Dir = project
+	cmd1.Env = env
+	cmd1.Stdin = strings.NewReader(makePayload())
+	out1, err1 := cmd1.CombinedOutput()
+	if err1 != nil {
+		t.Fatalf("first pre-read: expected exit 0 (silent), got err=%v; out=%s", err1, out1)
+	}
+
+	// Second pre-read: not in anatomy, but already read → exit 1 with "already read"
+	cmd2 := exec.Command(binaryPath, "hook", "pre-read")
+	cmd2.Dir = project
+	cmd2.Env = env
+	cmd2.Stdin = strings.NewReader(makePayload())
+	out2, err2 := cmd2.CombinedOutput()
+	exitErr2, ok2 := err2.(*exec.ExitError)
+	if !ok2 || exitErr2.ExitCode() != 1 {
+		t.Fatalf("second pre-read: expected exit 1 (repeat-read), got err=%v; out=%s", err2, out2)
+	}
+	if !strings.Contains(string(out2), "already read") {
+		t.Errorf("second pre-read stderr should contain 'already read', got: %s", out2)
+	}
+}
+
+func TestPreReadOutsideProject(t *testing.T) {
+	home := t.TempDir()
+	project := t.TempDir()
+	initGitRepo(t, project)
+
+	env := append(os.Environ(), "HOME="+home)
+	initCmd := exec.Command(binaryPath, "init", "--yes", "--no-scan")
+	initCmd.Dir = project
+	initCmd.Env = env
+	if out, err := initCmd.CombinedOutput(); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+
+	// File path is OUTSIDE the project (in a different temp dir)
+	outsidePath := filepath.Join(t.TempDir(), "other.go")
+	os.WriteFile(outsidePath, []byte("package x\n"), 0644)
+
+	payload := fmt.Sprintf(
+		`{"session_id":"test","transcript_path":"/tmp/t","cwd":%q,"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":%q},"permission_mode":"bypassPermissions","stop_hook_active":false}`,
+		project, outsidePath,
+	)
+	cmd := exec.Command(binaryPath, "hook", "pre-read")
+	cmd.Dir = project
+	cmd.Env = env
+	cmd.Stdin = strings.NewReader(payload)
+	out, err := cmd.CombinedOutput()
+
+	// Must exit 0 (silently) — file is outside project tree
+	if err != nil {
+		t.Errorf("pre-read for outside-project file should exit 0, got: %v\n%s", err, out)
+	}
+}
