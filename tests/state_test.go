@@ -306,3 +306,69 @@ func TestAnatomyGolden(t *testing.T) {
 		t.Errorf("anatomy output mismatch\ngot:\n%s\nwant:\n%s", actual, string(golden))
 	}
 }
+
+func TestAppendSessionReadFirstTime(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+
+	s := state.Session{SessionID: "sess-reads-1", ClaudeCodeModel: "claude-opus-4-7"}
+	if err := state.UpsertSession(dir, s); err != nil {
+		t.Fatalf("UpsertSession: %v", err)
+	}
+
+	alreadyRead, err := state.AppendSessionRead(dir, "pkg/foo.go")
+	if err != nil {
+		t.Fatalf("AppendSessionRead: %v", err)
+	}
+	if alreadyRead {
+		t.Error("expected alreadyRead=false on first read")
+	}
+
+	id, _ := state.ReadOrCreateLocalID(dir)
+	data, _ := os.ReadFile(filepath.Join(state.GlobalProjectDir(id), "_session.json"))
+	if !strings.Contains(string(data), "pkg/foo.go") {
+		t.Errorf("path not persisted in _session.json: %s", data)
+	}
+}
+
+func TestAppendSessionReadSecondTime(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+
+	state.UpsertSession(dir, state.Session{SessionID: "sess-reads-2"})
+
+	if _, err := state.AppendSessionRead(dir, "main.go"); err != nil {
+		t.Fatalf("first AppendSessionRead: %v", err)
+	}
+	alreadyRead, err := state.AppendSessionRead(dir, "main.go")
+	if err != nil {
+		t.Fatalf("second AppendSessionRead: %v", err)
+	}
+	if !alreadyRead {
+		t.Error("expected alreadyRead=true on second read")
+	}
+
+	id, _ := state.ReadOrCreateLocalID(dir)
+	data, _ := os.ReadFile(filepath.Join(state.GlobalProjectDir(id), "_session.json"))
+	if strings.Count(string(data), "main.go") != 1 {
+		t.Errorf("expected path exactly once in session JSON, got: %s", data)
+	}
+}
+
+func TestAppendSessionReadNewSession(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+
+	state.UpsertSession(dir, state.Session{SessionID: "sess-A"})
+	state.AppendSessionRead(dir, "foo.go")
+
+	state.UpsertSession(dir, state.Session{SessionID: "sess-B"})
+
+	alreadyRead, err := state.AppendSessionRead(dir, "foo.go")
+	if err != nil {
+		t.Fatalf("AppendSessionRead after new session: %v", err)
+	}
+	if alreadyRead {
+		t.Error("expected alreadyRead=false after new session started")
+	}
+}
