@@ -313,14 +313,16 @@ hook/sessionstart.go:
 
 ### F. Stop
 
+> ⚠️ **M0 finding**: Claude Code 2.1.119 fires `Stop` after **every assistant turn**, not at session exit. The flow below as originally drafted (write session-row, delete `_session.json`) would corrupt mid-session state. **M3 spec brainstorm must address turn-vs-session distinction** before this flow can be implemented. Likely paths: (a) treat Stop as turn-end and find another signal for session-end; (b) use `stop_hook_active` field as recursion guard; (c) idle-timeout on `_session.json` rather than explicit close. See `2026-04-27-m0-hook-protocol-validation-report.md` "Bonus finding" for full discussion.
+
 ```
-hook/stop.go:
+hook/stop.go (DRAFT — needs M3 turn-vs-session decision before implementation):
     1. read _session.json; compute session totals
     2. flock-X 200ms:
-         - append session row to memory.md table
+         - append session row to memory.md table   ← would fire per-turn under current Claude Code; bad
          - update token-ledger.json: accumulate counters
          - compute savings = anatomy_hits × avg_anatomy_token_saving + repeated_reads_blocked
-    3. delete _session.json
+    3. delete _session.json   ← would break mid-session under current Claude Code; bad
     4. exit 0
 ```
 
@@ -328,30 +330,52 @@ hook/stop.go:
 
 ## Hook Protocol
 
-**Input** (Claude Code passes via stdin):
+> **Validated against Claude Code 2.1.119** in the M0 spike (see `2026-04-27-m0-hook-protocol-validation-report.md`). Schema and exit-code semantics below reflect empirical findings, not pre-spike assumptions.
+
+**Input** (Claude Code passes via stdin) — full real schema captured in M0:
+
+**Common fields (every event):**
 
 ```json
 {
-  "session_id": "uuid",
-  "transcript_path": "/path/to/transcript.jsonl",
-  "tool_name": "Read | Write | Edit | ...",
-  "tool_input": { /* tool-specific */ },
-  "tool_response": { /* PostToolUse only */ }
+  "session_id": "<uuid>",
+  "transcript_path": "<HOME>/.claude/projects/<project-slug>/<session>.jsonl",
+  "cwd": "/process/working/directory",
+  "hook_event_name": "PreToolUse | PostToolUse | SessionStart | Stop"
 }
 ```
 
-**Output contract:**
+**Per-event additions:**
 
-| Channel | Purpose | Audience |
-|---|---|---|
-| stderr | Feedback to Claude (anatomy hits, cerebrum warnings, buglog hints) | Claude (model) |
-| stdout | Debug only (silent unless `--debug`) | User terminal |
-| exit 0 | Normal | — |
-| exit ≥1 | Internal error; **must not block Claude** — only used when hook itself crashed | User terminal |
+| Field | PreToolUse | PostToolUse | SessionStart | Stop |
+|---|---|---|---|---|
+| `permission_mode` | ✓ | ✓ | — | ✓ |
+| `tool_name` | ✓ | ✓ | — | — |
+| `tool_input` | ✓ | ✓ | — | — |
+| `tool_use_id` | ✓ (correlates Pre↔Post) | ✓ | — | — |
+| `tool_response` | — | ✓ | — | — |
+| `duration_ms` | — | ✓ (int, ms) | — | — |
+| `source` | — | — | ✓ ("startup", etc.) | — |
+| `model` | — | — | ✓ ("claude-opus-4-7[1m]") | — |
+| `stop_hook_active` | — | — | — | ✓ (recursion guard) |
+| `last_assistant_message` | — | — | — | ✓ (string) |
 
-All stderr lines carry the `⚡ claude-context: ...` prefix so Claude can recognize them as hook feedback rather than tool output.
+**Note:** `tool_name` is **NOT** present in `SessionStart` or `Stop` events — dispatch on `hook_event_name` instead. Canonical sample payloads at `tests/fixtures/hook-payloads/`.
 
-**To verify in M1** (see Risks): exit code 2 semantics in current Claude Code hook protocol. Our intent is "informational stderr, never block" regardless of which exit code achieves that.
+**Output contract** (validated by M0 R2):
+
+| Exit code | What Claude sees | Tool call proceeds? | Use this for |
+|---|---|---|---|
+| **0** | nothing — stderr is silent to Claude (terminal only) | yes | hooks that have **no** message for Claude (pure state init / silent telemetry) |
+| **1** | `Failed with non-blocking status code: <stderr>` | yes | **informational hooks** — anatomy hits, cerebrum warnings, buglog hints (use exit 1, accept the wrapping) |
+| **2** | elaborate hook-error block; Claude **perceives blocking** | yes (but Claude reacts as if blocked) | **avoid** — Claude verbally responds as if the action was denied |
+| **127** | identical framing to exit 1 | yes | (no use; treat as accidental "command not found") |
+
+🚨 **Critical correction from M0**: Earlier draft assumed `exit 0 + stderr` was the informational channel. **It is not.** Use **exit 1** to feed text to Claude. The "Failed with non-blocking status code:" wrapping is unfortunate cosmetic noise but content is delivered.
+
+**Stderr formatting**: All informational stderr lines carry the `⚡ claude-context: ...` prefix so Claude can identify them inside the wrapped error message. Example end result Claude sees: `Failed with non-blocking status code: ⚡ claude-context: src/foo.go — handles auth (~340 tok)`.
+
+**Follow-up** (post-M0, not blocking M1): investigate whether Claude Code supports JSON stdout from hooks for structured feedback that bypasses the wrapping. A small future spike could verify this with the same probe scripts. If supported, it'd be a cleaner channel.
 
 **Fault tolerance:**
 
@@ -670,21 +694,19 @@ Dependency graph:
 
 ---
 
-## Risks / Open Questions to Validate in M1
+## Risks / Open Questions
 
-These must be empirically verified during M1 Day 1 — assumptions left untested risk reworking later milestones.
+R1-R5 validated in the M0 spike (`2026-04-27-m0-hook-protocol-validation-report.md`). R6 and R7 still pending.
 
-| # | Item | Verification | Affects | Severity |
-|---|---|---|---|---|
-| R1 | Claude Code hook stdin JSON real schema | minimal echo hook → real Claude Code session → diff against §6 assumptions | `pkg/hook/protocol.go` (all of it) | 🔴 high |
-| R2 | exit code 2 semantics in current hook protocol | exit-2 hook with stderr → observe Claude behavior | output contract | 🔴 high |
-| R3 | Real hook latency tolerance | sleep 100ms / 500ms / 2s hooks → observe interactivity | latency budgets in §5 | 🟡 medium |
-| R4 | settings.json schema tolerates `_managed_by` extra field | inject the field → restart Claude Code → check for schema errors | boundary scheme in §8 | 🟡 medium |
-| R5 | CLAUDE.md `@import` works for absolute / `~` / relative paths | try all three forms | rules injection in §8 | 🟢 low |
-| R6 | Concurrency model (does Claude Code serialize hook fires?) | timestamped sleep hooks → measure overlap | lock granularity in §7 | 🟢 low |
-| R7 | scan memory peak on 10K+ file repos | repo-large fixture + pprof | M2 perf budgets | 🟢 low |
-
-R1-R3 are M1 Day-1 tasks; the rest can be validated alongside their respective milestones.
+| # | Item | Status | Outcome / next |
+|---|---|---|---|
+| R1 | Hook stdin JSON real schema | ✅ **VALIDATED** (M0) | Schema fully documented in §6; arch spec updated; canonical fixtures at `tests/fixtures/hook-payloads/`. **Bonus finding**: Stop fires per assistant turn — see §5 Flow F note and M0 report. |
+| R2 | Exit code semantics | ✅ **VALIDATED** (M0) | exit 0 stderr is silent to Claude; **use exit 1** for informational hooks (wrapped as "non-blocking error"). exit 2 makes Claude perceive blocking — avoid. §6 updated. |
+| R3 | Hook latency tolerance | ✅ **VALIDATED objectively** (M0) | Claude Code does NOT enforce a hook timeout under 3000ms. Subjective grades deferred to M2-M4 with real workloads. Arch spec budgets (preread 80ms / prewrite-postwrite 200ms / stop 500ms) **kept** as designed. |
+| R4 | `_managed_by` field tolerance | ✅ **VALIDATED** (M0) | Claude Code 2.1.119 accepted `_managed_by` + `_version` fields; hooks fired normally. §8 boundary scheme stands. |
+| R5 | `@import` path forms | ✅ **VALIDATED** (M0) | All three forms (`@~/`, `@/abs`, `@./rel`) work. §8 init can use any form. |
+| R6 | Hook concurrency model (does Claude Code serialize hook fires?) | ⏳ **PENDING** | Defer to M3 first concurrency conflict; §7 single-lock design is correct under both serial and parallel. |
+| R7 | scan memory peak on 10K+ file repos | ⏳ **PENDING** | Defer to M2 (its native domain). |
 
 ---
 
