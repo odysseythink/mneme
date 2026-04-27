@@ -465,3 +465,23 @@ func TestAggregateTurn(t *testing.T) {
 		t.Errorf("StopCount = %d, want 1", s.StopCount)
 	}
 }
+
+func TestLedgerEditPattern(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+
+	state.IncrementSafe(dir, "edit_pattern.feature")
+	state.IncrementSafe(dir, "edit_pattern.feature")
+	state.IncrementSafe(dir, "edit_pattern.bugfix")
+
+	l, err := state.ReadLedger(dir)
+	if err != nil {
+		t.Fatalf("ReadLedger: %v", err)
+	}
+	if l.Totals.EditPatterns["feature"] != 2 {
+		t.Errorf("feature = %d, want 2", l.Totals.EditPatterns["feature"])
+	}
+	if l.Totals.EditPatterns["bugfix"] != 1 {
+		t.Errorf("bugfix = %d, want 1", l.Totals.EditPatterns["bugfix"])
+	}
+}
