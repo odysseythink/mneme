@@ -15,6 +15,9 @@ type LedgerTotals struct {
 	StdinParseFailures    int            `json:"stdin_parse_failures"`
 	OutsideProjectSkipped int            `json:"outside_project_skipped"`
 	WriteSkipped          int            `json:"write_skipped"`
+	AnatomyHits           int            `json:"anatomy_hits"` // M2
+	RepeatReads           int            `json:"repeat_reads"` // M2
+	ScanCount             int            `json:"scan_count"`   // M2
 }
 
 type Ledger struct {
@@ -135,6 +138,12 @@ func (l *Ledger) increment(key string) {
 		l.Totals.OutsideProjectSkipped++
 	case "write_skipped":
 		l.Totals.WriteSkipped++
+	case "anatomy_hits":
+		l.Totals.AnatomyHits++
+	case "repeat_reads":
+		l.Totals.RepeatReads++
+	case "scan_count":
+		l.Totals.ScanCount++
 	}
 }
 

@@ -38,6 +38,9 @@ func dispatchStats(args []string) {
 	fmt.Printf("hook_errors:          %d\n", l.Totals.HookErrors)
 	fmt.Printf("stdin_parse_failures: %d\n", l.Totals.StdinParseFailures)
 	fmt.Printf("outside_project_skipped: %d\n", l.Totals.OutsideProjectSkipped)
+	fmt.Printf("anatomy_hits:            %d\n", l.Totals.AnatomyHits)
+	fmt.Printf("repeat_reads:            %d\n", l.Totals.RepeatReads)
+	fmt.Printf("scan_count:              %d\n", l.Totals.ScanCount)
 	if l.Totals.HookFired["stop"] > 0 {
 		fmt.Println()
 		fmt.Println("note: stop counts include per-turn fires (per M0 finding); session-end semantics deferred to M3")

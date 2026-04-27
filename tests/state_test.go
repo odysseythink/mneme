@@ -372,3 +372,27 @@ func TestAppendSessionReadNewSession(t *testing.T) {
 		t.Error("expected alreadyRead=false after new session started")
 	}
 }
+
+func TestLedgerIncrementNewCounters(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+
+	state.IncrementSafe(dir, "anatomy_hits")
+	state.IncrementSafe(dir, "anatomy_hits")
+	state.IncrementSafe(dir, "repeat_reads")
+	state.IncrementSafe(dir, "scan_count")
+
+	l, err := state.ReadLedger(dir)
+	if err != nil {
+		t.Fatalf("ReadLedger: %v", err)
+	}
+	if l.Totals.AnatomyHits != 2 {
+		t.Errorf("anatomy_hits = %d, want 2", l.Totals.AnatomyHits)
+	}
+	if l.Totals.RepeatReads != 1 {
+		t.Errorf("repeat_reads = %d, want 1", l.Totals.RepeatReads)
+	}
+	if l.Totals.ScanCount != 1 {
+		t.Errorf("scan_count = %d, want 1", l.Totals.ScanCount)
+	}
+}
