@@ -31,6 +31,3 @@ func main() {
 
 // Stubs — replaced by real implementations in subsequent tasks.
 func dispatchInit(args []string)  { os.Exit(0) }
-func dispatchStats(args []string) { os.Exit(0) }
-func printVersion()               {}
-func printTopUsage()              {}
