@@ -703,3 +703,46 @@ func TestBuglogClearWithYes(t *testing.T) {
 		t.Errorf("expected empty after clear, got: %s", out)
 	}
 }
+
+func TestPostWriteAutoUpsert(t *testing.T) {
+	project, home := setupInitializedProject(t)
+	env := append(os.Environ(), "HOME="+home)
+
+	oldStr := "func init() {\n\tsession.StopCount++\n\tbadValue := session.Init()\n\tsession.Reset()\n\tdoWork()\n}"
+	newStr := "func init() {\n\tsession.StopCount++\n\tsession.Reset()\n\tdoWork()\n}"
+
+	payload := map[string]interface{}{
+		"session_id":      "test",
+		"cwd":             project,
+		"hook_event_name": "PostToolUse",
+		"tool_name":       "Edit",
+		"tool_input": map[string]interface{}{
+			"file_path":  filepath.Join(project, "main.go"),
+			"old_string": oldStr,
+			"new_string": newStr,
+		},
+	}
+	payloadBytes, _ := json.Marshal(payload)
+
+	cmd := exec.Command(binaryPath, "hook", "post-tool-use")
+	cmd.Dir = project
+	cmd.Env = env
+	cmd.Stdin = strings.NewReader(string(payloadBytes))
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("post-tool-use hook: %v\n%s", err, out)
+	}
+
+	entries, err := state.ReadBuglog(project)
+	if err != nil {
+		t.Fatalf("ReadBuglog: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 buglog entry after bugfix edit, got %d", len(entries))
+	}
+	if entries[0].Source != "auto" {
+		t.Errorf("expected source=auto, got %q", entries[0].Source)
+	}
+	if !strings.Contains(entries[0].Description, "main.go") {
+		t.Errorf("description should contain filename, got: %q", entries[0].Description)
+	}
+}
