@@ -175,10 +175,19 @@ func (s *Server) handleToolCall(ctx context.Context, params json.RawMessage) int
 
 	switch req.Name {
 	case "index_codebase":
+		if s.indexer == nil {
+			return toolError("embedding tools unavailable: set EMBEDDING_API_KEY to use index_codebase")
+		}
 		return s.callIndexCodbase(ctx, req.Arguments)
 	case "search_codebase":
+		if s.searcher == nil {
+			return toolError("embedding tools unavailable: set EMBEDDING_API_KEY to use search_codebase")
+		}
 		return s.callSearchCodebase(ctx, req.Arguments)
 	case "ping_embedding":
+		if s.embedding == nil {
+			return toolError("embedding tools unavailable: set EMBEDDING_API_KEY to use ping_embedding")
+		}
 		return s.callPingEmbedding(ctx)
 	default:
 		return toolError("unknown tool: " + req.Name)
