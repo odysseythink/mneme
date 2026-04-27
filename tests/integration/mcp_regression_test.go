@@ -14,10 +14,10 @@ func TestMCPServerStartsWithNoArgs(t *testing.T) {
 
 	cmd := exec.Command(binaryPath)
 	cmd.Stdin = strings.NewReader(initRequest + "\n")
-	cmd.Env = append([]string{
+	cmd.Env = []string{
 		"EMBEDDING_API_KEY=test-key-placeholder",
 		"DB_BACKEND=chromem",
-	})
+	}
 
 	out, _ := cmd.CombinedOutput()
 	outStr := string(out)
