@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,5 +42,116 @@ func TestScaffoldProjectIdempotent(t *testing.T) {
 	}
 	if id1 != id2 {
 		t.Errorf("re-scaffold changed ID: %q → %q", id1, id2)
+	}
+}
+
+func TestMergeEmptySettings(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "settings.json")
+
+	err := installer.MergeHooks(path, "/usr/local/bin/claude-context")
+	if err != nil {
+		t.Fatalf("MergeHooks: %v", err)
+	}
+
+	data, _ := os.ReadFile(path)
+	var result map[string]interface{}
+	json.Unmarshal(data, &result)
+
+	hooks, ok := result["hooks"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected 'hooks' key in settings.json")
+	}
+	preToolUse, ok := hooks["PreToolUse"].([]interface{})
+	if !ok {
+		t.Fatal("expected PreToolUse array")
+	}
+	if len(preToolUse) != 2 {
+		t.Errorf("expected 2 PreToolUse matchers (Read+Write), got %d", len(preToolUse))
+	}
+	if _, ok := hooks["SessionStart"]; !ok {
+		t.Error("expected SessionStart key")
+	}
+	if _, ok := hooks["Stop"]; !ok {
+		t.Error("expected Stop key")
+	}
+}
+
+func TestMergeExistingUserHookPreserved(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "settings.json")
+
+	existing := `{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"my-logger"}]}]}}`
+	os.WriteFile(path, []byte(existing), 0644)
+
+	installer.MergeHooks(path, "/usr/local/bin/claude-context")
+
+	data, _ := os.ReadFile(path)
+	if !strings.Contains(string(data), "my-logger") {
+		t.Error("user's existing hook was removed")
+	}
+	if !strings.Contains(string(data), "hook pre-read") {
+		t.Error("our hook not added")
+	}
+}
+
+func TestMergeUpgradeIdempotent(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "settings.json")
+
+	installer.MergeHooks(path, "/old/claude-context")
+	installer.MergeHooks(path, "/new/claude-context")
+
+	data, _ := os.ReadFile(path)
+	if strings.Count(string(data), "hook pre-read") != 1 {
+		t.Errorf("expected exactly 1 pre-read entry after upgrade, count=%d, data=%s",
+			strings.Count(string(data), "hook pre-read"), data)
+	}
+	if !strings.Contains(string(data), "/new/claude-context") {
+		t.Error("expected new binary path after upgrade")
+	}
+}
+
+func TestUninstallByMarker(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "settings.json")
+
+	installer.MergeHooks(path, "/usr/local/bin/claude-context")
+	installer.UninstallHooks(path)
+
+	data, _ := os.ReadFile(path)
+	if strings.Contains(string(data), `"_managed_by"`) {
+		t.Errorf("found _managed_by after uninstall: %s", data)
+	}
+}
+
+func TestUninstallEmptyHooksKeyRemoved(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "settings.json")
+
+	installer.MergeHooks(path, "/usr/local/bin/claude-context")
+	installer.UninstallHooks(path)
+
+	data, _ := os.ReadFile(path)
+	var result map[string]interface{}
+	json.Unmarshal(data, &result)
+	if _, ok := result["hooks"]; ok {
+		t.Errorf("hooks key should be absent after full uninstall of all managed entries, got: %s", data)
+	}
+}
+
+func TestUninstallPreservesUserHooks(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "settings.json")
+
+	existing := `{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"my-logger"}]}]}}`
+	os.WriteFile(path, []byte(existing), 0644)
+
+	installer.MergeHooks(path, "/usr/local/bin/claude-context")
+	installer.UninstallHooks(path)
+
+	data, _ := os.ReadFile(path)
+	if !strings.Contains(string(data), "my-logger") {
+		t.Error("user hook removed during uninstall")
 	}
 }
