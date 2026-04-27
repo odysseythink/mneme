@@ -323,3 +323,155 @@ func TestPreReadOutsideProject(t *testing.T) {
 		t.Errorf("pre-read for outside-project file should exit 0, got: %v\n%s", err, out)
 	}
 }
+
+func TestPostToolUseClassifiesEdit(t *testing.T) {
+	project, home := setupInitializedProject(t)
+	env := append(os.Environ(), "HOME="+home)
+
+	sessionPayload := map[string]interface{}{
+		"session_id":      "sess-ptu-test",
+		"transcript_path": "/tmp/t",
+		"cwd":             project,
+		"hook_event_name": "SessionStart",
+		"source":          "human",
+		"model":           "claude-opus-4-7",
+	}
+	sessionBytes, _ := json.Marshal(sessionPayload)
+	cmd := exec.Command(binaryPath, "hook", "session-start")
+	cmd.Dir = project
+	cmd.Env = env
+	cmd.Stdin = strings.NewReader(string(sessionBytes))
+	cmd.CombinedOutput()
+
+	ptuPayload := map[string]interface{}{
+		"session_id":      "sess-ptu-test",
+		"transcript_path": "/tmp/t",
+		"cwd":             project,
+		"hook_event_name": "PostToolUse",
+		"tool_name":       "Write",
+		"tool_use_id":     "toolu_01",
+		"tool_input": map[string]interface{}{
+			"file_path": filepath.Join(project, "new_handler.go"),
+			"content":   "package main\n\nfunc newHandler() {}\n",
+		},
+	}
+	ptuBytes, _ := json.Marshal(ptuPayload)
+	cmd2 := exec.Command(binaryPath, "hook", "post-tool-use")
+	cmd2.Dir = project
+	cmd2.Env = env
+	cmd2.Stdin = strings.NewReader(string(ptuBytes))
+	if out, err := cmd2.CombinedOutput(); err != nil {
+		t.Fatalf("post-tool-use: %v\n%s", err, out)
+	}
+
+	statsCmd := exec.Command(binaryPath, "stats")
+	statsCmd.Dir = project
+	statsCmd.Env = env
+	out, _ := statsCmd.CombinedOutput()
+	if !strings.Contains(string(out), "post-tool-use") {
+		t.Errorf("stats missing post-tool-use counter: %s", out)
+	}
+}
+
+func TestSessionStartWritesMemoryRow(t *testing.T) {
+	project, home := setupInitializedProject(t)
+	env := append(os.Environ(), "HOME="+home)
+
+	fireSessionStart := func(sessionID string) {
+		payload := map[string]interface{}{
+			"session_id":      sessionID,
+			"transcript_path": "/tmp/t",
+			"cwd":             project,
+			"hook_event_name": "SessionStart",
+			"source":          "human",
+			"model":           "claude-opus-4-7",
+		}
+		b, _ := json.Marshal(payload)
+		cmd := exec.Command(binaryPath, "hook", "session-start")
+		cmd.Dir = project
+		cmd.Env = env
+		cmd.Stdin = strings.NewReader(string(b))
+		cmd.CombinedOutput()
+	}
+
+	fireSessionStart("sess-A")
+	fireSessionStart("sess-B")
+
+	memPath := filepath.Join(home, ".claude", "claude-context-memory.md")
+	data, err := os.ReadFile(memPath)
+	if err != nil {
+		t.Fatalf("memory.md not created: %v", err)
+	}
+	if !strings.Contains(string(data), "<!-- claude-context memory v1 -->") {
+		t.Errorf("memory.md missing header: %s", data)
+	}
+	if !strings.Contains(string(data), "(0 turns)") {
+		t.Errorf("memory.md missing session row: %s", data)
+	}
+}
+
+func TestStopAggregatesTurnEdits(t *testing.T) {
+	project, home := setupInitializedProject(t)
+	env := append(os.Environ(), "HOME="+home)
+
+	sessPayload := map[string]interface{}{
+		"session_id":      "sess-agg",
+		"transcript_path": "/tmp/t",
+		"cwd":             project,
+		"hook_event_name": "SessionStart",
+		"source":          "human",
+		"model":           "claude-opus-4-7",
+	}
+	b, _ := json.Marshal(sessPayload)
+	cmd := exec.Command(binaryPath, "hook", "session-start")
+	cmd.Dir = project
+	cmd.Env = env
+	cmd.Stdin = strings.NewReader(string(b))
+	cmd.CombinedOutput()
+
+	for i := 0; i < 2; i++ {
+		ptuPayload := map[string]interface{}{
+			"session_id":      "sess-agg",
+			"transcript_path": "/tmp/t",
+			"cwd":             project,
+			"hook_event_name": "PostToolUse",
+			"tool_name":       "Write",
+			"tool_use_id":     fmt.Sprintf("toolu_%d", i),
+			"tool_input": map[string]interface{}{
+				"file_path": filepath.Join(project, fmt.Sprintf("file%d.go", i)),
+				"content":   "package main\n",
+			},
+		}
+		pb, _ := json.Marshal(ptuPayload)
+		c := exec.Command(binaryPath, "hook", "post-tool-use")
+		c.Dir = project
+		c.Env = env
+		c.Stdin = strings.NewReader(string(pb))
+		c.CombinedOutput()
+	}
+
+	stopPayload := map[string]interface{}{
+		"session_id":       "sess-agg",
+		"transcript_path":  "/tmp/t",
+		"cwd":              project,
+		"hook_event_name":  "Stop",
+		"permission_mode":  "bypassPermissions",
+		"stop_hook_active": false,
+	}
+	sb, _ := json.Marshal(stopPayload)
+	stopCmd := exec.Command(binaryPath, "hook", "stop")
+	stopCmd.Dir = project
+	stopCmd.Env = env
+	stopCmd.Stdin = strings.NewReader(string(sb))
+	if out, err := stopCmd.CombinedOutput(); err != nil {
+		t.Fatalf("stop: %v\n%s", err, out)
+	}
+
+	statsCmd := exec.Command(binaryPath, "stats")
+	statsCmd.Dir = project
+	statsCmd.Env = env
+	out, _ := statsCmd.CombinedOutput()
+	if !strings.Contains(string(out), "stop") {
+		t.Errorf("stats missing stop: %s", out)
+	}
+}
