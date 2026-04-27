@@ -18,6 +18,8 @@ type LedgerTotals struct {
 	AnatomyHits           int            `json:"anatomy_hits"` // M2
 	RepeatReads           int            `json:"repeat_reads"` // M2
 	ScanCount             int            `json:"scan_count"`   // M2
+	EditPatterns          map[string]int `json:"edit_patterns,omitempty"`
+	MemoryRowsWritten     int            `json:"memory_rows_written,omitempty"`
 }
 
 type Ledger struct {
@@ -97,7 +99,10 @@ func emptyLedger(projectID string) *Ledger {
 	return &Ledger{
 		Version:   1,
 		ProjectID: projectID,
-		Totals:    LedgerTotals{HookFired: make(map[string]int)},
+		Totals: LedgerTotals{
+			HookFired:    make(map[string]int),
+			EditPatterns: make(map[string]int),
+		},
 	}
 }
 
@@ -117,6 +122,9 @@ func readLedgerNoLock(path, projectID string) *Ledger {
 	if l.Totals.HookFired == nil {
 		l.Totals.HookFired = make(map[string]int)
 	}
+	if l.Totals.EditPatterns == nil {
+		l.Totals.EditPatterns = make(map[string]int)
+	}
 	return &l
 }
 
@@ -127,6 +135,14 @@ func (l *Ledger) increment(key string) {
 			l.Totals.HookFired = make(map[string]int)
 		}
 		l.Totals.HookFired[event]++
+		return
+	}
+	if strings.HasPrefix(key, "edit_pattern.") {
+		cat := strings.TrimPrefix(key, "edit_pattern.")
+		if l.Totals.EditPatterns == nil {
+			l.Totals.EditPatterns = make(map[string]int)
+		}
+		l.Totals.EditPatterns[cat]++
 		return
 	}
 	switch key {
@@ -144,6 +160,8 @@ func (l *Ledger) increment(key string) {
 		l.Totals.RepeatReads++
 	case "scan_count":
 		l.Totals.ScanCount++
+	case "memory_rows_written":
+		l.Totals.MemoryRowsWritten++
 	}
 }
 
