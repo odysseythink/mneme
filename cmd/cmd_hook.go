@@ -73,16 +73,6 @@ func runPreRead(stdin io.Reader) {
 	exitHook("pre-read", root)
 }
 
-func runPreWrite(stdin io.Reader) {
-	defer recoverAndLog("pre-write")
-	ev := parseOrExit(stdin, "pre-write")
-	root, _, resolved := resolveProjectFromEvent(ev)
-	if !resolved {
-		os.Exit(0)
-	}
-	state.IncrementSafe(root, "hook_fired.pre-write")
-	exitHook("pre-write", root)
-}
 
 func runPostWrite(stdin io.Reader) {
 	defer recoverAndLog("post-write")
