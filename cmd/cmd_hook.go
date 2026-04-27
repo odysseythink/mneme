@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ranwei/claude-context/pkg/hook"
@@ -39,6 +40,34 @@ func runPreRead(stdin io.Reader) {
 		os.Exit(0)
 	}
 	state.IncrementSafe(root, "hook_fired.pre-read")
+
+	absPath, ok := ev.FilePathFromToolInput()
+	if !ok {
+		exitHook("pre-read", root)
+		return
+	}
+	// Resolve symlinks to match the canonical git root path
+	absPath, _ = filepath.EvalSymlinks(absPath)
+	relPath, err := filepath.Rel(root, absPath)
+	if err != nil || strings.HasPrefix(relPath, "..") {
+		exitHook("pre-read", root)
+		return
+	}
+
+	anatomy, _ := state.ReadAnatomy(root)
+	alreadyRead, _ := state.AppendSessionRead(root, relPath)
+
+	if entry, ok := anatomy[relPath]; ok {
+		state.IncrementSafe(root, "anatomy_hits")
+		hook.WriteStderr(fmt.Sprintf("%s — %s (~%d tok)", relPath, entry.Description, entry.EstTokens))
+		os.Exit(1)
+	}
+	if alreadyRead {
+		state.IncrementSafe(root, "repeat_reads")
+		hook.WriteStderr(fmt.Sprintf("%s already read this session", relPath))
+		os.Exit(1)
+	}
+
 	exitHook("pre-read", root)
 }
 
