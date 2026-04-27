@@ -506,3 +506,125 @@ func BenchmarkPostToolUseE2E(b *testing.B) {
 		cmd.Run()
 	}
 }
+
+func TestPreWriteMatchesCerebrumRule(t *testing.T) {
+	project, home := setupInitializedProject(t)
+	env := append(os.Environ(), "HOME="+home)
+
+	// Add a cerebrum rule
+	cmd := exec.Command(binaryPath, "cerebrum", "add", "--pattern", `fmt\.Println\(`, "--message", "use structured logger")
+	cmd.Dir = project
+	cmd.Env = env
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("cerebrum add failed: %v\n%s", err, out)
+	}
+
+	// Fire pre-write hook with Edit payload where new_string contains fmt.Println
+	payload := map[string]interface{}{
+		"session_id":      "sess-X",
+		"transcript_path": "/tmp/t",
+		"cwd":             project,
+		"hook_event_name": "PreToolUse",
+		"tool_name":       "Edit",
+		"tool_input": map[string]interface{}{
+			"file_path":  filepath.Join(project, "main.go"),
+			"old_string": "func main() {}",
+			"new_string": "func main() {\n\tfmt.Println(\"hello\")\n}",
+		},
+	}
+	b, _ := json.Marshal(payload)
+
+	hookCmd := exec.Command(binaryPath, "hook", "pre-write")
+	hookCmd.Dir = project
+	hookCmd.Env = env
+	hookCmd.Stdin = strings.NewReader(string(b))
+	out, err = hookCmd.CombinedOutput()
+
+	// Should exit with code 1 (error)
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok || exitErr.ExitCode() != 1 {
+		t.Fatalf("expected exit 1, got err=%v; output: %s", err, out)
+	}
+
+	// Output should contain "cerebrum" and the message
+	outStr := string(out)
+	if !strings.Contains(outStr, "cerebrum") {
+		t.Errorf("output missing 'cerebrum': %s", outStr)
+	}
+	if !strings.Contains(outStr, "use structured logger") {
+		t.Errorf("output missing 'use structured logger': %s", outStr)
+	}
+}
+
+func TestPreWriteNoMatchExitsZero(t *testing.T) {
+	project, home := setupInitializedProject(t)
+	env := append(os.Environ(), "HOME="+home)
+
+	// Add the fmt.Println rule
+	cmd := exec.Command(binaryPath, "cerebrum", "add", "--pattern", `fmt\.Println\(`, "--message", "use structured logger")
+	cmd.Dir = project
+	cmd.Env = env
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("cerebrum add failed: %v\n%s", err, out)
+	}
+
+	// Fire pre-write hook with Edit payload where new_string does NOT contain fmt.Println
+	payload := map[string]interface{}{
+		"session_id":      "sess-X",
+		"transcript_path": "/tmp/t",
+		"cwd":             project,
+		"hook_event_name": "PreToolUse",
+		"tool_name":       "Edit",
+		"tool_input": map[string]interface{}{
+			"file_path":  filepath.Join(project, "main.go"),
+			"old_string": "func main() {}",
+			"new_string": "func main() {\n\tlog.Println(\"hello\")\n}",
+		},
+	}
+	b, _ := json.Marshal(payload)
+
+	hookCmd := exec.Command(binaryPath, "hook", "pre-write")
+	hookCmd.Dir = project
+	hookCmd.Env = env
+	hookCmd.Stdin = strings.NewReader(string(b))
+	out, err = hookCmd.CombinedOutput()
+
+	// Should exit with code 0
+	if err != nil {
+		t.Errorf("expected exit 0 (no match), got: %v\n%s", err, out)
+	}
+}
+
+func TestPreWriteNoCerebrumExitsZero(t *testing.T) {
+	project, home := setupInitializedProject(t)
+	env := append(os.Environ(), "HOME="+home)
+
+	// Do NOT add any cerebrum rules
+
+	// Fire pre-write hook with Write payload
+	payload := map[string]interface{}{
+		"session_id":      "sess-X",
+		"transcript_path": "/tmp/t",
+		"cwd":             project,
+		"hook_event_name": "PreToolUse",
+		"tool_name":       "Write",
+		"tool_input": map[string]interface{}{
+			"file_path": filepath.Join(project, "newfile.go"),
+			"content":   "package main\n",
+		},
+	}
+	b, _ := json.Marshal(payload)
+
+	hookCmd := exec.Command(binaryPath, "hook", "pre-write")
+	hookCmd.Dir = project
+	hookCmd.Env = env
+	hookCmd.Stdin = strings.NewReader(string(b))
+	out, err := hookCmd.CombinedOutput()
+
+	// Should exit with code 0
+	if err != nil {
+		t.Errorf("expected exit 0 (no rules), got: %v\n%s", err, out)
+	}
+}
