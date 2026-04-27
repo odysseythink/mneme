@@ -33,14 +33,17 @@ type hookConfig struct {
 var managedHooks = []hookConfig{
 	{"PreToolUse", "Read", "hook pre-read"},
 	{"PreToolUse", "Write", "hook pre-write"},
-	{"PostToolUse", "Write", "hook post-write"},
+	{"PostToolUse", "Write", "hook post-tool-use"},
+	{"PostToolUse", "Edit", "hook post-tool-use"},
+	{"PostToolUse", "MultiEdit", "hook post-tool-use"},
+	{"PostToolUse", "NotebookEdit", "hook post-tool-use"},
 	{"SessionStart", "", "hook session-start"},
 	{"Stop", "", "hook stop"},
 }
 
 const managedBy = "claude-context"
 
-// MergeHooks updates settingsPath with our 5 hook entries. Idempotent.
+// MergeHooks updates settingsPath with our 8 hook entries. Idempotent.
 // binaryPath is the absolute path to the claude-context binary.
 func MergeHooks(settingsPath, binaryPath string) error {
 	raw := loadRawSettings(settingsPath)

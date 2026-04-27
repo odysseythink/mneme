@@ -52,7 +52,7 @@ func TestInitFreshThenUninstall(t *testing.T) {
 		t.Fatalf("init --yes failed: %v\n%s", err, out)
 	}
 
-	// Verify settings.json was created with 5 hooks
+	// Verify settings.json was created with 8 hooks
 	settingsPath := filepath.Join(home, ".claude", "settings.json")
 	data, err := os.ReadFile(settingsPath)
 	if err != nil {
@@ -72,6 +72,9 @@ func TestInitFreshThenUninstall(t *testing.T) {
 	}
 	if _, ok := hooks["Stop"]; !ok {
 		t.Error("Stop not in hooks")
+	}
+	if _, ok := hooks["PostToolUse"]; !ok {
+		t.Error("PostToolUse not in hooks")
 	}
 
 	// Verify rules.md was created
