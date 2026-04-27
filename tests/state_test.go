@@ -3,6 +3,7 @@ package tests
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -176,5 +177,44 @@ func TestLedgerIncrementTopLevel(t *testing.T) {
 	}
 	if l.Totals.StdinParseFailures != 1 {
 		t.Errorf("stdin_parse_failures = %d, want 1", l.Totals.StdinParseFailures)
+	}
+}
+
+func TestSessionUpsert(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+
+	s := state.Session{SessionID: "sess-abc-123", ClaudeCodeModel: "claude-opus-4-7"}
+	if err := state.UpsertSession(dir, s); err != nil {
+		t.Fatalf("UpsertSession: %v", err)
+	}
+
+	id, _ := state.ReadOrCreateLocalID(dir)
+	path := filepath.Join(state.GlobalProjectDir(id), "_session.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("_session.json not found: %v", err)
+	}
+	if !strings.Contains(string(data), "sess-abc-123") {
+		t.Errorf("session_id not in file: %s", data)
+	}
+}
+
+func TestSessionJSONUpsertIdempotent(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+
+	s := state.Session{SessionID: "sess-same", ClaudeCodeModel: "claude-opus-4-7"}
+	if err := state.UpsertSession(dir, s); err != nil {
+		t.Fatalf("first UpsertSession: %v", err)
+	}
+	if err := state.UpsertSession(dir, s); err != nil {
+		t.Fatalf("second UpsertSession: %v", err)
+	}
+
+	id, _ := state.ReadOrCreateLocalID(dir)
+	data, _ := os.ReadFile(filepath.Join(state.GlobalProjectDir(id), "_session.json"))
+	if strings.Count(string(data), "sess-same") != 1 {
+		t.Errorf("expected session_id exactly once, got: %s", data)
 	}
 }
