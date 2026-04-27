@@ -1,8 +1,8 @@
-# M0 Probe Scripts
+# Hook Protocol Probe Scripts
 
-These bash scripts validate Claude Code's hook protocol assumptions baked into the architecture spec at `docs/superpowers/specs/2026-04-27-claude-context-hook-architecture-design.md`. Designed to be run by a human against a real Claude Code session.
+> **THIS IS NOT PRODUCT CODE.** These bash scripts validate Claude Code's hook protocol assumptions baked into `claude-context`. They were originally created during the M0 spike (see `docs/superpowers/specs/2026-04-27-m0-hook-protocol-validation-design.md`) and are kept here for **re-verification when Claude Code's hook protocol changes**.
 
-**This directory will be renamed to `scripts/hook-protocol-probe/` after M0 completes (see Phase 4 of the M0 plan).**
+To re-validate against a new Claude Code version: follow the runbook at `docs/m0-runbook.md` and diff your findings against the M0 report at `docs/superpowers/specs/2026-04-27-m0-hook-protocol-validation-report.md`. Patch the architecture spec at `docs/superpowers/specs/2026-04-27-claude-context-hook-architecture-design.md` if the protocol has shifted.
 
 ## Scripts
 
