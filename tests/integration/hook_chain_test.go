@@ -475,3 +475,34 @@ func TestStopAggregatesTurnEdits(t *testing.T) {
 		t.Errorf("stats missing stop: %s", out)
 	}
 }
+
+func BenchmarkPostToolUseE2E(b *testing.B) {
+	home := b.TempDir()
+	project := b.TempDir()
+	exec.Command("git", "-C", project, "init").Run()
+	exec.Command("git", "-C", project, "config", "user.email", "b@b.com").Run()
+	exec.Command("git", "-C", project, "config", "user.name", "B").Run()
+	env := append(os.Environ(), "HOME="+home)
+	initCmd := exec.Command(binaryPath, "init", "--yes")
+	initCmd.Dir = project
+	initCmd.Env = env
+	initCmd.Run()
+
+	sessPayload := `{"session_id":"bench-sess","transcript_path":"/tmp/t","cwd":"` + project + `","hook_event_name":"SessionStart","source":"human","model":"claude-opus-4-7"}`
+	sc := exec.Command(binaryPath, "hook", "session-start")
+	sc.Dir = project
+	sc.Env = env
+	sc.Stdin = strings.NewReader(sessPayload)
+	sc.Run()
+
+	ptuPayload := `{"session_id":"bench-sess","transcript_path":"/tmp/t","cwd":"` + project + `","hook_event_name":"PostToolUse","tool_name":"Write","tool_use_id":"t1","tool_input":{"file_path":"` + project + `/foo.go","content":"package main\n"}}`
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		cmd := exec.Command(binaryPath, "hook", "post-tool-use")
+		cmd.Dir = project
+		cmd.Env = env
+		cmd.Stdin = strings.NewReader(ptuPayload)
+		cmd.Run()
+	}
+}
