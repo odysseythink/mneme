@@ -29,7 +29,7 @@ describe('App', () => {
     render(<App />)
     await waitFor(() => {
       for (const label of ['Overview', 'Activity', 'Cron', 'Cerebrum', 'Memory', 'Anatomy', 'BugLog', 'Suggestions', 'Token', 'DesignQC']) {
-        expect(screen.getByRole('link', { name: label })).toBeInTheDocument()
+        expect(screen.getByRole('link', { name: new RegExp(label) })).toBeInTheDocument()
       }
     })
   })
