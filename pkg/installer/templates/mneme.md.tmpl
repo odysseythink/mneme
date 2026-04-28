@@ -1,0 +1,40 @@
+<!-- managed by mneme — to update: mneme update -->
+<!-- user customizations between mneme:user-section fences are preserved -->
+
+# mneme operational guide
+
+This file tells Claude Code how to use mneme in **this** project. State directory: `.mneme/`.
+
+## When to use which tool
+
+| Need | Tool |
+|---|---|
+| Find code by meaning | MCP `search_codebase` |
+| Index a fresh repo | MCP `index_codebase` |
+| See file structure | MCP `describe_codebase` (reads `anatomy.md`) |
+| Check coding rules | MCP `get_project_rules` (reads `cerebrum.json`) |
+| Avoid past bugs | MCP `find_similar_bugs` (reads `buglog.json`) |
+
+## State files
+
+- `.mneme/anatomy.md` — file map. Refresh: `mneme scan`.
+- `.mneme/cerebrum.json` — coding rules. Manage: `mneme cerebrum add/list/remove`.
+- `.mneme/buglog.json` — past bugs. Manage: `mneme buglog add/list/search`.
+- `.mneme/identity.md` — project facts (auto-generated).
+
+## Commands
+
+```
+mneme status          # health snapshot
+mneme scan            # rebuild anatomy.md
+mneme scan --check    # verify anatomy.md matches filesystem
+mneme stats           # hook + memory stats
+mneme update          # sync templates from latest mneme binary
+mneme update --binary # download latest binary from GitHub Releases
+mneme restore         # restore from backup
+mneme bug search <q>  # search buglog
+```
+
+<!-- mneme:user-section BEGIN -->
+<!-- Add project-specific guidance here. mneme update will preserve this block. -->
+<!-- mneme:user-section END -->
