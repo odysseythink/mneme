@@ -3,3 +3,5 @@ bin/
 
 web/node_modules/
 web/.vite/
+
+.superpowers/
