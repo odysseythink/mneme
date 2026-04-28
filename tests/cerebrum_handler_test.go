@@ -21,6 +21,7 @@ func TestCerebrumLearnHandlerEnqueues(t *testing.T) {
 	root := filepath.Join(tmp, "proj")
 	os.MkdirAll(filepath.Join(root, ".mneme"), 0755)
 	id, _ := state.ReadOrCreateLocalID(root)
+	os.MkdirAll(state.GlobalProjectDir(id), 0755)
 	os.WriteFile(filepath.Join(state.GlobalProjectDir(id), "origin"), []byte(root+"\n"), 0644)
 
 	transcript := filepath.Join(tmp, "english.jsonl")
