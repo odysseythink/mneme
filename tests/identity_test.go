@@ -66,3 +66,48 @@ func TestWriteIdentityMD(t *testing.T) {
 		t.Errorf("identity.md missing language: %q", s)
 	}
 }
+
+func TestWriteMnemeMD(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
+
+	if err := installer.WriteMnemeMD(dir); err != nil {
+		t.Fatalf("WriteMnemeMD: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, ".mneme", "mneme.md"))
+	if err != nil {
+		t.Fatalf("read mneme.md: %v", err)
+	}
+	s := string(data)
+	if !strings.Contains(s, "mneme operational guide") {
+		t.Errorf("mneme.md missing header")
+	}
+	if !strings.Contains(s, "<!-- mneme:user-section BEGIN -->") {
+		t.Errorf("mneme.md missing user-section fence")
+	}
+}
+
+func TestWriteMnemeMDPreservesUserSection(t *testing.T) {
+	dir := t.TempDir()
+	mneme := filepath.Join(dir, ".mneme")
+	os.MkdirAll(mneme, 0755)
+	original := `before
+<!-- mneme:user-section BEGIN -->
+my custom guidance
+keep this verbatim
+<!-- mneme:user-section END -->
+after`
+	os.WriteFile(filepath.Join(mneme, "mneme.md"), []byte(original), 0644)
+
+	if err := installer.WriteMnemeMD(dir); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(filepath.Join(mneme, "mneme.md"))
+	s := string(data)
+	if !strings.Contains(s, "my custom guidance") {
+		t.Errorf("user section dropped: %q", s)
+	}
+	if !strings.Contains(s, "keep this verbatim") {
+		t.Errorf("user section partially dropped: %q", s)
+	}
+}
