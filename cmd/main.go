@@ -35,6 +35,8 @@ func main() {
 		dispatchBuglog(os.Args[2:])
 	case "memory":
 		dispatchMemory(os.Args[2:])
+	case "restore":
+		dispatchRestore(os.Args[2:])
 	case "update":
 		dispatchUpdate(os.Args[2:])
 	case "version":
