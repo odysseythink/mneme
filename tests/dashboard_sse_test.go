@@ -57,3 +57,34 @@ func TestSSE_DeliversEvents(t *testing.T) {
 	}
 	t.Fatal("did not receive ping.test event over SSE")
 }
+
+func TestEventsPublish_UnixOnly(t *testing.T) {
+	home := t.TempDir()
+	bus, _ := events.NewBus(home, &stubLogger{})
+	defer bus.Close()
+	mux := daemon.NewMux(daemon.RouteDeps{Log: &stubLogger{}, Home: home, Bus: bus})
+
+	body := strings.NewReader(`{"type":"hook.fired","project_id":"abc","data":{"hook":"x"}}`)
+	req := httptest.NewRequest("POST", "/events/publish", body)
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(daemon.WithTransport(req.Context(), daemon.TransportTCP))
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("TCP /events/publish: got %d, want 403", rec.Code)
+	}
+
+	body2 := strings.NewReader(`{"type":"hook.fired","project_id":"abc","data":{"hook":"x"}}`)
+	req2 := httptest.NewRequest("POST", "/events/publish", body2)
+	req2.Header.Set("Content-Type", "application/json")
+	req2 = req2.WithContext(daemon.WithTransport(req2.Context(), daemon.TransportUnix))
+	rec2 := httptest.NewRecorder()
+	mux.ServeHTTP(rec2, req2)
+	if rec2.Code != http.StatusNoContent {
+		t.Errorf("Unix /events/publish: got %d body=%s", rec2.Code, rec2.Body.String())
+	}
+
+	if got := bus.Tail(10, 0); len(got) != 1 {
+		t.Errorf("bus.Tail after publish: got %d events, want 1", len(got))
+	}
+}
