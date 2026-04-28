@@ -63,6 +63,8 @@ func NewMux(deps RouteDeps) http.Handler {
 	mux.Handle("/cerebrum/reject", dashboard.CerebrumRejectHandler(deps.Bus))
 	mux.Handle("/api/memory", dashboard.MemoryHandler())
 	mux.Handle("/api/anatomy", dashboard.AnatomyHandler())
+	mux.Handle("/api/buglog", dashboard.BugLogHandler())
+	mux.Handle("/buglog/delete", dashboard.BugLogDeleteHandler(deps.Bus))
 	dashboard.Mount(mux, dashboard.Deps{})
 	return mux
 }
