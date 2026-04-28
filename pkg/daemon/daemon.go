@@ -114,6 +114,7 @@ func Run(ctx context.Context, opt RunOptions) error {
 		return fmt.Errorf("event bus: %w", err)
 	}
 	defer bus.Close()
+	sched.SetBus(bus)
 
 	startedAt := time.Now().Unix()
 	mux := NewMux(RouteDeps{
