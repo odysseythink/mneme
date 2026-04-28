@@ -124,6 +124,19 @@ func (b *Bus) Tail(limit int, since int64) []Event {
 	return out
 }
 
+// TailFiltered returns up to limit events with TS > since that match f, newest-first.
+// It overshoots on Tail to account for events filtered out.
+func (b *Bus) TailFiltered(limit int, since int64, f Filter) []Event {
+	all := b.Tail(limit*4, since) // overshoot to leave room for filter
+	out := make([]Event, 0, limit)
+	for _, e := range all {
+		if f.Match(e) && len(out) < limit {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
 func mergeKey(e Event) string {
 	return fmt.Sprintf("%d|%s|%s", e.TS, e.Type, e.ProjectID)
 }

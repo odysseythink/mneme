@@ -106,3 +106,20 @@ func tss(es []events.Event) []int64 {
 	}
 	return out
 }
+
+func TestBus_TailFilters(t *testing.T) {
+	bus, _ := events.NewBus(t.TempDir(), &stubLogger{})
+	defer bus.Close()
+	bus.Publish(events.Event{TS: 1, Type: "a", ProjectID: "p1"})
+	bus.Publish(events.Event{TS: 2, Type: "b", ProjectID: "p1"})
+	bus.Publish(events.Event{TS: 3, Type: "a", ProjectID: "p2"})
+
+	got := bus.TailFiltered(10, 0, events.Filter{Types: []string{"a"}})
+	if len(got) != 2 {
+		t.Errorf("Filter Types=a: got %d, want 2", len(got))
+	}
+	got = bus.TailFiltered(10, 0, events.Filter{ProjectID: "p1"})
+	if len(got) != 2 {
+		t.Errorf("Filter ProjectID=p1: got %d, want 2", len(got))
+	}
+}
