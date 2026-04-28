@@ -3,6 +3,8 @@ import { useFetch } from '../hooks/useFetch'
 import { useSSE } from '../hooks/useSSE'
 import { getAnatomy } from '../api/anatomy'
 import { useActiveProject } from '../hooks/useActiveProject'
+import { PageHead } from '../components/PageHead'
+import { Empty, Skeleton, Pill, Input, Kbd } from '../components/primitives'
 
 export function Anatomy(): JSX.Element {
   const { active } = useActiveProject()
@@ -12,9 +14,30 @@ export function Anatomy(): JSX.Element {
   const [filter, setFilter] = useState('')
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
-  if (!active) return <div className="text-gray-500">No project selected.</div>
-  if (error) return <div className="text-red-700">failed to load: {error.message}</div>
-  if (!data) return <div className="text-gray-500">loading…</div>
+  if (!active) {
+    return (
+      <>
+        <PageHead title="Anatomy" />
+        <Empty title="No project selected" hint="Pick one in the sidebar." />
+      </>
+    )
+  }
+  if (error) {
+    return (
+      <>
+        <PageHead title="Anatomy" />
+        <Empty title={`failed to load: ${error.message}`} />
+      </>
+    )
+  }
+  if (!data) {
+    return (
+      <>
+        <PageHead title="Anatomy" />
+        <Skeleton rows={6} />
+      </>
+    )
+  }
 
   const needle = filter.trim().toLowerCase()
   const dirs = needle === '' ? data.directories : data.directories
@@ -29,37 +52,81 @@ export function Anatomy(): JSX.Element {
     })
   }
 
+  const totalFiles = data.directories.reduce((acc, d) => acc + d.files.length, 0)
+
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">anatomy</h1>
-      <div className="text-xs text-gray-500">generated {data.generated_at || '(never)'}</div>
-      <input
+    <>
+      <PageHead
+        title="Anatomy"
+        meta={`${dirs.length} dir${dirs.length === 1 ? '' : 's'} · ${totalFiles} files · generated ${data.generated_at || '(never)'}`}
+      />
+      <Input
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
-        placeholder="filter by filename…"
-        className="w-full rounded border px-3 py-2 text-sm"
+        placeholder="Filter by filename…"
+        style={{ width: '100%', maxWidth: 360 }}
       />
       {dirs.length === 0 ? (
-        <div className="text-gray-500">no files {needle && 'match'}</div>
+        <Empty
+          icon="∅"
+          title={needle ? `No files match "${filter}"` : 'No anatomy map'}
+          hint={needle ? undefined : <>Run <Kbd>mneme scan</Kbd> to generate one.</>}
+        />
       ) : (
-        <div className="flex flex-col gap-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {dirs.map(d => {
             const isCollapsed = collapsed.has(d.path)
             return (
-              <div key={d.path} className="rounded border bg-white">
+              <div
+                key={d.path}
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-3)',
+                  overflow: 'hidden',
+                }}
+              >
                 <button
-                  className="w-full text-left px-3 py-2 font-medium border-b bg-gray-50 hover:bg-gray-100"
                   onClick={() => toggle(d.path)}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '8px 12px',
+                    fontWeight: 500,
+                    fontSize: 12,
+                    background: 'var(--bg-raised)',
+                    color: 'var(--text-strong)',
+                    border: 'none',
+                    borderBottom: isCollapsed ? 'none' : '1px solid var(--border-default)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
                 >
-                  {isCollapsed ? '▶' : '▼'} {d.path}/ ({d.files.length})
+                  <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>{isCollapsed ? '▶' : '▼'}</span>
+                  <span className="mono">{d.path}/</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 10, marginLeft: 'auto' }}>
+                    {d.files.length} file{d.files.length === 1 ? '' : 's'}
+                  </span>
                 </button>
                 {!isCollapsed && (
-                  <ul>
-                    {d.files.map(f => (
-                      <li key={f.name} className="px-3 py-2 border-b last:border-b-0 text-sm flex gap-3">
-                        <span className="font-mono">{f.name}</span>
-                        <span className="text-xs bg-gray-100 rounded px-1 py-0.5 self-start shrink-0">{f.est_tokens}t</span>
-                        <span className="text-gray-700 flex-1">{f.description}</span>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {d.files.map((f, i) => (
+                      <li
+                        key={f.name}
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: 11,
+                          display: 'flex',
+                          gap: 12,
+                          alignItems: 'center',
+                          borderBottom: i === d.files.length - 1 ? 'none' : '1px solid color-mix(in srgb, var(--border-default) 40%, transparent)',
+                        }}
+                      >
+                        <span className="mono" style={{ color: 'var(--text-body)' }}>{f.name}</span>
+                        <Pill variant="neutral">{f.est_tokens}t</Pill>
+                        <span style={{ color: 'var(--text-muted)', flex: 1, fontSize: 11 }}>{f.description}</span>
                       </li>
                     ))}
                   </ul>
@@ -69,6 +136,6 @@ export function Anatomy(): JSX.Element {
           })}
         </div>
       )}
-    </div>
+    </>
   )
 }
