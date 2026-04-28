@@ -77,6 +77,26 @@ func (c *Client) CronRetry(ctx context.Context, name string) error {
 	return c.do(ctx, "POST", "/cron/retry", map[string]string{"name": name}, nil)
 }
 
+// PublishEvent posts an event to the daemon's /events/publish endpoint.
+// Intended for hook subprocesses. Returns nil silently if data marshalling fails
+// (so a hook never blocks Claude on a serialization bug).
+func (c *Client) PublishEvent(ctx context.Context, eventType, projectID string, data interface{}) error {
+	var raw json.RawMessage
+	if data != nil {
+		b, err := json.Marshal(data)
+		if err != nil {
+			return nil
+		}
+		raw = b
+	}
+	body := map[string]interface{}{
+		"type":       eventType,
+		"project_id": projectID,
+		"data":       raw,
+	}
+	return c.do(ctx, "POST", "/events/publish", body, nil)
+}
+
 func (c *Client) do(ctx context.Context, method, path string, body, out interface{}) error {
 	var buf io.Reader
 	if body != nil {
