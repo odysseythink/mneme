@@ -8,9 +8,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ranwei/claude-context/pkg/hook"
-	"github.com/ranwei/claude-context/pkg/match"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/hook"
+	"github.com/ranwei/mneme/pkg/match"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func runPreWrite(stdin io.Reader) {
@@ -90,7 +90,7 @@ func runPreWrite(stdin io.Reader) {
 	}
 
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "⚡ claude-context: ⚠️ %d rule(s)/match(es):\n", len(warns))
+	fmt.Fprintf(&sb, "⚡ mneme: ⚠️ %d rule(s)/match(es):\n", len(warns))
 	for _, w := range warns {
 		if w.was != "" {
 			fmt.Fprintf(&sb, "  • [%s] %s (line %d)\n    was: %s\n", w.source, w.msg, w.line, w.was)

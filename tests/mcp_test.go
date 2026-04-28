@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	ctxpkg "github.com/ranwei/claude-context/pkg/context"
-	"github.com/ranwei/claude-context/pkg/mcp"
+	ctxpkg "github.com/ranwei/mneme/pkg/context"
+	"github.com/ranwei/mneme/pkg/mcp"
 )
 
 func TestMCPServerInit(t *testing.T) {

@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ranwei/claude-context/pkg/scanner"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/scanner"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func dispatchScan(args []string) {
@@ -19,8 +19,8 @@ func dispatchScan(args []string) {
 
 	cwd, _ := os.Getwd()
 	root, _ := resolveInitProjectRoot(cwd)
-	if _, err := os.Stat(filepath.Join(root, ".claude-context")); err != nil {
-		fmt.Fprintln(os.Stderr, "scan: project not initialized (run: claude-context init)")
+	if _, err := os.Stat(filepath.Join(root, ".mneme")); err != nil {
+		fmt.Fprintln(os.Stderr, "scan: project not initialized (run: mneme init)")
 		os.Exit(1)
 	}
 
@@ -62,7 +62,7 @@ func dispatchScan(args []string) {
 		}
 	}
 
-	anatomyPath := filepath.Join(root, ".claude-context", "anatomy.md")
+	anatomyPath := filepath.Join(root, ".mneme", "anatomy.md")
 	if err := state.WriteAnatomy(root, entries); err != nil {
 		fmt.Fprintln(os.Stderr, "scan: write anatomy:", err)
 		os.Exit(1)

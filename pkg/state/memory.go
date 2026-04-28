@@ -23,20 +23,20 @@ type MemoryRow struct {
 	Summary       string
 }
 
-// AppendMemoryRow appends a session summary row to ~/.claude/claude-context-memory.md.
+// AppendMemoryRow appends a session summary row to ~/.claude/mneme-memory.md.
 func AppendMemoryRow(homeDir string, row MemoryRow) error {
 	dir := filepath.Join(homeDir, ".claude")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
-	lockPath := filepath.Join(dir, "claude-context-memory.lock")
+	lockPath := filepath.Join(dir, "mneme-memory.lock")
 	release, err := AcquireLock(lockPath, 1*time.Second)
 	if err != nil {
 		return err
 	}
 	defer release()
 
-	memPath := filepath.Join(dir, "claude-context-memory.md")
+	memPath := filepath.Join(dir, "mneme-memory.md")
 	existing, err := os.ReadFile(memPath)
 	if err != nil && !os.IsNotExist(err) {
 		return err
@@ -46,17 +46,17 @@ func AppendMemoryRow(homeDir string, row MemoryRow) error {
 
 	var content string
 	if len(existing) == 0 {
-		content = "<!-- claude-context memory v1 -->\n\n" + rowText
+		content = "<!-- mneme memory v1 -->\n\n" + rowText
 	} else {
 		content = string(existing) + "\n" + rowText
 	}
 	return AtomicWrite(memPath, []byte(content))
 }
 
-// ReadMemory parses ~/.claude/claude-context-memory.md into rows.
+// ReadMemory parses ~/.claude/mneme-memory.md into rows.
 // Returns nil, nil if the file does not exist.
 func ReadMemory(homeDir string) ([]MemoryRow, error) {
-	path := filepath.Join(homeDir, ".claude", "claude-context-memory.md")
+	path := filepath.Join(homeDir, ".claude", "mneme-memory.md")
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		return nil, nil

@@ -8,17 +8,17 @@ import (
 const version = "0.1.0-m4b"
 
 func printTopUsage() {
-	fmt.Fprintln(os.Stderr, `claude-context — Claude Code context management
+	fmt.Fprintln(os.Stderr, `mneme — Claude Code context management
 
 Usage:
-  claude-context                   start MCP server (for claude mcp add)
-  claude-context hook <event>      handle a Claude Code hook event
-  claude-context init [flags]      install hooks and scaffolding
-  claude-context stats             show ledger counters for current project
-  claude-context scan              scan project files and update anatomy map
-  claude-context cerebrum <cmd>    manage project coding rules
-  claude-context buglog <cmd>      manage per-project bug history
-  claude-context version           print version
+  mneme                   start MCP server (for claude mcp add)
+  mneme hook <event>      handle a Claude Code hook event
+  mneme init [flags]      install hooks and scaffolding
+  mneme stats             show ledger counters for current project
+  mneme scan              scan project files and update anatomy map
+  mneme cerebrum <cmd>    manage project coding rules
+  mneme buglog <cmd>      manage per-project bug history
+  mneme version           print version
 
 cerebrum commands:
   cerebrum add [--pattern P] [--message M] [--comment C]
@@ -37,5 +37,5 @@ init flags:
   --project     write to <project>/.claude/settings.json
   --local       write to <project>/.claude/settings.local.json
   --no-scan     skip anatomy scan on init
-  --uninstall   remove all claude-context managed entries`)
+  --uninstall   remove all mneme managed entries`)
 }

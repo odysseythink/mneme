@@ -4,7 +4,7 @@
 # Invoked as: exit-n.sh <code> [stderr-message]
 set -euo pipefail
 N="${1:-0}"
-MSG="${2:-claude-context-m0 probe stderr line}"
+MSG="${2:-mneme-m0 probe stderr line}"
 cat > /dev/null
 echo "$MSG" >&2
 exit "$N"

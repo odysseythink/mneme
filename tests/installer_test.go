@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/installer"
+	"github.com/ranwei/mneme/pkg/installer"
 )
 
 func TestScaffoldProject(t *testing.T) {
@@ -21,14 +21,14 @@ func TestScaffoldProject(t *testing.T) {
 		t.Errorf("expected UUID length 36, got %d (val=%q)", len(id), id)
 	}
 
-	if _, err := os.Stat(filepath.Join(dir, ".claude-context")); err != nil {
-		t.Error(".claude-context/ not created")
+	if _, err := os.Stat(filepath.Join(dir, ".mneme")); err != nil {
+		t.Error(".mneme/ not created")
 	}
-	gi, _ := os.ReadFile(filepath.Join(dir, ".claude-context", ".gitignore"))
+	gi, _ := os.ReadFile(filepath.Join(dir, ".mneme", ".gitignore"))
 	if !strings.Contains(string(gi), "_session.json") {
 		t.Errorf(".gitignore missing _session.json, got: %q", string(gi))
 	}
-	if _, err := os.Stat(filepath.Join(dir, ".claude-context", ".local-id")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, ".mneme", ".local-id")); err != nil {
 		t.Error(".local-id not created")
 	}
 }
@@ -49,7 +49,7 @@ func TestMergeEmptySettings(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "settings.json")
 
-	err := installer.MergeHooks(path, "/usr/local/bin/claude-context")
+	err := installer.MergeHooks(path, "/usr/local/bin/mneme")
 	if err != nil {
 		t.Fatalf("MergeHooks: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestMergeExistingUserHookPreserved(t *testing.T) {
 	existing := `{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"my-logger"}]}]}}`
 	os.WriteFile(path, []byte(existing), 0644)
 
-	installer.MergeHooks(path, "/usr/local/bin/claude-context")
+	installer.MergeHooks(path, "/usr/local/bin/mneme")
 
 	data, _ := os.ReadFile(path)
 	if !strings.Contains(string(data), "my-logger") {
@@ -99,15 +99,15 @@ func TestMergeUpgradeIdempotent(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "settings.json")
 
-	installer.MergeHooks(path, "/old/claude-context")
-	installer.MergeHooks(path, "/new/claude-context")
+	installer.MergeHooks(path, "/old/mneme")
+	installer.MergeHooks(path, "/new/mneme")
 
 	data, _ := os.ReadFile(path)
 	if strings.Count(string(data), "hook pre-read") != 1 {
 		t.Errorf("expected exactly 1 pre-read entry after upgrade, count=%d, data=%s",
 			strings.Count(string(data), "hook pre-read"), data)
 	}
-	if !strings.Contains(string(data), "/new/claude-context") {
+	if !strings.Contains(string(data), "/new/mneme") {
 		t.Error("expected new binary path after upgrade")
 	}
 }
@@ -116,7 +116,7 @@ func TestUninstallByMarker(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "settings.json")
 
-	installer.MergeHooks(path, "/usr/local/bin/claude-context")
+	installer.MergeHooks(path, "/usr/local/bin/mneme")
 	installer.UninstallHooks(path)
 
 	data, _ := os.ReadFile(path)
@@ -129,7 +129,7 @@ func TestUninstallEmptyHooksKeyRemoved(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "settings.json")
 
-	installer.MergeHooks(path, "/usr/local/bin/claude-context")
+	installer.MergeHooks(path, "/usr/local/bin/mneme")
 	installer.UninstallHooks(path)
 
 	data, _ := os.ReadFile(path)
@@ -147,7 +147,7 @@ func TestUninstallPreservesUserHooks(t *testing.T) {
 	existing := `{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"my-logger"}]}]}}`
 	os.WriteFile(path, []byte(existing), 0644)
 
-	installer.MergeHooks(path, "/usr/local/bin/claude-context")
+	installer.MergeHooks(path, "/usr/local/bin/mneme")
 	installer.UninstallHooks(path)
 
 	data, _ := os.ReadFile(path)
@@ -167,15 +167,15 @@ func TestRulesMDWrite(t *testing.T) {
 	if len(data) == 0 {
 		t.Error("rules.md is empty")
 	}
-	if !strings.Contains(string(data), "claude-context") {
-		t.Error("rules.md should mention claude-context")
+	if !strings.Contains(string(data), "mneme") {
+		t.Error("rules.md should mention mneme")
 	}
 }
 
 func TestInjectCLAUDEMD(t *testing.T) {
 	dir := t.TempDir()
 	mdPath := filepath.Join(dir, "CLAUDE.md")
-	rulesPath := filepath.Join(dir, "claude-context-rules.md")
+	rulesPath := filepath.Join(dir, "mneme-rules.md")
 
 	os.WriteFile(mdPath, []byte("# existing\n"), 0644)
 
@@ -184,10 +184,10 @@ func TestInjectCLAUDEMD(t *testing.T) {
 	}
 
 	data, _ := os.ReadFile(mdPath)
-	if !strings.Contains(string(data), "claude-context-managed BEGIN") {
+	if !strings.Contains(string(data), "mneme-managed BEGIN") {
 		t.Error("missing BEGIN marker")
 	}
-	if !strings.Contains(string(data), "claude-context-managed END") {
+	if !strings.Contains(string(data), "mneme-managed END") {
 		t.Error("missing END marker")
 	}
 	if !strings.Contains(string(data), "@") {
@@ -212,7 +212,7 @@ func TestInjectCLAUDEMDIdempotent(t *testing.T) {
 	}
 
 	data, _ := os.ReadFile(mdPath)
-	if strings.Count(string(data), "claude-context-managed BEGIN") != 1 {
+	if strings.Count(string(data), "mneme-managed BEGIN") != 1 {
 		t.Errorf("expected exactly 1 BEGIN marker, got: %s", data)
 	}
 }
@@ -227,7 +227,7 @@ func TestRemoveCLAUDEMDBlock(t *testing.T) {
 	installer.RemoveCLAUDEMDBlock(mdPath)
 
 	data, _ := os.ReadFile(mdPath)
-	if strings.Contains(string(data), "claude-context-managed") {
+	if strings.Contains(string(data), "mneme-managed") {
 		t.Errorf("markers still present after removal: %s", data)
 	}
 	if !strings.Contains(string(data), "# existing") {

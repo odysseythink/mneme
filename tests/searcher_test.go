@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg"
-	ctxpkg "github.com/ranwei/claude-context/pkg/context"
-	"github.com/ranwei/claude-context/pkg/embedding"
+	"github.com/ranwei/mneme/pkg"
+	ctxpkg "github.com/ranwei/mneme/pkg/context"
+	"github.com/ranwei/mneme/pkg/embedding"
 )
 
 type MockSearchStore struct{}

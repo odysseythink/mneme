@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/odysseythink/mlog"
-	"github.com/ranwei/claude-context/pkg"
-	"github.com/ranwei/claude-context/pkg/embedding"
-	"github.com/ranwei/claude-context/pkg/splitter"
+	"github.com/ranwei/mneme/pkg"
+	"github.com/ranwei/mneme/pkg/embedding"
+	"github.com/ranwei/mneme/pkg/splitter"
 )
 
 type Indexer struct {

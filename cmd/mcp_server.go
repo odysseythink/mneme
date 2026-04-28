@@ -6,13 +6,13 @@ import (
 	"os"
 
 	"github.com/odysseythink/mlog"
-	"github.com/ranwei/claude-context/pkg"
-	"github.com/ranwei/claude-context/pkg/config"
-	ctxpkg "github.com/ranwei/claude-context/pkg/context"
-	"github.com/ranwei/claude-context/pkg/embedding"
-	"github.com/ranwei/claude-context/pkg/mcp"
-	"github.com/ranwei/claude-context/pkg/splitter"
-	"github.com/ranwei/claude-context/pkg/vectordb"
+	"github.com/ranwei/mneme/pkg"
+	"github.com/ranwei/mneme/pkg/config"
+	ctxpkg "github.com/ranwei/mneme/pkg/context"
+	"github.com/ranwei/mneme/pkg/embedding"
+	"github.com/ranwei/mneme/pkg/mcp"
+	"github.com/ranwei/mneme/pkg/splitter"
+	"github.com/ranwei/mneme/pkg/vectordb"
 )
 
 func initLogger(logLevel string) {
@@ -28,7 +28,7 @@ func runMCPServer() {
 
 	stat, _ := os.Stdin.Stat()
 	if (stat.Mode() & os.ModeCharDevice) != 0 {
-		fmt.Println("Claude Context MCP Server")
+		fmt.Println("Mneme MCP Server")
 		fmt.Println("Usage: Set EMBEDDING_API_KEY and run via Claude Code MCP")
 		fmt.Printf("Provider: %s, Model: %s\n", cfg.EmbeddingProvider, cfg.EmbeddingModel)
 		os.Exit(0)
@@ -73,10 +73,10 @@ func runMCPServer() {
 		if cfg.ConfigSource != "" {
 			configSrc = cfg.ConfigSource
 		}
-		mlog.Infof("Claude Context MCP Server started: provider=%s model=%s backend=%s key=%s config=%s",
+		mlog.Infof("Mneme MCP Server started: provider=%s model=%s backend=%s key=%s config=%s",
 			cfg.EmbeddingProvider, cfg.EmbeddingModel, cfg.DBBackend, keyHint, configSrc)
 	} else {
-		mlog.Infof("Claude Context MCP Server started: EMBEDDING_API_KEY not set — embedding tools unavailable; local-state tools active")
+		mlog.Infof("Mneme MCP Server started: EMBEDDING_API_KEY not set — embedding tools unavailable; local-state tools active")
 	}
 
 	server := mcp.NewMCPServer(indexer, searcher, embeddingClient)

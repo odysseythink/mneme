@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/hook"
-	"github.com/ranwei/claude-context/pkg/scanner"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/hook"
+	"github.com/ranwei/mneme/pkg/scanner"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func BenchmarkParseEvent(b *testing.B) {
@@ -26,7 +26,7 @@ func BenchmarkParseEvent(b *testing.B) {
 
 func BenchmarkLedgerIncrement(b *testing.B) {
 	dir := b.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		state.IncrementSafe(dir, "hook_fired.pre-read")
@@ -50,7 +50,7 @@ func BenchmarkScanProject(b *testing.B) {
 
 func BenchmarkReadAnatomy(b *testing.B) {
 	dir := b.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	entries := make([]state.AnatomyEntry, 50)
 	for i := range entries {

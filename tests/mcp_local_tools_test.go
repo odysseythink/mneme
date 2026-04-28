@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/mcp"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/mcp"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func newTestServer() *mcp.Server {
@@ -49,7 +49,7 @@ func TestServerEmbeddingToolsWithoutKey(t *testing.T) {
 func setupMCPProject(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	if err := os.MkdirAll(dir+"/.claude-context", 0755); err != nil {
+	if err := os.MkdirAll(dir+"/.mneme", 0755); err != nil {
 		t.Fatalf("setup: %v", err)
 	}
 	return dir
@@ -74,8 +74,8 @@ func TestDescribeCodebaseNoProject(t *testing.T) {
 	if !result.IsError {
 		t.Errorf("expected IsError=true for non-project cwd")
 	}
-	if !strings.Contains(result.Content[0].Text, "no claude-context project found") {
-		t.Errorf("expected 'no claude-context project found', got: %s", result.Content[0].Text)
+	if !strings.Contains(result.Content[0].Text, "no mneme project found") {
+		t.Errorf("expected 'no mneme project found', got: %s", result.Content[0].Text)
 	}
 }
 

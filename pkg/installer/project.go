@@ -4,15 +4,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 const gitignoreContent = "_session.json\n*.bak.*\n"
 
-// ScaffoldProject creates <projectRoot>/.claude-context/ with .gitignore and .local-id.
+// ScaffoldProject creates <projectRoot>/.mneme/ with .gitignore and .local-id.
 // Returns the project UUID. Idempotent.
 func ScaffoldProject(projectRoot string) (string, error) {
-	dir := filepath.Join(projectRoot, ".claude-context")
+	dir := filepath.Join(projectRoot, ".mneme")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", err
 	}

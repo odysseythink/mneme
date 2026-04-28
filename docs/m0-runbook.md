@@ -12,11 +12,11 @@ Step-by-step guide for executing the M0 spike against a real Claude Code session
 ## Phase 0 — Setup (1 minute)
 
 ```bash
-cd <go-claude-context project root>
+cd <go-mneme project root>
 bash scripts/hook-protocol-probe/setup-sandbox.sh
 ```
 
-**Expected output:** `✓ Sandbox at /tmp/claude-context-m0-sandbox/` and 5 other ✓ lines, ending with `NEXT STEPS:`.
+**Expected output:** `✓ Sandbox at /tmp/mneme-m0-sandbox/` and 5 other ✓ lines, ending with `NEXT STEPS:`.
 
 If anything is missing, stop and investigate.
 
@@ -28,7 +28,7 @@ This phase captures stdin payloads (R1), tests `_managed_by` field tolerance (R4
 
 ```bash
 # In a NEW terminal:
-cd /tmp/claude-context-m0-sandbox/
+cd /tmp/mneme-m0-sandbox/
 claude code
 ```
 
@@ -36,7 +36,7 @@ Starting Claude Code triggers `SessionStart`. After Claude is ready, **type thes
 
 | # | Prompt | Triggers | Expected dump location |
 |---|---|---|---|
-| 1 | `read README.md` | PreToolUse:Read | `/tmp/claude-context-m0/pre-read/` |
+| 1 | `read README.md` | PreToolUse:Read | `/tmp/mneme-m0/pre-read/` |
 | 2 | `read auth.go` | PreToolUse:Read (2nd sample) | same |
 | 3 | `create a file hello.txt with content 'hi'` | PreToolUse:Write + PostToolUse:Write | `pre-write/` + `post-write/` |
 | 4 | `edit hello.txt to say "hello world"` | PreToolUse:Edit + PostToolUse:Edit | same |
@@ -45,7 +45,7 @@ Starting Claude Code triggers `SessionStart`. After Claude is ready, **type thes
 | 7 | `/exit` | Stop | `stop/` |
 
 **For prompt #6 (R5):** record which passphrases Claude says it sees. The mapping:
-- `passphrase-tilde-abc123` ← imported via `@~/claude-context-m0-tilde-test.md`
+- `passphrase-tilde-abc123` ← imported via `@~/mneme-m0-tilde-test.md`
 - `passphrase-abs-def456` ← imported via `@/abs/path/...m0-test-abs.md`
 - `passphrase-rel-ghi789` ← imported via `@./.claude/m0-test-rel.md`
 
@@ -57,12 +57,12 @@ After `/exit`, list the dumps:
 
 ```bash
 # Back in your original terminal:
-ls -la /tmp/claude-context-m0/
-ls -la /tmp/claude-context-m0/pre-read/
-ls -la /tmp/claude-context-m0/pre-write/
-ls -la /tmp/claude-context-m0/post-write/
-ls -la /tmp/claude-context-m0/session-start/
-ls -la /tmp/claude-context-m0/stop/
+ls -la /tmp/mneme-m0/
+ls -la /tmp/mneme-m0/pre-read/
+ls -la /tmp/mneme-m0/pre-write/
+ls -la /tmp/mneme-m0/post-write/
+ls -la /tmp/mneme-m0/session-start/
+ls -la /tmp/mneme-m0/stop/
 ```
 
 **Paste the output of all 6 `ls` commands back to the conversation, plus the R5 passphrase findings, plus any R4 anomalies (Claude Code error messages, hook fire failures).**
@@ -80,7 +80,7 @@ bash scripts/hook-protocol-probe/swap-hook.sh exit-n.sh 0 "marker-zero"
 
 ```bash
 # In a NEW Claude Code session:
-cd /tmp/claude-context-m0-sandbox/
+cd /tmp/mneme-m0-sandbox/
 claude code
 > read README.md
 > /exit

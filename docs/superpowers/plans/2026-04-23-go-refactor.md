@@ -1,8 +1,8 @@
-# Claude Context Go Refactoring Implementation Plan
+# Mneme Go Refactoring Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Refactor TypeScript claude-context v0.1.7 into a single Go binary (core + MCP server) with embedded DuckDB and SiliconFlow/Qwen embeddings.
+**Goal:** Refactor TypeScript mneme v0.1.7 into a single Go binary (core + MCP server) with embedded DuckDB and SiliconFlow/Qwen embeddings.
 
 **Architecture:** Go-idiomatic three-layer design (MCP service → business logic → DuckDB data layer). All components compile into one binary with no external infrastructure dependencies.
 
@@ -13,7 +13,7 @@
 ## File Structure Overview
 
 ```
-go-claude-context/
+go-mneme/
 ├── cmd/mcp/
 │   └── main.go                         # MCP server binary entry point
 ├── pkg/
@@ -69,8 +69,8 @@ go-claude-context/
 - [ ] **Step 1: Initialize go.mod**
 
 ```bash
-cd /Users/ranwei/workspace/go_work/claude-context-research/go-claude-context
-go mod init github.com/ranwei/claude-context
+cd /Users/ranwei/workspace/go_work/mneme-research/go-mneme
+go mod init github.com/ranwei/mneme
 ```
 
 - [ ] **Step 2: Add third-party dependencies to go.mod**
@@ -214,7 +214,7 @@ func FromEnv() *Config {
 		EmbeddingAPIKey:  os.Getenv("EMBEDDING_API_KEY"),
 		EmbeddingProvider: getEnvOrDefault("EMBEDDING_PROVIDER", "siliconflow"),
 		EmbeddingModel:   getEnvOrDefault("EMBEDDING_MODEL", "BAAI/bge-large-zh-v1.5"),
-		DBPath:           getEnvOrDefault("DB_PATH", filepath.Join(homeDir, ".claude-context", "db.duckdb")),
+		DBPath:           getEnvOrDefault("DB_PATH", filepath.Join(homeDir, ".mneme", "db.duckdb")),
 		LogLevel:         getEnvOrDefault("LOG_LEVEL", "info"),
 	}
 }
@@ -254,8 +254,8 @@ import (
 	"context"
 	"os"
 	"testing"
-	"github.com/ranwei/claude-context/pkg"
-	"github.com/ranwei/claude-context/pkg/vectordb"
+	"github.com/ranwei/mneme/pkg"
+	"github.com/ranwei/mneme/pkg/vectordb"
 )
 
 func TestStoreInitialize(t *testing.T) {
@@ -334,7 +334,7 @@ import (
 	"path/filepath"
 
 	_ "github.com/marcboeker/go-duckdb"
-	"github.com/ranwei/claude-context/pkg"
+	"github.com/ranwei/mneme/pkg"
 )
 
 type DuckDBStore struct {
@@ -527,7 +527,7 @@ package tests
 
 import (
 	"testing"
-	"github.com/ranwei/claude-context/pkg/splitter"
+	"github.com/ranwei/mneme/pkg/splitter"
 )
 
 func TestSplitGoCode(t *testing.T) {
@@ -595,7 +595,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ranwei/claude-context/pkg"
+	"github.com/ranwei/mneme/pkg"
 	sitter "github.com/tree-sitter/go-tree-sitter"
 	"github.com/tree-sitter/go-tree-sitter/golang"
 )
@@ -744,7 +744,7 @@ package tests
 import (
 	"context"
 	"testing"
-	"github.com/ranwei/claude-context/pkg/embedding"
+	"github.com/ranwei/mneme/pkg/embedding"
 )
 
 func TestCachedClientCache(t *testing.T) {
@@ -808,7 +808,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/ranwei/claude-context/pkg"
+	"github.com/ranwei/mneme/pkg"
 )
 
 type CachedClient struct {
@@ -1037,7 +1037,7 @@ package tests
 import (
 	"context"
 	"testing"
-	"github.com/ranwei/claude-context/pkg/embedding"
+	"github.com/ranwei/mneme/pkg/embedding"
 )
 
 func TestSiliconFlowProviderInit(t *testing.T) {
@@ -1229,7 +1229,7 @@ package tests
 
 import (
 	"testing"
-	"github.com/ranwei/claude-context/pkg/embedding"
+	"github.com/ranwei/mneme/pkg/embedding"
 )
 
 func TestQwenProviderInit(t *testing.T) {
@@ -1275,10 +1275,10 @@ import (
 	"context"
 	"os"
 	"testing"
-	"github.com/ranwei/claude-context/pkg"
-	"github.com/ranwei/claude-context/pkg/context"
-	"github.com/ranwei/claude-context/pkg/embedding"
-	"github.com/ranwei/claude-context/pkg/vectordb"
+	"github.com/ranwei/mneme/pkg"
+	"github.com/ranwei/mneme/pkg/context"
+	"github.com/ranwei/mneme/pkg/embedding"
+	"github.com/ranwei/mneme/pkg/vectordb"
 )
 
 func TestIndexerIndex(t *testing.T) {
@@ -1337,9 +1337,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/ranwei/claude-context/pkg"
-	"github.com/ranwei/claude-context/pkg/embedding"
-	"github.com/ranwei/claude-context/pkg/splitter"
+	"github.com/ranwei/mneme/pkg"
+	"github.com/ranwei/mneme/pkg/embedding"
+	"github.com/ranwei/mneme/pkg/splitter"
 )
 
 type Indexer struct {
@@ -1506,9 +1506,9 @@ package tests
 import (
 	"context"
 	"testing"
-	"github.com/ranwei/claude-context/pkg"
-	ctxpkg "github.com/ranwei/claude-context/pkg/context"
-	"github.com/ranwei/claude-context/pkg/embedding"
+	"github.com/ranwei/mneme/pkg"
+	ctxpkg "github.com/ranwei/mneme/pkg/context"
+	"github.com/ranwei/mneme/pkg/embedding"
 )
 
 func TestSearcherSearch(t *testing.T) {
@@ -1556,8 +1556,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ranwei/claude-context/pkg"
-	"github.com/ranwei/claude-context/pkg/embedding"
+	"github.com/ranwei/mneme/pkg"
+	"github.com/ranwei/mneme/pkg/embedding"
 )
 
 type Searcher struct {
@@ -1731,7 +1731,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/ranwei/claude-context/pkg"
+	"github.com/ranwei/mneme/pkg"
 )
 
 type Server struct {
@@ -1886,8 +1886,8 @@ package tests
 
 import (
 	"testing"
-	"github.com/ranwei/claude-context/pkg/mcp"
-	ctxpkg "github.com/ranwei/claude-context/pkg/context"
+	"github.com/ranwei/mneme/pkg/mcp"
+	ctxpkg "github.com/ranwei/mneme/pkg/context"
 )
 
 func TestMCPServerInit(t *testing.T) {
@@ -1940,12 +1940,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/ranwei/claude-context/pkg/config"
-	ctxpkg "github.com/ranwei/claude-context/pkg/context"
-	"github.com/ranwei/claude-context/pkg/embedding"
-	"github.com/ranwei/claude-context/pkg/mcp"
-	"github.com/ranwei/claude-context/pkg/splitter"
-	"github.com/ranwei/claude-context/pkg/vectordb"
+	"github.com/ranwei/mneme/pkg/config"
+	ctxpkg "github.com/ranwei/mneme/pkg/context"
+	"github.com/ranwei/mneme/pkg/embedding"
+	"github.com/ranwei/mneme/pkg/mcp"
+	"github.com/ranwei/mneme/pkg/splitter"
+	"github.com/ranwei/mneme/pkg/vectordb"
 )
 
 func main() {
@@ -1987,7 +1987,7 @@ func main() {
 	// Create and start MCP server
 	server := mcp.NewMCPServer(indexer, searcher)
 
-	fmt.Fprintf(os.Stderr, "Claude Context MCP Server started\n")
+	fmt.Fprintf(os.Stderr, "Mneme MCP Server started\n")
 	fmt.Fprintf(os.Stderr, "Embedding Provider: %s\n", cfg.EmbeddingProvider)
 	fmt.Fprintf(os.Stderr, "Database: %s\n", cfg.DBPath)
 
@@ -2000,16 +2000,16 @@ func main() {
 - [ ] **Step 2: Build the binary**
 
 ```bash
-cd /Users/ranwei/workspace/go_work/claude-context-research/go-claude-context
-go build -o ./bin/claude-context ./cmd/mcp
+cd /Users/ranwei/workspace/go_work/mneme-research/go-mneme
+go build -o ./bin/mneme ./cmd/mcp
 ```
 
-Expected: Binary created at `./bin/claude-context`
+Expected: Binary created at `./bin/mneme`
 
 - [ ] **Step 3: Verify binary**
 
 ```bash
-file ./bin/claude-context
+file ./bin/mneme
 ```
 
 Expected: `Mach-O 64-bit executable` (or similar for your platform)
@@ -2039,10 +2039,10 @@ import (
 	"os"
 	"testing"
 
-	ctxpkg "github.com/ranwei/claude-context/pkg/context"
-	"github.com/ranwei/claude-context/pkg/embedding"
-	"github.com/ranwei/claude-context/pkg/splitter"
-	"github.com/ranwei/claude-context/pkg/vectordb"
+	ctxpkg "github.com/ranwei/mneme/pkg/context"
+	"github.com/ranwei/mneme/pkg/embedding"
+	"github.com/ranwei/mneme/pkg/splitter"
+	"github.com/ranwei/mneme/pkg/vectordb"
 )
 
 func TestEndToEndIndexAndSearch(t *testing.T) {
@@ -2115,7 +2115,7 @@ git commit -m "test: add end-to-end integration test"
 
 ```bash
 cat > README.md << 'EOF'
-# Claude Context - Go Edition
+# Mneme - Go Edition
 
 High-performance semantic code search for Claude Code, powered by Go and DuckDB.
 
@@ -2137,7 +2137,7 @@ High-performance semantic code search for Claude Code, powered by Go and DuckDB.
 ### Build
 
 ```bash
-go build -o claude-context ./cmd/mcp
+go build -o mneme ./cmd/mcp
 ```
 
 ### Configuration
@@ -2148,16 +2148,16 @@ Set environment variables:
 export EMBEDDING_API_KEY="your-api-key"
 export EMBEDDING_PROVIDER="siliconflow"  # or "qwen"
 export EMBEDDING_MODEL="BAAI/bge-large-zh-v1.5"
-export DB_PATH="$HOME/.claude-context/db.duckdb"
+export DB_PATH="$HOME/.mneme/db.duckdb"
 ```
 
 ### Register with Claude Code
 
 ```bash
-claude mcp add claude-context \
+claude mcp add mneme \
   -e EMBEDDING_API_KEY=$EMBEDDING_API_KEY \
   -e EMBEDDING_PROVIDER=$EMBEDDING_PROVIDER \
-  -- /path/to/claude-context
+  -- /path/to/mneme
 ```
 
 ## Usage
@@ -2187,7 +2187,7 @@ go test -v ./...
 Build with debug logging:
 
 ```bash
-LOG_LEVEL=debug ./claude-context
+LOG_LEVEL=debug ./mneme
 ```
 
 ## License
@@ -2207,8 +2207,8 @@ cat > docs/DEPLOYMENT.md << 'EOF'
 1. **Clone and build:**
    ```bash
    git clone <repo>
-   cd go-claude-context
-   go build -o bin/claude-context ./cmd/mcp
+   cd go-mneme
+   go build -o bin/mneme ./cmd/mcp
    ```
 
 2. **Set credentials:**
@@ -2219,7 +2219,7 @@ cat > docs/DEPLOYMENT.md << 'EOF'
 
 3. **Register with Claude Code:**
    ```bash
-   claude mcp add claude-context -- ./bin/claude-context
+   claude mcp add mneme -- ./bin/mneme
    ```
 
 ## Docker Deployment (Future)
@@ -2273,9 +2273,9 @@ git commit -m "docs: add README and deployment guide"
 - [ ] **Step 1: Clean build**
 
 ```bash
-cd /Users/ranwei/workspace/go_work/claude-context-research/go-claude-context
+cd /Users/ranwei/workspace/go_work/mneme-research/go-mneme
 go clean
-go build -o bin/claude-context ./cmd/mcp
+go build -o bin/mneme ./cmd/mcp
 ```
 
 Expected: Binary compiles without errors
@@ -2291,7 +2291,7 @@ Expected: All tests pass
 - [ ] **Step 3: Check binary size**
 
 ```bash
-ls -lh bin/claude-context
+ls -lh bin/mneme
 ```
 
 Expected: Single binary, likely 10-50MB depending on Go version and platform
@@ -2299,7 +2299,7 @@ Expected: Single binary, likely 10-50MB depending on Go version and platform
 - [ ] **Step 4: Verify binary works**
 
 ```bash
-./bin/claude-context --help 2>&1 || echo "Binary runs without error"
+./bin/mneme --help 2>&1 || echo "Binary runs without error"
 ```
 
 - [ ] **Step 5: Final commit**
@@ -2319,7 +2319,7 @@ git tag v0.1.0-go
 
 ## Acceptance Criteria Checklist
 
-- [ ] Single compiled binary at `bin/claude-context`
+- [ ] Single compiled binary at `bin/mneme`
 - [ ] All unit tests passing
 - [ ] Integration test passing
 - [ ] Supports SiliconFlow and Qwen embeddings

@@ -6,8 +6,8 @@ import (
 	"math"
 	"sort"
 
-	"github.com/ranwei/claude-context/pkg"
-	"github.com/ranwei/claude-context/pkg/embedding"
+	"github.com/ranwei/mneme/pkg"
+	"github.com/ranwei/mneme/pkg/embedding"
 )
 
 type Searcher struct {

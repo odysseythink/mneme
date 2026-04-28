@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func TestReadBuglogEmpty(t *testing.T) {
@@ -73,14 +73,14 @@ func TestWriteBuglogClear(t *testing.T) {
 	if len(entries) != 0 {
 		t.Errorf("expected 0 entries after clear, got %d", len(entries))
 	}
-	if _, err := os.Stat(filepath.Join(dir, ".claude-context", "buglog.json")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, ".mneme", "buglog.json")); err != nil {
 		t.Errorf("buglog.json should exist after WriteBuglog: %v", err)
 	}
 }
 
 func TestReadBuglogCorrupt(t *testing.T) {
 	dir := t.TempDir()
-	p := filepath.Join(dir, ".claude-context", "buglog.json")
+	p := filepath.Join(dir, ".mneme", "buglog.json")
 	os.MkdirAll(filepath.Dir(p), 0755)
 	os.WriteFile(p, []byte("{bad json"), 0644)
 

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/ranwei/claude-context/pkg"
+	"github.com/ranwei/mneme/pkg"
 )
 
 type CachedClient struct {

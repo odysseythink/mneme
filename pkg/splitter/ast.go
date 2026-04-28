@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ranwei/claude-context/pkg"
+	"github.com/ranwei/mneme/pkg"
 )
 
 type ASTSplitter struct{}

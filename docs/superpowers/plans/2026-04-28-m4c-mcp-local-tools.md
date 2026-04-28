@@ -32,7 +32,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/mcp"
+	"github.com/ranwei/mneme/pkg/mcp"
 )
 
 // newTestServer creates a Server with no embedding dependencies (nil indexer/searcher/embedding).
@@ -123,7 +123,7 @@ func runMCPServer() {
 
 	stat, _ := os.Stdin.Stat()
 	if (stat.Mode() & os.ModeCharDevice) != 0 {
-		fmt.Println("Claude Context MCP Server")
+		fmt.Println("Mneme MCP Server")
 		fmt.Println("Usage: Set EMBEDDING_API_KEY and run via Claude Code MCP")
 		fmt.Printf("Provider: %s, Model: %s\n", cfg.EmbeddingProvider, cfg.EmbeddingModel)
 		os.Exit(0)
@@ -168,10 +168,10 @@ func runMCPServer() {
 		if cfg.ConfigSource != "" {
 			configSrc = cfg.ConfigSource
 		}
-		mlog.Infof("Claude Context MCP Server started: provider=%s model=%s backend=%s key=%s config=%s",
+		mlog.Infof("Mneme MCP Server started: provider=%s model=%s backend=%s key=%s config=%s",
 			cfg.EmbeddingProvider, cfg.EmbeddingModel, cfg.DBBackend, keyHint, configSrc)
 	} else {
-		mlog.Infof("Claude Context MCP Server started: EMBEDDING_API_KEY not set — embedding tools unavailable; local-state tools active")
+		mlog.Infof("Mneme MCP Server started: EMBEDDING_API_KEY not set — embedding tools unavailable; local-state tools active")
 	}
 
 	server := mcp.NewMCPServer(indexer, searcher, embClient)
@@ -184,7 +184,7 @@ func runMCPServer() {
 - [ ] **Step 6: Build to verify no compile errors**
 
 ```bash
-go build -o ./bin/claude-context ./cmd
+go build -o ./bin/mneme ./cmd
 ```
 
 Expected: success.
@@ -218,12 +218,12 @@ git commit -m "feat(m4c): allow MCP server to start without embedding API key"
 Append after `TestServerEmbeddingToolsWithoutKey`:
 
 ```go
-// setupMCPProject creates a temp dir with a .claude-context/ subdirectory.
+// setupMCPProject creates a temp dir with a .mneme/ subdirectory.
 // state.FindProjectRoot will locate it via the walk-up fallback (no git needed).
 func setupMCPProject(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	if err := os.MkdirAll(dir+"/.claude-context", 0755); err != nil {
+	if err := os.MkdirAll(dir+"/.mneme", 0755); err != nil {
 		t.Fatalf("setup: %v", err)
 	}
 	return dir
@@ -244,15 +244,15 @@ func TestDescribeCodebaseNoCwd(t *testing.T) {
 
 func TestDescribeCodebaseNoProject(t *testing.T) {
 	s := newTestServer()
-	// t.TempDir() has no .claude-context/ and is not a git repo
+	// t.TempDir() has no .mneme/ and is not a git repo
 	result := toolsCall(t, s, "describe_codebase", map[string]interface{}{
 		"cwd": t.TempDir(),
 	})
 	if !result.IsError {
 		t.Errorf("expected IsError=true for non-project cwd")
 	}
-	if !strings.Contains(result.Content[0].Text, "no claude-context project found") {
-		t.Errorf("expected 'no claude-context project found', got: %s", result.Content[0].Text)
+	if !strings.Contains(result.Content[0].Text, "no mneme project found") {
+		t.Errorf("expected 'no mneme project found', got: %s", result.Content[0].Text)
 	}
 }
 
@@ -514,7 +514,7 @@ case "find_similar_bugs":
 - [ ] **Step 5: Build to verify it fails with "undefined" (methods not yet defined)**
 
 ```bash
-go build -o ./bin/claude-context ./cmd 2>&1
+go build -o ./bin/mneme ./cmd 2>&1
 ```
 
 Expected: compile error: `s.callDescribeCodebase undefined`.
@@ -533,8 +533,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ranwei/claude-context/pkg/match"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/match"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 type localArgs struct {
@@ -550,7 +550,7 @@ func (s *Server) callDescribeCodebase(_ context.Context, args json.RawMessage) i
 
 	root, ok := state.FindProjectRoot(a.Cwd)
 	if !ok {
-		return toolError(fmt.Sprintf("no claude-context project found at %s (run: claude-context init)", a.Cwd))
+		return toolError(fmt.Sprintf("no mneme project found at %s (run: mneme init)", a.Cwd))
 	}
 
 	var sb strings.Builder
@@ -559,7 +559,7 @@ func (s *Server) callDescribeCodebase(_ context.Context, args json.RawMessage) i
 	// Anatomy section
 	anatomy, _ := state.ReadAnatomy(root)
 	if len(anatomy) == 0 {
-		fmt.Fprintf(&sb, "\n(No anatomy map. Run: claude-context scan)\n")
+		fmt.Fprintf(&sb, "\n(No anatomy map. Run: mneme scan)\n")
 	} else {
 		entries := make([]state.AnatomyEntry, 0, len(anatomy))
 		for _, e := range anatomy {
@@ -637,12 +637,12 @@ func (s *Server) callGetProjectRules(_ context.Context, args json.RawMessage) in
 
 	root, ok := state.FindProjectRoot(a.Cwd)
 	if !ok {
-		return toolError(fmt.Sprintf("no claude-context project found at %s (run: claude-context init)", a.Cwd))
+		return toolError(fmt.Sprintf("no mneme project found at %s (run: mneme init)", a.Cwd))
 	}
 
 	rules, _ := state.ReadCerebrum(root)
 	if len(rules) == 0 {
-		return ToolCallResult{Content: []ToolContent{{Type: "text", Text: "No cerebrum rules. Run: claude-context cerebrum add"}}}
+		return ToolCallResult{Content: []ToolContent{{Type: "text", Text: "No cerebrum rules. Run: mneme cerebrum add"}}}
 	}
 
 	var sb strings.Builder
@@ -668,12 +668,12 @@ func (s *Server) callFindSimilarBugs(_ context.Context, args json.RawMessage) in
 
 	root, ok := state.FindProjectRoot(a.Cwd)
 	if !ok {
-		return toolError(fmt.Sprintf("no claude-context project found at %s (run: claude-context init)", a.Cwd))
+		return toolError(fmt.Sprintf("no mneme project found at %s (run: mneme init)", a.Cwd))
 	}
 
 	entries, _ := state.ReadBuglog(root)
 	if len(entries) == 0 {
-		return ToolCallResult{Content: []ToolContent{{Type: "text", Text: "No buglog entries. Run: claude-context buglog add"}}}
+		return ToolCallResult{Content: []ToolContent{{Type: "text", Text: "No buglog entries. Run: mneme buglog add"}}}
 	}
 
 	queryTokens := match.Tokenize(a.Query)
@@ -718,7 +718,7 @@ func (s *Server) callFindSimilarBugs(_ context.Context, args json.RawMessage) in
 - [ ] **Step 7: Build to verify it compiles**
 
 ```bash
-go build -o ./bin/claude-context ./cmd
+go build -o ./bin/mneme ./cmd
 ```
 
 Expected: success.
@@ -763,7 +763,7 @@ git commit -m "feat(m4c): add describe_codebase, get_project_rules, find_similar
 - ✅ `find_similar_bugs` no buglog → "No buglog entries" — Task 2
 - ✅ `find_similar_bugs` no match → "No matches found." — Task 2
 - ✅ Missing `cwd` → tool error "cwd is required" — Task 2
-- ✅ Non-project cwd → tool error "no claude-context project found" — Task 2
+- ✅ Non-project cwd → tool error "no mneme project found" — Task 2
 - ✅ Missing `query` for find_similar_bugs → "query is required" — Task 2
 - ✅ `TestServerEmbeddingToolsWithoutKey` — Task 1
 - ✅ All 9 remaining local-tool tests — Task 2

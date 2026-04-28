@@ -6,14 +6,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 //go:embed templates/rules.md
 var rulesTemplate string
 
-const beginMarker = "<!-- claude-context-managed BEGIN -->"
-const endMarker = "<!-- claude-context-managed END -->"
+const beginMarker = "<!-- mneme-managed BEGIN -->"
+const endMarker = "<!-- mneme-managed END -->"
 
 // WriteRules writes the embedded rules template to rulesPath (overwrites).
 func WriteRules(rulesPath string) error {

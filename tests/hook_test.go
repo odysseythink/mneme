@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/hook"
+	"github.com/ranwei/mneme/pkg/hook"
 )
 
 func TestParseEvent_PreRead(t *testing.T) {
@@ -105,22 +105,22 @@ func TestParseEvent_PostWrite(t *testing.T) {
 
 func TestFeedbackFormat(t *testing.T) {
 	msg := hook.FormatStderr("hello world")
-	want := "⚡ claude-context: hello world"
+	want := "⚡ mneme: hello world"
 	if msg != want {
 		t.Errorf("FormatStderr = %q, want %q", msg, want)
 	}
 }
 
 func TestDebugLevelFromEnv(t *testing.T) {
-	t.Setenv("CLAUDE_CONTEXT_DEBUG", "")
+	t.Setenv("MNEME_DEBUG", "")
 	if hook.DebugLevel() != 0 {
 		t.Error("expected level 0 when unset")
 	}
-	t.Setenv("CLAUDE_CONTEXT_DEBUG", "1")
+	t.Setenv("MNEME_DEBUG", "1")
 	if hook.DebugLevel() != 1 {
 		t.Error("expected level 1")
 	}
-	t.Setenv("CLAUDE_CONTEXT_DEBUG", "2")
+	t.Setenv("MNEME_DEBUG", "2")
 	if hook.DebugLevel() != 2 {
 		t.Error("expected level 2")
 	}

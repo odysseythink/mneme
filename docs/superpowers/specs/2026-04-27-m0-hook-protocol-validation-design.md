@@ -2,13 +2,13 @@
 
 **Date:** 2026-04-27
 **Status:** Draft
-**Scope:** Empirically validate the hook-protocol assumptions baked into the architecture spec (`2026-04-27-claude-context-hook-architecture-design.md`) before implementation. M0 is a spike — its outputs are knowledge (a written report), data (test fixtures), and corrections (inline patches to the architecture spec). It produces no product code.
+**Scope:** Empirically validate the hook-protocol assumptions baked into the architecture spec (`2026-04-27-mneme-hook-architecture-design.md`) before implementation. M0 is a spike — its outputs are knowledge (a written report), data (test fixtures), and corrections (inline patches to the architecture spec). It produces no product code.
 
 ---
 
 ## Problem
 
-The architecture spec for embedding openwolf-style token-saving mechanisms into `claude-context` makes seven assumptions about Claude Code's hook protocol (§13 risks R1-R7). Three of those (R1, R2, R3) are gating risks — if wrong, large parts of the M1 implementation must be redesigned. Two more (R4, R5) are virtually free to verify in the same probe session and would also force redesign if wrong.
+The architecture spec for embedding openwolf-style token-saving mechanisms into `mneme` makes seven assumptions about Claude Code's hook protocol (§13 risks R1-R7). Three of those (R1, R2, R3) are gating risks — if wrong, large parts of the M1 implementation must be redesigned. Two more (R4, R5) are virtually free to verify in the same probe session and would also force redesign if wrong.
 
 If we proceed straight to M1 implementation without verifying these assumptions, the cost of being wrong compounds across all later milestones. The cost of verifying first is one human-in-the-loop probe session, ~30-60 minutes of the user's attention, and ~4-7 hours of total elapsed work.
 
@@ -42,7 +42,7 @@ Locked during the M0 brainstorm.
 |---|---|
 | Scope | R1-R5 (R6/R7 deferred) |
 | Probe implementation | Bash scripts in `scripts/m0-probe/` (later renamed `scripts/hook-protocol-probe/`) |
-| Sandbox location | Temporary `/tmp/claude-context-m0-sandbox/` |
+| Sandbox location | Temporary `/tmp/mneme-m0-sandbox/` |
 | Hook registration scope | `<sandbox>/.claude/settings.local.json` (project-local + git-ignored) |
 | Execution model | Human in the loop (user runs runbook in a separate Claude Code session; this conversation analyses results) |
 | Spec patches | Inline edits to architecture spec submitted in the same commit as the M0 report |
@@ -58,7 +58,7 @@ scripts/m0-probe/
 ├── echo.sh              probe: dump stdin to file, exit 0
 ├── exit-n.sh            probe: parameterized exit code (0/1/2/127)
 ├── sleep-n.sh           probe: parameterized sleep before exit (50/200/500/1000/3000 ms)
-├── setup-sandbox.sh     creates /tmp/claude-context-m0-sandbox/ with realistic content
+├── setup-sandbox.sh     creates /tmp/mneme-m0-sandbox/ with realistic content
 ├── swap-hook.sh         rewrites sandbox settings.local.json to register a different
 │                        probe (e.g., swap-hook.sh exit-n.sh 2 — used by Phases 2 & 3)
 ├── cleanup.sh           removes sandbox + dump dir + verifies env clean
@@ -81,7 +81,7 @@ tests/fixtures/hook-payloads/
                           canonical payloads selected from Phase 2 captures
 
 (if findings contradict architecture spec)
-docs/superpowers/specs/2026-04-27-claude-context-hook-architecture-design.md
+docs/superpowers/specs/2026-04-27-mneme-hook-architecture-design.md
                           inline patches (same commit as the report)
 ```
 
@@ -104,7 +104,7 @@ The `scripts/hook-protocol-probe/README.md` opens with a prominent **"This is NO
 # Probe: dump stdin verbatim to a timestamped file under $OUT_DIR.
 # Used to capture real hook payloads (R1).
 set -euo pipefail
-OUT_DIR="${OUT_DIR:-/tmp/claude-context-m0/$1}"
+OUT_DIR="${OUT_DIR:-/tmp/mneme-m0/$1}"
 mkdir -p "$OUT_DIR"
 ts=$(date +%s)-$$
 cat > "$OUT_DIR/${ts}-stdin.json"
@@ -122,7 +122,7 @@ Invoked as: `echo.sh <event-name>`. The `<event-name>` argument segregates dumps
 # Used to pin down R2.
 set -euo pipefail
 N="${1:-0}"
-MSG="${2:-claude-context-m0 probe stderr line}"
+MSG="${2:-mneme-m0 probe stderr line}"
 cat > /dev/null
 echo "$MSG" >&2
 exit "$N"
@@ -150,17 +150,17 @@ Invoked via settings.local.json with command `sleep-n.sh 500`. User repeats with
 
 ```bash
 #!/usr/bin/env bash
-# Builds /tmp/claude-context-m0-sandbox/ with:
+# Builds /tmp/mneme-m0-sandbox/ with:
 #   - 4 files with realistic content (Go, Python, README, package.json)
 #   - .claude/settings.local.json registering all 5 hook events to echo.sh
-#   - dump dir at /tmp/claude-context-m0/{pre-read,pre-write,post-write,session-start,stop}/
+#   - dump dir at /tmp/mneme-m0/{pre-read,pre-write,post-write,session-start,stop}/
 # Prints next-step instructions.
 ```
 
 The sandbox files contain real markers (godoc, docstring, named exports) so payload variability matches what M1+ will see in production:
 
 ```
-/tmp/claude-context-m0-sandbox/
+/tmp/mneme-m0-sandbox/
 ├── auth.go         (with package + godoc on a function)
 ├── utils.py        (with module docstring + def with docstring)
 ├── README.md       (with first-heading)
@@ -174,17 +174,17 @@ The sandbox files contain real markers (godoc, docstring, named exports) so payl
 ```bash
 #!/usr/bin/env bash
 # Removes:
-#   - /tmp/claude-context-m0-sandbox/
-#   - /tmp/claude-context-m0/
-#   - $HOME/claude-context-m0-* (R5 tilde-test files)
+#   - /tmp/mneme-m0-sandbox/
+#   - /tmp/mneme-m0/
+#   - $HOME/mneme-m0-* (R5 tilde-test files)
 # Self-checks:
 #   - confirms ~/.claude/settings.json was not modified (compares hash to pre-recorded baseline)
-#   - confirms no stray claude-context-m0 references in ~/.claude/
-#   - confirms no leftover $HOME/claude-context-m0-* files
+#   - confirms no stray mneme-m0 references in ~/.claude/
+#   - confirms no leftover $HOME/mneme-m0-* files
 #   - prints diff if any leftover detected
 ```
 
-The hash baseline is captured by `setup-sandbox.sh` into `/tmp/claude-context-m0-baseline-hash`. If `~/.claude/settings.json` was accidentally modified during M0, cleanup surfaces it loudly.
+The hash baseline is captured by `setup-sandbox.sh` into `/tmp/mneme-m0-baseline-hash`. If `~/.claude/settings.json` was accidentally modified during M0, cleanup surfaces it loudly.
 
 ---
 
@@ -195,13 +195,13 @@ User-facing checklist. Five phases, each with explicit "what to type" + "what to
 ### Phase 0 — Prep
 
 ```
-$ cd <go-claude-context project root>
+$ cd <go-mneme project root>
 $ bash scripts/m0-probe/setup-sandbox.sh
 
 Expected output:
-  ✓ sandbox at /tmp/claude-context-m0-sandbox/
+  ✓ sandbox at /tmp/mneme-m0-sandbox/
   ✓ hooks registered in <sandbox>/.claude/settings.local.json (echo.sh, all 5 events)
-  ✓ dump dir at /tmp/claude-context-m0/
+  ✓ dump dir at /tmp/mneme-m0/
   Next: open a NEW terminal, cd into the sandbox, start Claude Code.
 ```
 
@@ -209,7 +209,7 @@ Expected output:
 
 ```
 [NEW TERMINAL]
-$ cd /tmp/claude-context-m0-sandbox/
+$ cd /tmp/mneme-m0-sandbox/
 $ claude code        (this triggers SessionStart)
 
 In Claude Code, type these prompts (one at a time, wait for completion):
@@ -221,23 +221,23 @@ In Claude Code, type these prompts (one at a time, wait for completion):
   6. /exit                         (triggers Stop)
 
 Then back in your original terminal:
-$ ls -la /tmp/claude-context-m0/
+$ ls -la /tmp/mneme-m0/
 Expected: 5 subdirs (pre-read, pre-write, post-write, session-start, stop), each with N JSON files.
 
 Paste the directory listing back to this conversation.
 ```
 
-For R4 (within Phase 1): the setup-sandbox.sh's settings.local.json includes a `_managed_by: "claude-context"` field on each hook entry. R4 succeeds iff Claude Code starts cleanly AND the dumps appear (i.e., hook fires despite the extra field).
+For R4 (within Phase 1): the setup-sandbox.sh's settings.local.json includes a `_managed_by: "mneme"` field on each hook entry. R4 succeeds iff Claude Code starts cleanly AND the dumps appear (i.e., hook fires despite the extra field).
 
 For R5 (within Phase 1): the sandbox CLAUDE.md contains three `@import` lines (one per form) each pointing to a tiny file with a unique passphrase:
 ```
-@~/.claude-context-m0-tilde-test.md           (file lives in $HOME, M0-prefixed for safe cleanup)
-@/tmp/claude-context-m0-sandbox/.claude/m0-test-abs.md
+@~/.mneme-m0-tilde-test.md           (file lives in $HOME, M0-prefixed for safe cleanup)
+@/tmp/mneme-m0-sandbox/.claude/m0-test-abs.md
 @./.claude/m0-test-rel.md
 ```
 Each target file says e.g. `passphrase-tilde-abc123`. After the session starts, the user asks Claude "do you see passphrase-tilde-abc123? passphrase-abs-def456? passphrase-rel-ghi789?". Whichever Claude confirms tells us which forms work.
 
-**Cleanup obligation:** `cleanup.sh` must remove `~/.claude-context-m0-tilde-test.md` (the only M0 artifact that lives outside `/tmp/`). The `claude-context-m0-` prefix is mandatory for any file written outside `/tmp/` so cleanup can find them by glob.
+**Cleanup obligation:** `cleanup.sh` must remove `~/.mneme-m0-tilde-test.md` (the only M0 artifact that lives outside `/tmp/`). The `mneme-m0-` prefix is mandatory for any file written outside `/tmp/` so cleanup can find them by glob.
 
 ### Phase 2 — R2 (exit codes)
 
@@ -289,8 +289,8 @@ Paste the 5 grades + any timeout observations.
 $ bash scripts/m0-probe/cleanup.sh
 
 Expected output:
-  ✓ /tmp/claude-context-m0-sandbox/ removed
-  ✓ /tmp/claude-context-m0/ removed
+  ✓ /tmp/mneme-m0-sandbox/ removed
+  ✓ /tmp/mneme-m0/ removed
   ✓ ~/.claude/settings.json unchanged from baseline
   ✓ no leftover references found
 ```
@@ -352,7 +352,7 @@ For each exit code in {0, 1, 2, 127}:
 - Verdict on init's rules-injection path generation
 
 ## Architecture spec patches required
-Bullet list of every change made to `2026-04-27-claude-context-hook-architecture-design.md`:
+Bullet list of every change made to `2026-04-27-mneme-hook-architecture-design.md`:
 - §X.Y: changed "..." to "..." (reason: R<N> revealed ...)
 - ...
 (Empty list = no patches needed.)

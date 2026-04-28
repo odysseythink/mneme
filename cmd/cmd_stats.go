@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ranwei/claude-context/pkg/state"
-	"github.com/ranwei/claude-context/pkg/waste"
+	"github.com/ranwei/mneme/pkg/state"
+	"github.com/ranwei/mneme/pkg/waste"
 )
 
 type statsReport struct {
@@ -37,7 +37,7 @@ func dispatchStats(args []string) {
 
 	root, ok := state.FindProjectRoot(cwd)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "stats: not inside an initialized project (run: claude-context init)")
+		fmt.Fprintln(os.Stderr, "stats: not inside an initialized project (run: mneme init)")
 		os.Exit(1)
 	}
 
@@ -117,7 +117,7 @@ func dispatchStats(args []string) {
 		fmt.Println()
 		fmt.Println("=== Memory ===")
 		fmt.Printf("  rows written:      %d\n", l.Totals.MemoryRowsWritten)
-		fmt.Printf("  memory.md:         %s/.claude/claude-context-memory.md\n", home)
+		fmt.Printf("  memory.md:         %s/.claude/mneme-memory.md\n", home)
 	}
 
 	if *flagWaste {

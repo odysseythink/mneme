@@ -25,7 +25,7 @@ type buglogFile struct {
 }
 
 func buglogPath(projectRoot string) string {
-	return filepath.Join(projectRoot, ".claude-context", "buglog.json")
+	return filepath.Join(projectRoot, ".mneme", "buglog.json")
 }
 
 // ReadBuglog reads buglog.json; returns nil, nil if absent or corrupt.
@@ -55,7 +55,7 @@ func AppendBuglogEntry(projectRoot string, e BuglogEntry) error {
 		e.CreatedAt = time.Now().UTC().Format(time.RFC3339)
 	}
 
-	lockPath := filepath.Join(projectRoot, ".claude-context", "buglog.lock")
+	lockPath := filepath.Join(projectRoot, ".mneme", "buglog.lock")
 	release, err := AcquireLock(lockPath, 50*time.Millisecond)
 	if err != nil {
 		return err
@@ -70,7 +70,7 @@ func AppendBuglogEntry(projectRoot string, e BuglogEntry) error {
 // WriteBuglog overwrites buglog.json with the given slice.
 // Passing nil writes an empty entries array. Uses flock-X with 50ms timeout.
 func WriteBuglog(projectRoot string, entries []BuglogEntry) error {
-	lockPath := filepath.Join(projectRoot, ".claude-context", "buglog.lock")
+	lockPath := filepath.Join(projectRoot, ".mneme", "buglog.lock")
 	release, err := AcquireLock(lockPath, 50*time.Millisecond)
 	if err != nil {
 		return err

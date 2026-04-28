@@ -37,7 +37,7 @@ const lockTimeout = 5 * time.Second
 // "outside_project_skipped", "write_skipped".
 func IncrementSafe(projectRoot string, key string) {
 	// Acquire lock on local-id first to ensure concurrent calls get the same ID.
-	localIDPath := filepath.Join(projectRoot, ".claude-context", ".local-id")
+	localIDPath := filepath.Join(projectRoot, ".mneme", ".local-id")
 	localIDDir := filepath.Dir(localIDPath)
 	if err := os.MkdirAll(localIDDir, 0755); err != nil {
 		return

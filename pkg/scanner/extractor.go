@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 // FileEntry holds the result of scanning a single file.

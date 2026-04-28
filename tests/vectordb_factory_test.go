@@ -3,8 +3,8 @@ package tests
 import (
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/config"
-	"github.com/ranwei/claude-context/pkg/vectordb"
+	"github.com/ranwei/mneme/pkg/config"
+	"github.com/ranwei/mneme/pkg/vectordb"
 )
 
 func TestFactoryDefaultsToDuckDB(t *testing.T) {

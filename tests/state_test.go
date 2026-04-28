@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func TestAtomicWrite(t *testing.T) {
@@ -130,7 +130,7 @@ func TestAcquireLockTimeout(t *testing.T) {
 
 func TestLedgerIncrementOnce(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	state.IncrementSafe(dir, "hook_fired.pre-read")
 
@@ -145,7 +145,7 @@ func TestLedgerIncrementOnce(t *testing.T) {
 
 func TestLedgerIncrementRMW(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	const n = 20
 	var wg sync.WaitGroup
@@ -166,7 +166,7 @@ func TestLedgerIncrementRMW(t *testing.T) {
 
 func TestLedgerIncrementTopLevel(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	state.IncrementSafe(dir, "hook_errors")
 	state.IncrementSafe(dir, "stdin_parse_failures")
@@ -182,7 +182,7 @@ func TestLedgerIncrementTopLevel(t *testing.T) {
 
 func TestSessionUpsert(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	s := state.Session{SessionID: "sess-abc-123", ClaudeCodeModel: "claude-opus-4-7"}
 	if err := state.UpsertSession(dir, s); err != nil {
@@ -202,7 +202,7 @@ func TestSessionUpsert(t *testing.T) {
 
 func TestSessionJSONUpsertIdempotent(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	s := state.Session{SessionID: "sess-same", ClaudeCodeModel: "claude-opus-4-7"}
 	if err := state.UpsertSession(dir, s); err != nil {
@@ -221,7 +221,7 @@ func TestSessionJSONUpsertIdempotent(t *testing.T) {
 
 func TestWriteReadAnatomy(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	entries := []state.AnatomyEntry{
 		{Path: "main.go", Description: "entry point", EstTokens: 20, Language: "go"},
@@ -258,7 +258,7 @@ func TestWriteReadAnatomy(t *testing.T) {
 
 func TestReadAnatomyMissing(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	got, err := state.ReadAnatomy(dir)
 	if err != nil {
@@ -271,7 +271,7 @@ func TestReadAnatomyMissing(t *testing.T) {
 
 func TestAnatomyGolden(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	entries := []state.AnatomyEntry{
 		{Path: "main.go", Description: "entry point", EstTokens: 20, Language: "go"},
@@ -283,7 +283,7 @@ func TestAnatomyGolden(t *testing.T) {
 		t.Fatalf("WriteAnatomy: %v", err)
 	}
 
-	got, err := os.ReadFile(filepath.Join(dir, ".claude-context", "anatomy.md"))
+	got, err := os.ReadFile(filepath.Join(dir, ".mneme", "anatomy.md"))
 	if err != nil {
 		t.Fatalf("read anatomy.md: %v", err)
 	}
@@ -309,7 +309,7 @@ func TestAnatomyGolden(t *testing.T) {
 
 func TestAppendSessionReadFirstTime(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	s := state.Session{SessionID: "sess-reads-1", ClaudeCodeModel: "claude-opus-4-7"}
 	if err := state.UpsertSession(dir, s); err != nil {
@@ -333,7 +333,7 @@ func TestAppendSessionReadFirstTime(t *testing.T) {
 
 func TestAppendSessionReadSecondTime(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	state.UpsertSession(dir, state.Session{SessionID: "sess-reads-2"})
 
@@ -357,7 +357,7 @@ func TestAppendSessionReadSecondTime(t *testing.T) {
 
 func TestAppendSessionReadNewSession(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	state.UpsertSession(dir, state.Session{SessionID: "sess-A"})
 	state.AppendSessionRead(dir, "foo.go")
@@ -375,7 +375,7 @@ func TestAppendSessionReadNewSession(t *testing.T) {
 
 func TestLedgerIncrementNewCounters(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	state.IncrementSafe(dir, "anatomy_hits")
 	state.IncrementSafe(dir, "anatomy_hits")
@@ -399,7 +399,7 @@ func TestLedgerIncrementNewCounters(t *testing.T) {
 
 func TestReadSessionNone(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 	s, err := state.ReadSession(dir)
 	if err != nil {
 		t.Fatalf("ReadSession: %v", err)
@@ -411,7 +411,7 @@ func TestReadSessionNone(t *testing.T) {
 
 func TestAppendTurnEditNoSession(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 	err := state.AppendTurnEdit(dir, state.TurnEdit{File: "foo.go", Category: "feature", LineDelta: 10})
 	if err != nil {
 		t.Errorf("AppendTurnEdit with no session should not error: %v", err)
@@ -420,7 +420,7 @@ func TestAppendTurnEditNoSession(t *testing.T) {
 
 func TestAppendTurnEditAndRead(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 	if err := state.UpsertSession(dir, state.Session{SessionID: "sess-1", ClaudeCodeModel: "claude-opus-4-7"}); err != nil {
 		t.Fatalf("UpsertSession: %v", err)
 	}
@@ -442,7 +442,7 @@ func TestAppendTurnEditAndRead(t *testing.T) {
 
 func TestAggregateTurn(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 	state.UpsertSession(dir, state.Session{SessionID: "sess-2", ClaudeCodeModel: "claude-opus-4-7"})
 	state.AppendTurnEdit(dir, state.TurnEdit{File: "a.go", Category: "bugfix", LineDelta: 3})
 	state.AppendTurnEdit(dir, state.TurnEdit{File: "b.go", Category: "test", LineDelta: 5})
@@ -468,7 +468,7 @@ func TestAggregateTurn(t *testing.T) {
 
 func TestLedgerEditPattern(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	state.IncrementSafe(dir, "edit_pattern.feature")
 	state.IncrementSafe(dir, "edit_pattern.feature")
@@ -499,12 +499,12 @@ func TestAppendMemoryRowCreatesHeader(t *testing.T) {
 		t.Fatalf("AppendMemoryRow: %v", err)
 	}
 
-	data, err := os.ReadFile(filepath.Join(home, ".claude", "claude-context-memory.md"))
+	data, err := os.ReadFile(filepath.Join(home, ".claude", "mneme-memory.md"))
 	if err != nil {
 		t.Fatalf("memory.md not created: %v", err)
 	}
 	content := string(data)
-	if !strings.Contains(content, "<!-- claude-context memory v1 -->") {
+	if !strings.Contains(content, "<!-- mneme memory v1 -->") {
 		t.Error("missing header")
 	}
 	if !strings.Contains(content, "## 2026-04-27T14:32:00Z (3 turns)") {
@@ -524,8 +524,8 @@ func TestAppendMemoryRowHeaderOnce(t *testing.T) {
 	state.AppendMemoryRow(home, row)
 	state.AppendMemoryRow(home, row)
 
-	data, _ := os.ReadFile(filepath.Join(home, ".claude", "claude-context-memory.md"))
-	count := strings.Count(string(data), "<!-- claude-context memory v1 -->")
+	data, _ := os.ReadFile(filepath.Join(home, ".claude", "mneme-memory.md"))
+	count := strings.Count(string(data), "<!-- mneme memory v1 -->")
 	if count != 1 {
 		t.Errorf("header appears %d times, want 1", count)
 	}

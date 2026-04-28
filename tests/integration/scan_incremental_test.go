@@ -12,10 +12,10 @@ import (
 func setupScanProject(t *testing.T) string {
 	t.Helper()
 	proj := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(proj, ".claude-context"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(proj, ".mneme"), 0755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(proj, ".claude-context", ".local-id"), []byte("test-scan-incr-1234"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(proj, ".mneme", ".local-id"), []byte("test-scan-incr-1234"), 0644); err != nil {
 		t.Fatalf("write .local-id: %v", err)
 	}
 	// init a git repo so Walk() works

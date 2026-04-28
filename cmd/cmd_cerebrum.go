@@ -11,12 +11,12 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func dispatchCerebrum(args []string) {
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "Usage: claude-context cerebrum <add|list|remove>")
+		fmt.Fprintln(os.Stderr, "Usage: mneme cerebrum <add|list|remove>")
 		os.Exit(2)
 	}
 	switch args[0] {
@@ -84,7 +84,7 @@ func cerebrumAdd(args []string) {
 	}
 	root, ok := state.FindProjectRoot(cwd)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "✗ not inside an initialized project (run: claude-context init)")
+		fmt.Fprintln(os.Stderr, "✗ not inside an initialized project (run: mneme init)")
 		os.Exit(1)
 	}
 	rule := state.CerebrumRule{Comment: *comment, Pattern: *pattern, Message: *message}
@@ -94,9 +94,9 @@ func cerebrumAdd(args []string) {
 	}
 
 	if rules, err2 := state.ReadCerebrum(root); err2 == nil {
-		fmt.Fprintf(os.Stderr, "✓ Rule added (%d rules total in .claude-context/cerebrum.md)\n", len(rules))
+		fmt.Fprintf(os.Stderr, "✓ Rule added (%d rules total in .mneme/cerebrum.md)\n", len(rules))
 	} else {
-		fmt.Fprintln(os.Stderr, "✓ Rule added to .claude-context/cerebrum.md")
+		fmt.Fprintln(os.Stderr, "✓ Rule added to .mneme/cerebrum.md")
 	}
 }
 
@@ -104,7 +104,7 @@ func cerebrumList() {
 	cwd, _ := os.Getwd()
 	root, ok := state.FindProjectRoot(cwd)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "✗ not inside an initialized project (run: claude-context init)")
+		fmt.Fprintln(os.Stderr, "✗ not inside an initialized project (run: mneme init)")
 		os.Exit(1)
 	}
 
@@ -114,7 +114,7 @@ func cerebrumList() {
 		os.Exit(1)
 	}
 	if len(rules) == 0 {
-		fmt.Println("No cerebrum rules. Run: claude-context cerebrum add")
+		fmt.Println("No cerebrum rules. Run: mneme cerebrum add")
 		return
 	}
 
@@ -133,7 +133,7 @@ func cerebrumRemove(args []string) {
 		os.Exit(2)
 	}
 	if fs.NArg() < 1 {
-		fmt.Fprintln(os.Stderr, "Usage: claude-context cerebrum remove <N> [--yes]")
+		fmt.Fprintln(os.Stderr, "Usage: mneme cerebrum remove <N> [--yes]")
 		os.Exit(2)
 	}
 
@@ -146,7 +146,7 @@ func cerebrumRemove(args []string) {
 	cwd, _ := os.Getwd()
 	root, ok := state.FindProjectRoot(cwd)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "✗ not inside an initialized project (run: claude-context init)")
+		fmt.Fprintln(os.Stderr, "✗ not inside an initialized project (run: mneme init)")
 		os.Exit(1)
 	}
 

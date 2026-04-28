@@ -11,8 +11,8 @@ import (
 	"sync"
 
 	"github.com/odysseythink/mlog"
-	"github.com/ranwei/claude-context/pkg"
-	"github.com/ranwei/claude-context/pkg/embedding"
+	"github.com/ranwei/mneme/pkg"
+	"github.com/ranwei/mneme/pkg/embedding"
 )
 
 type Server struct {
@@ -110,7 +110,7 @@ func (s *Server) handleInitialize() interface{} {
 			},
 		},
 		"serverInfo": map[string]interface{}{
-			"name":    "claude-context",
+			"name":    "mneme",
 			"version": "1.0.0",
 		},
 	}

@@ -3,8 +3,8 @@ package vectordb
 import (
 	"fmt"
 
-	"github.com/ranwei/claude-context/pkg"
-	"github.com/ranwei/claude-context/pkg/config"
+	"github.com/ranwei/mneme/pkg"
+	"github.com/ranwei/mneme/pkg/config"
 )
 
 // NewStoreFromConfig selects and constructs the vector store backend from config.

@@ -10,7 +10,7 @@ PROBE_NAME="${1:?usage: swap-hook.sh <probe-name> [args...]}"
 shift
 PROBE_ARGS="$*"
 
-SANDBOX="${SANDBOX:-/tmp/claude-context-m0-sandbox}"
+SANDBOX="${SANDBOX:-/tmp/mneme-m0-sandbox}"
 SETTINGS="$SANDBOX/.claude/settings.local.json"
 PROBE_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROBE_PATH="$PROBE_DIR/$PROBE_NAME"

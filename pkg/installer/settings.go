@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 type hookEntry struct {
@@ -41,10 +41,10 @@ var managedHooks = []hookConfig{
 	{"Stop", "", "hook stop"},
 }
 
-const managedBy = "claude-context"
+const managedBy = "mneme"
 
 // MergeHooks updates settingsPath with our 8 hook entries. Idempotent.
-// binaryPath is the absolute path to the claude-context binary.
+// binaryPath is the absolute path to the mneme binary.
 func MergeHooks(settingsPath, binaryPath string) error {
 	raw := loadRawSettings(settingsPath)
 	hm := parseHooksMap(raw)
@@ -64,7 +64,7 @@ func MergeHooks(settingsPath, binaryPath string) error {
 	return saveHooksMap(settingsPath, raw, hm)
 }
 
-// UninstallHooks removes all entries with _managed_by == "claude-context".
+// UninstallHooks removes all entries with _managed_by == "mneme".
 func UninstallHooks(settingsPath string) error {
 	raw := loadRawSettings(settingsPath)
 	hm := parseHooksMap(raw)

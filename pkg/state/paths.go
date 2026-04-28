@@ -21,14 +21,14 @@ func FindGitRoot(startDir string) (string, bool) {
 }
 
 // FindProjectRoot returns the project root by trying git root first, then walking up
-// looking for a .claude-context/ marker directory.
+// looking for a .mneme/ marker directory.
 func FindProjectRoot(startDir string) (string, bool) {
 	if root, ok := FindGitRoot(startDir); ok {
 		return root, true
 	}
 	dir := startDir
 	for {
-		if _, err := os.Stat(filepath.Join(dir, ".claude-context")); err == nil {
+		if _, err := os.Stat(filepath.Join(dir, ".mneme")); err == nil {
 			return dir, true
 		}
 		parent := filepath.Dir(dir)
@@ -40,16 +40,16 @@ func FindProjectRoot(startDir string) (string, bool) {
 	return "", false
 }
 
-// GlobalProjectDir returns ~/.claude-context/projects/<projectID>/.
+// GlobalProjectDir returns ~/.mneme/projects/<projectID>/.
 func GlobalProjectDir(projectID string) string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".claude-context", "projects", projectID)
+	return filepath.Join(home, ".mneme", "projects", projectID)
 }
 
 // ReadOrCreateLocalID reads the per-project UUID from
-// <projectRoot>/.claude-context/.local-id, creating it on first call.
+// <projectRoot>/.mneme/.local-id, creating it on first call.
 func ReadOrCreateLocalID(projectRoot string) (string, error) {
-	dir := filepath.Join(projectRoot, ".claude-context")
+	dir := filepath.Join(projectRoot, ".mneme")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", err
 	}

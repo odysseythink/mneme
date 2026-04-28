@@ -82,7 +82,7 @@ All three tools require `cwd` (string, required) — the caller's working direct
 **Output format:**
 
 ```
-Project root: go-claude-context (/path/to/project)
+Project root: go-mneme (/path/to/project)
 
 === Anatomy (37 files) ===
 cmd/
@@ -103,7 +103,7 @@ pkg/state/
 - Anatomy entries are grouped by directory (lexicographic), each file indented with 2 spaces.
 - If anatomy has > 40 entries, show the 40 with the highest `EstTokens`.
 - Sessions: last 5 from `ReadMemory`, most-recent first.
-- If anatomy absent: replace anatomy section with `(No anatomy map. Run: claude-context scan)`
+- If anatomy absent: replace anatomy section with `(No anatomy map. Run: mneme scan)`
 - If memory absent or empty: replace sessions section with `(No session history yet.)`
 
 ---
@@ -136,7 +136,7 @@ Cerebrum rules (2):
 
 If a rule has a non-empty `Comment`, it is shown as the label; otherwise `Message` is used. `Pattern` is always shown.
 
-If no rules: `No cerebrum rules. Run: claude-context cerebrum add`
+If no rules: `No cerebrum rules. Run: mneme cerebrum add`
 
 ---
 
@@ -167,7 +167,7 @@ Similar bugs (1 match):
      was: session.StopCount++
 
 No matches found. (if entries exist but none overlap >= 3)
-No buglog entries. Run: claude-context buglog add (if file absent)
+No buglog entries. Run: mneme buglog add (if file absent)
 ```
 
 ---
@@ -226,7 +226,7 @@ The 3 new local-state tools have no nil-guard — they always proceed to file re
 | Error | Behavior |
 |---|---|
 | `cwd` param missing or empty | Return tool error: `"cwd is required"` |
-| Project root not found from `cwd` | Return tool error: `"no claude-context project found at <cwd> (run: claude-context init)"` |
+| Project root not found from `cwd` | Return tool error: `"no mneme project found at <cwd> (run: mneme init)"` |
 | Anatomy/cerebrum/buglog file absent | Return partial/empty result with explanatory message — never a tool error |
 | `find_similar_bugs` no matches | Return `"No matches found."` — not an error |
 | `os.UserHomeDir()` fails | Omit sessions section from `describe_codebase`, continue |
@@ -250,7 +250,7 @@ func toolsCall(t *testing.T, s *mcp.Server, name string, args map[string]string)
 ```
 
 - `TestDescribeCodebaseNoCwd` — missing cwd → tool error containing `"cwd is required"`
-- `TestDescribeCodebaseNoProject` — cwd = `/tmp` (not initialized) → tool error containing `"no claude-context project found"`
+- `TestDescribeCodebaseNoProject` — cwd = `/tmp` (not initialized) → tool error containing `"no mneme project found"`
 - `TestDescribeCodebaseEmpty` — initialized project, no anatomy, no memory → output contains `"No anatomy"` and `"No session history"`
 - `TestDescribeCodebaseWithAnatomy` — project with 2 anatomy entries → output contains directory grouping and token estimates
 - `TestGetProjectRulesEmpty` — no cerebrum.md → output contains `"No cerebrum rules"`
@@ -269,4 +269,4 @@ func toolsCall(t *testing.T, s *mcp.Server, name string, args map[string]string)
 - Streaming results (all responses are single text blocks)
 - `describe_codebase` showing buglog or cerebrum rules (those have their own tools)
 - Fuzzy / semantic matching for `find_similar_bugs` (M5+ with embeddings)
-- Auto-refresh anatomy on `describe_codebase` call (user must run `claude-context scan`)
+- Auto-refresh anatomy on `describe_codebase` call (user must run `mneme scan`)
