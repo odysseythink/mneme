@@ -4,7 +4,7 @@
 # Invoked as: echo.sh <event-name>   e.g. echo.sh pre-read
 set -euo pipefail
 EVENT="${1:-unknown}"
-OUT_DIR="${OUT_DIR:-/tmp/claude-context-m0/$EVENT}"
+OUT_DIR="${OUT_DIR:-/tmp/mneme-m0/$EVENT}"
 mkdir -p "$OUT_DIR"
 ts=$(date +%s)-$$-$RANDOM
 cat > "$OUT_DIR/${ts}-stdin.json"

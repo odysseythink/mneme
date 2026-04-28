@@ -5,8 +5,8 @@
 1. **Clone and build:**
    ```bash
    git clone <repo>
-   cd go-claude-context
-   go build -o bin/claude-context ./cmd/mcp
+   cd go-mneme
+   go build -o bin/mneme ./cmd/mcp
    ```
 
 2. **Set credentials:**
@@ -17,7 +17,7 @@
 
 3. **Register with Claude Code:**
    ```bash
-   claude mcp add claude-context -- ./bin/claude-context
+   claude mcp add mneme -- ./bin/mneme
    ```
 
 ## Docker Deployment (Future)

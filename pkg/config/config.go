@@ -38,11 +38,11 @@ type fileConfig struct {
 
 // FromEnv builds Config with priority: env var > config file > built-in default.
 // The config file path is read from CONFIG_FILE env var, defaulting to
-// ~/.claude-context/config.yaml. Missing file is silently ignored.
+// ~/.mneme/config.yaml. Missing file is silently ignored.
 func FromEnv() *Config {
 	homeDir, _ := os.UserHomeDir()
 
-	defaultConfigPath := filepath.Join(homeDir, ".claude-context", "config.yaml")
+	defaultConfigPath := filepath.Join(homeDir, ".mneme", "config.yaml")
 	configPath := expandHome(getEnvOrDefault("CONFIG_FILE", defaultConfigPath), homeDir)
 
 	file, fileLoaded := loadFileConfig(configPath)
@@ -56,12 +56,12 @@ func FromEnv() *Config {
 		EmbeddingAPIKey:   resolve(os.Getenv("EMBEDDING_API_KEY"), file.EmbeddingAPIKey, ""),
 		EmbeddingProvider: resolve(os.Getenv("EMBEDDING_PROVIDER"), file.EmbeddingProvider, "siliconflow"),
 		EmbeddingModel:    resolve(os.Getenv("EMBEDDING_MODEL"), file.EmbeddingModel, "BAAI/bge-large-zh-v1.5"),
-		DBPath:            expandHome(resolve(os.Getenv("DB_PATH"), file.DBPath, filepath.Join(homeDir, ".claude-context", "db.duckdb")), homeDir),
+		DBPath:            expandHome(resolve(os.Getenv("DB_PATH"), file.DBPath, filepath.Join(homeDir, ".mneme", "db.duckdb")), homeDir),
 		LogLevel:          resolve(os.Getenv("LOG_LEVEL"), file.LogLevel, "info"),
 		DBBackend:         resolve(os.Getenv("DB_BACKEND"), file.DBBackend, "duckdb"),
 		QdrantURL:         resolve(os.Getenv("QDRANT_URL"), file.QdrantURL, "http://localhost:6333"),
-		QdrantCollection:  resolve(os.Getenv("QDRANT_COLLECTION"), file.QdrantCollection, "claude-context"),
-		ChromemPath:       expandHome(resolve(os.Getenv("CHROMEM_PATH"), file.ChromemPath, filepath.Join(homeDir, ".claude-context", "chromem")), homeDir),
+		QdrantCollection:  resolve(os.Getenv("QDRANT_COLLECTION"), file.QdrantCollection, "mneme"),
+		ChromemPath:       expandHome(resolve(os.Getenv("CHROMEM_PATH"), file.ChromemPath, filepath.Join(homeDir, ".mneme", "chromem")), homeDir),
 		ConfigSource:      configSource,
 	}
 }
@@ -87,7 +87,7 @@ func loadFileConfig(path string) (fileConfig, bool) {
 	}
 	var fc fileConfig
 	if err := yaml.Unmarshal(data, &fc); err != nil {
-		fmt.Fprintf(os.Stderr, "claude-context: warning: malformed config file %s: %v (using defaults)\n", path, err)
+		fmt.Fprintf(os.Stderr, "mneme: warning: malformed config file %s: %v (using defaults)\n", path, err)
 		return fileConfig{}, false
 	}
 	return fc, true

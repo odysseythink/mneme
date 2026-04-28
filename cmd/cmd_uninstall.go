@@ -10,7 +10,7 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/ranwei/claude-context/pkg/installer"
+	"github.com/ranwei/mneme/pkg/installer"
 )
 
 func dispatchUninstall(opts initOpts) {
@@ -18,14 +18,14 @@ func dispatchUninstall(opts initOpts) {
 	projectRoot, _ := resolveInitProjectRoot(cwd)
 	settingsPath := resolveSettingsPath(projectRoot, opts)
 	claudeMDPath := filepath.Join(os.Getenv("HOME"), ".claude", "CLAUDE.md")
-	rulesPath := filepath.Join(os.Getenv("HOME"), ".claude", "claude-context-rules.md")
+	rulesPath := filepath.Join(os.Getenv("HOME"), ".claude", "mneme-rules.md")
 
 	// Detect if anything is installed
 	data, _ := os.ReadFile(settingsPath)
 	md, _ := os.ReadFile(claudeMDPath)
 	if !strings.Contains(string(data), `"_managed_by"`) &&
-		!strings.Contains(string(md), "claude-context-managed") {
-		fmt.Fprintln(os.Stderr, "no claude-context installation found")
+		!strings.Contains(string(md), "mneme-managed") {
+		fmt.Fprintln(os.Stderr, "no mneme installation found")
 		os.Exit(0)
 	}
 
@@ -41,7 +41,7 @@ func dispatchUninstall(opts initOpts) {
 	fmt.Fprintf(os.Stderr, "│ Remove managed hooks from %-34s│\n", settingsPath)
 	fmt.Fprintf(os.Stderr, "│ Remove @import block from %-35s│\n", claudeMDPath)
 	fmt.Fprintf(os.Stderr, "│ Delete %-53s│\n", rulesPath)
-	fmt.Fprintln(os.Stderr, "│ Keep <project>/.claude-context/ (user data; remove manually)│")
+	fmt.Fprintln(os.Stderr, "│ Keep <project>/.mneme/ (user data; remove manually)│")
 	fmt.Fprintln(os.Stderr, "╰────────────────────────────────────────────────────────────╯")
 
 	if opts.dryRun {
@@ -76,6 +76,6 @@ func dispatchUninstall(opts initOpts) {
 	fmt.Fprintf(os.Stderr, "✓ Removed managed hooks from %s\n", settingsPath)
 	fmt.Fprintf(os.Stderr, "✓ Removed @import from %s\n", claudeMDPath)
 	fmt.Fprintf(os.Stderr, "✓ Deleted %s\n", rulesPath)
-	fmt.Fprintf(os.Stderr, "! Project state at %s/.claude-context/ kept intact.\n", projectRoot)
-	fmt.Fprintln(os.Stderr, "  To remove: rm -rf "+projectRoot+"/.claude-context/")
+	fmt.Fprintf(os.Stderr, "! Project state at %s/.mneme/ kept intact.\n", projectRoot)
+	fmt.Fprintln(os.Stderr, "  To remove: rm -rf "+projectRoot+"/.mneme/")
 }

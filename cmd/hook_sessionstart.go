@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ranwei/claude-context/pkg/consolidator"
-	"github.com/ranwei/claude-context/pkg/hook"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/consolidator"
+	"github.com/ranwei/mneme/pkg/hook"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func runSessionStart(stdin io.Reader) {

@@ -45,12 +45,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func TestReadCerebrumEmpty(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 	rules, err := state.ReadCerebrum(dir)
 	if err != nil {
 		t.Fatalf("ReadCerebrum on missing file: %v", err)
@@ -62,7 +62,7 @@ func TestReadCerebrumEmpty(t *testing.T) {
 
 func TestAppendAndReadRules(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	r1 := state.CerebrumRule{Comment: "no var", Pattern: `\bvar\s+\w+\s*=`, Message: "prefer :="}
 	r2 := state.CerebrumRule{Pattern: `fmt\.Println\(`, Message: "use structured logger"}
@@ -97,7 +97,7 @@ func TestAppendAndReadRules(t *testing.T) {
 
 func TestWriteCerebrumRoundtrip(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	rules := []state.CerebrumRule{
 		{Comment: "a", Pattern: "pat1", Message: "msg1"},
@@ -126,14 +126,14 @@ func TestWriteCerebrumRoundtrip(t *testing.T) {
 
 func TestHeaderWrittenOnce(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	r := state.CerebrumRule{Pattern: "x", Message: "y"}
 	state.AppendCerebrumRule(dir, r)
 	state.AppendCerebrumRule(dir, r)
 
-	data, _ := os.ReadFile(filepath.Join(dir, ".claude-context", "cerebrum.md"))
-	count := strings.Count(string(data), "<!-- claude-context cerebrum v1 -->")
+	data, _ := os.ReadFile(filepath.Join(dir, ".mneme", "cerebrum.md"))
+	count := strings.Count(string(data), "<!-- mneme cerebrum v1 -->")
 	if count != 1 {
 		t.Errorf("header appears %d times, want 1", count)
 	}
@@ -166,13 +166,13 @@ type CerebrumRule struct {
 	Message string // warning text shown to Claude
 }
 
-const cerebrumHeader = "<!-- claude-context cerebrum v1 -->"
+const cerebrumHeader = "<!-- mneme cerebrum v1 -->"
 
-// ReadCerebrum reads .claude-context/cerebrum.md.
+// ReadCerebrum reads .mneme/cerebrum.md.
 // Returns nil, nil if the file does not exist.
 // Unlocked — stale reads are acceptable in hook context.
 func ReadCerebrum(projectRoot string) ([]CerebrumRule, error) {
-	path := filepath.Join(projectRoot, ".claude-context", "cerebrum.md")
+	path := filepath.Join(projectRoot, ".mneme", "cerebrum.md")
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		return nil, nil
@@ -186,7 +186,7 @@ func ReadCerebrum(projectRoot string) ([]CerebrumRule, error) {
 // AppendCerebrumRule appends one rule to cerebrum.md, creating it with the v1 header if absent.
 // Uses flock-X with 50ms timeout.
 func AppendCerebrumRule(projectRoot string, rule CerebrumRule) error {
-	dir := filepath.Join(projectRoot, ".claude-context")
+	dir := filepath.Join(projectRoot, ".mneme")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -216,7 +216,7 @@ func AppendCerebrumRule(projectRoot string, rule CerebrumRule) error {
 // Used by cerebrum remove. Writes the v1 header.
 // Uses flock-X with 50ms timeout.
 func WriteCerebrum(projectRoot string, rules []CerebrumRule) error {
-	dir := filepath.Join(projectRoot, ".claude-context")
+	dir := filepath.Join(projectRoot, ".mneme")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -397,7 +397,7 @@ func TestExtractAddedLinesNoChange(t *testing.T) {
 }
 ```
 
-Add `"github.com/ranwei/claude-context/pkg/hook"` to the import block in `tests/cerebrum_test.go`.
+Add `"github.com/ranwei/mneme/pkg/hook"` to the import block in `tests/cerebrum_test.go`.
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -522,8 +522,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ranwei/claude-context/pkg/hook"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/hook"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func runPreWrite(stdin io.Reader) {
@@ -607,7 +607,7 @@ The `case "pre-write": runPreWrite(os.Stdin)` dispatch line stays — it now cal
 - [ ] **Step 3: Build to verify it compiles**
 
 ```bash
-go build -o ./bin/claude-context ./cmd
+go build -o ./bin/mneme ./cmd
 ```
 
 Expected: no errors.
@@ -652,12 +652,12 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func dispatchCerebrum(args []string) {
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "Usage: claude-context cerebrum <add|list|remove>")
+		fmt.Fprintln(os.Stderr, "Usage: mneme cerebrum <add|list|remove>")
 		os.Exit(2)
 	}
 	switch args[0] {
@@ -727,14 +727,14 @@ func cerebrumAdd(args []string) {
 	}
 
 	rules, _ := state.ReadCerebrum(root)
-	fmt.Fprintf(os.Stderr, "✓ Rule added (%d rules total in .claude-context/cerebrum.md)\n", len(rules))
+	fmt.Fprintf(os.Stderr, "✓ Rule added (%d rules total in .mneme/cerebrum.md)\n", len(rules))
 }
 
 func cerebrumList() {
 	cwd, _ := os.Getwd()
 	root, ok := state.FindProjectRoot(cwd)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "✗ not inside an initialized project (run: claude-context init)")
+		fmt.Fprintln(os.Stderr, "✗ not inside an initialized project (run: mneme init)")
 		os.Exit(1)
 	}
 
@@ -744,7 +744,7 @@ func cerebrumList() {
 		os.Exit(1)
 	}
 	if len(rules) == 0 {
-		fmt.Println("No cerebrum rules. Run: claude-context cerebrum add")
+		fmt.Println("No cerebrum rules. Run: mneme cerebrum add")
 		return
 	}
 
@@ -765,7 +765,7 @@ func cerebrumRemove(args []string) {
 		os.Exit(2)
 	}
 	if fs.NArg() < 1 {
-		fmt.Fprintln(os.Stderr, "Usage: claude-context cerebrum remove <N> [--yes]")
+		fmt.Fprintln(os.Stderr, "Usage: mneme cerebrum remove <N> [--yes]")
 		os.Exit(2)
 	}
 
@@ -778,7 +778,7 @@ func cerebrumRemove(args []string) {
 	cwd, _ := os.Getwd()
 	root, ok := state.FindProjectRoot(cwd)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "✗ not inside an initialized project (run: claude-context init)")
+		fmt.Fprintln(os.Stderr, "✗ not inside an initialized project (run: mneme init)")
 		os.Exit(1)
 	}
 
@@ -842,15 +842,15 @@ import (
 const version = "0.1.0-m4a"
 
 func printTopUsage() {
-	fmt.Fprintln(os.Stderr, `claude-context — Claude Code context management
+	fmt.Fprintln(os.Stderr, `mneme — Claude Code context management
 
 Usage:
-  claude-context                   start MCP server (for claude mcp add)
-  claude-context hook <event>      handle a Claude Code hook event
-  claude-context init [flags]      install hooks and scaffolding
-  claude-context stats             show ledger counters for current project
-  claude-context cerebrum <cmd>    manage project coding rules
-  claude-context version           print version
+  mneme                   start MCP server (for claude mcp add)
+  mneme hook <event>      handle a Claude Code hook event
+  mneme init [flags]      install hooks and scaffolding
+  mneme stats             show ledger counters for current project
+  mneme cerebrum <cmd>    manage project coding rules
+  mneme version           print version
 
 cerebrum commands:
   cerebrum add [--pattern P] [--message M] [--comment C]
@@ -864,36 +864,36 @@ init flags:
   --project     write to <project>/.claude/settings.json
   --local       write to <project>/.claude/settings.local.json
   --no-scan     skip anatomy scan on init
-  --uninstall   remove all claude-context managed entries`)
+  --uninstall   remove all mneme managed entries`)
 }
 ```
 
 - [ ] **Step 4: Build to verify it compiles**
 
 ```bash
-go build -o ./bin/claude-context ./cmd
+go build -o ./bin/mneme ./cmd
 ```
 
 Expected: no errors.
 
 - [ ] **Step 5: Smoke-test the CLI**
 
-In a git repo with `claude-context init` already run:
+In a git repo with `mneme init` already run:
 
 ```bash
-./bin/claude-context cerebrum list
-# Expected: "No cerebrum rules. Run: claude-context cerebrum add"
+./bin/mneme cerebrum list
+# Expected: "No cerebrum rules. Run: mneme cerebrum add"
 
-./bin/claude-context cerebrum add --pattern '\bvar\s+\w+\s*=' --message 'prefer :='
-# Expected: "✓ Rule added (1 rules total in .claude-context/cerebrum.md)"
+./bin/mneme cerebrum add --pattern '\bvar\s+\w+\s*=' --message 'prefer :='
+# Expected: "✓ Rule added (1 rules total in .mneme/cerebrum.md)"
 
-./bin/claude-context cerebrum list
+./bin/mneme cerebrum list
 # Expected:
 # Cerebrum rules (1):
 #   1. prefer :=
 #      pattern: \bvar\s+\w+\s*=
 
-./bin/claude-context cerebrum add --pattern 'INVALID[' --message 'bad regex'
+./bin/mneme cerebrum add --pattern 'INVALID[' --message 'bad regex'
 # Expected: "✗ invalid regex: ..."  exit 1
 ```
 

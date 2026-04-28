@@ -9,8 +9,8 @@ type UninstallOpts struct {
 	RulesPath    string
 }
 
-// Uninstall removes all claude-context managed entries.
-// Does not delete the project .claude-context/ directory (user data).
+// Uninstall removes all mneme managed entries.
+// Does not delete the project .mneme/ directory (user data).
 func Uninstall(opts UninstallOpts) error {
 	if err := UninstallHooks(opts.SettingsPath); err != nil {
 		return err

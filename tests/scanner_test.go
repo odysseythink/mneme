@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/scanner"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/scanner"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func makeGitRepo(t *testing.T) string {

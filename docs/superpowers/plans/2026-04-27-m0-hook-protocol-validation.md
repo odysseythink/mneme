@@ -4,7 +4,7 @@
 
 **Goal:** Empirically validate the hook-protocol assumptions (R1-R5) baked into the architecture spec by building a bash-based probe harness, having the user run it against real Claude Code, then producing a written report + permanent test fixtures + (if needed) inline patches to the architecture spec.
 
-**Architecture:** Bash probe scripts in `scripts/m0-probe/` capture data from real Claude Code hook events into `/tmp/claude-context-m0/`. A user-facing runbook in `docs/m0-runbook.md` walks the user through 4 phases of probing. The assistant analyzes captured data, writes the report, selects canonical fixtures, and patches the architecture spec wherever findings contradict assumptions. Probe scripts are then renamed to `scripts/hook-protocol-probe/` for permanent re-verification.
+**Architecture:** Bash probe scripts in `scripts/m0-probe/` capture data from real Claude Code hook events into `/tmp/mneme-m0/`. A user-facing runbook in `docs/m0-runbook.md` walks the user through 4 phases of probing. The assistant analyzes captured data, writes the report, selects canonical fixtures, and patches the architecture spec wherever findings contradict assumptions. Probe scripts are then renamed to `scripts/hook-protocol-probe/` for permanent re-verification.
 
 **Tech Stack:** Bash 3.2+ (macOS-compatible), POSIX-friendly tools (sed, awk, shasum), JSON files for hook configs, Markdown for docs.
 
@@ -17,7 +17,7 @@
 - Create: `scripts/m0-probe/exit-n.sh` (probe: parameterized exit code)
 - Create: `scripts/m0-probe/sleep-n.sh` (probe: parameterized sleep)
 - Create: `scripts/m0-probe/swap-hook.sh` (helper: swap registered hook in settings.local.json)
-- Create: `scripts/m0-probe/setup-sandbox.sh` (creates `/tmp/claude-context-m0-sandbox/` + writes settings.local.json + R5 test files)
+- Create: `scripts/m0-probe/setup-sandbox.sh` (creates `/tmp/mneme-m0-sandbox/` + writes settings.local.json + R5 test files)
 - Create: `scripts/m0-probe/cleanup.sh` (removes sandbox + R5 leftovers + verifies env clean)
 - Create: `scripts/m0-probe/README.md` (usage notes)
 - Create: `docs/m0-runbook.md` (user-facing 4-phase runbook)
@@ -31,7 +31,7 @@
 - Create: `tests/fixtures/hook-payloads/session-start.json`
 - Create: `tests/fixtures/hook-payloads/stop.json`
 - Create: `docs/superpowers/specs/2026-04-27-m0-hook-protocol-validation-report.md`
-- Modify (only if findings contradict assumptions): `docs/superpowers/specs/2026-04-27-claude-context-hook-architecture-design.md`
+- Modify (only if findings contradict assumptions): `docs/superpowers/specs/2026-04-27-mneme-hook-architecture-design.md`
 
 **Phase 4 — release-form rename:**
 - Rename: `scripts/m0-probe/` → `scripts/hook-protocol-probe/`
@@ -61,7 +61,7 @@ Write `scripts/m0-probe/echo.sh`:
 # Invoked as: echo.sh <event-name>   e.g. echo.sh pre-read
 set -euo pipefail
 EVENT="${1:-unknown}"
-OUT_DIR="${OUT_DIR:-/tmp/claude-context-m0/$EVENT}"
+OUT_DIR="${OUT_DIR:-/tmp/mneme-m0/$EVENT}"
 mkdir -p "$OUT_DIR"
 ts=$(date +%s)-$$-$RANDOM
 cat > "$OUT_DIR/${ts}-stdin.json"
@@ -103,7 +103,7 @@ git commit -m "feat(m0): add echo probe for capturing hook stdin payloads"
 # Invoked as: exit-n.sh <code> [stderr-message]
 set -euo pipefail
 N="${1:-0}"
-MSG="${2:-claude-context-m0 probe stderr line}"
+MSG="${2:-mneme-m0 probe stderr line}"
 cat > /dev/null
 echo "$MSG" >&2
 exit "$N"
@@ -201,7 +201,7 @@ PROBE_NAME="${1:?usage: swap-hook.sh <probe-name> [args...]}"
 shift
 PROBE_ARGS="$*"
 
-SANDBOX="${SANDBOX:-/tmp/claude-context-m0-sandbox}"
+SANDBOX="${SANDBOX:-/tmp/mneme-m0-sandbox}"
 SETTINGS="$SANDBOX/.claude/settings.local.json"
 PROBE_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROBE_PATH="$PROBE_DIR/$PROBE_NAME"
@@ -255,26 +255,26 @@ git commit -m "feat(m0): add swap-hook helper for rewriting probe registrations"
 
 ```bash
 #!/usr/bin/env bash
-# Builds /tmp/claude-context-m0-sandbox/ for M0 probing.
+# Builds /tmp/mneme-m0-sandbox/ for M0 probing.
 # Creates:
 #   - 4 realistic source files (Go + Python + README + package.json)
 #   - .claude/settings.local.json with all 5 hooks → echo.sh, including _managed_by field for R4
 #   - CLAUDE.md with 3 @import lines (one per path form for R5)
 #   - 3 R5 test files (one in $HOME with M0 prefix for safe cleanup, two in sandbox)
-#   - dump dirs at /tmp/claude-context-m0/{pre-read,pre-write,post-write,session-start,stop}/
+#   - dump dirs at /tmp/mneme-m0/{pre-read,pre-write,post-write,session-start,stop}/
 #   - baseline hash of ~/.claude/settings.json for cleanup verification
 set -euo pipefail
 
-SANDBOX="/tmp/claude-context-m0-sandbox"
-DUMP_BASE="/tmp/claude-context-m0"
+SANDBOX="/tmp/mneme-m0-sandbox"
+DUMP_BASE="/tmp/mneme-m0"
 PROBE_DIR="$(cd "$(dirname "$0")" && pwd)"
-TILDE_FILE="$HOME/claude-context-m0-tilde-test.md"
+TILDE_FILE="$HOME/mneme-m0-tilde-test.md"
 USER_SETTINGS="$HOME/.claude/settings.json"
-BASELINE="/tmp/claude-context-m0-baseline-hash"
+BASELINE="/tmp/mneme-m0-baseline-hash"
 
 # Wipe any prior state
 rm -rf "$SANDBOX" "$DUMP_BASE"
-rm -f "$HOME"/claude-context-m0-* "$BASELINE"
+rm -f "$HOME"/mneme-m0-* "$BASELINE"
 
 # Create sandbox + dump dirs
 mkdir -p "$SANDBOX/.claude"
@@ -301,7 +301,7 @@ EOF
 
 cat > "$SANDBOX/README.md" <<'EOF'
 # Sandbox Project
-This is an M0 probe sandbox for claude-context. See docs/m0-runbook.md for instructions.
+This is an M0 probe sandbox for mneme. See docs/m0-runbook.md for instructions.
 EOF
 
 cat > "$SANDBOX/package.json" <<'EOF'
@@ -324,7 +324,7 @@ echo "passphrase-rel-ghi789" > "$REL_TARGET"
 cat > "$SANDBOX/CLAUDE.md" <<EOF
 # Sandbox Project Instructions
 
-@~/claude-context-m0-tilde-test.md
+@~/mneme-m0-tilde-test.md
 @$ABS_FILE
 @./.claude/m0-test-rel.md
 
@@ -341,7 +341,7 @@ cat > "$SANDBOX/.claude/settings.local.json" <<EOF
         "hooks": [{
           "type": "command",
           "command": "$PROBE_DIR/echo.sh pre-read",
-          "_managed_by": "claude-context",
+          "_managed_by": "mneme",
           "_version": 1
         }]
       },
@@ -350,7 +350,7 @@ cat > "$SANDBOX/.claude/settings.local.json" <<EOF
         "hooks": [{
           "type": "command",
           "command": "$PROBE_DIR/echo.sh pre-write",
-          "_managed_by": "claude-context",
+          "_managed_by": "mneme",
           "_version": 1
         }]
       }
@@ -361,7 +361,7 @@ cat > "$SANDBOX/.claude/settings.local.json" <<EOF
         "hooks": [{
           "type": "command",
           "command": "$PROBE_DIR/echo.sh post-write",
-          "_managed_by": "claude-context",
+          "_managed_by": "mneme",
           "_version": 1
         }]
       }
@@ -370,7 +370,7 @@ cat > "$SANDBOX/.claude/settings.local.json" <<EOF
       "hooks": [{
         "type": "command",
         "command": "$PROBE_DIR/echo.sh session-start",
-        "_managed_by": "claude-context",
+        "_managed_by": "mneme",
         "_version": 1
       }]
     }],
@@ -378,7 +378,7 @@ cat > "$SANDBOX/.claude/settings.local.json" <<EOF
       "hooks": [{
         "type": "command",
         "command": "$PROBE_DIR/echo.sh stop",
-        "_managed_by": "claude-context",
+        "_managed_by": "mneme",
         "_version": 1
       }]
     }]
@@ -421,23 +421,23 @@ chmod +x scripts/m0-probe/setup-sandbox.sh
 bash scripts/m0-probe/setup-sandbox.sh
 
 # Verify expected structure
-test -d /tmp/claude-context-m0-sandbox || { echo "✗ sandbox missing"; exit 1; }
-test -f /tmp/claude-context-m0-sandbox/auth.go || { echo "✗ auth.go missing"; exit 1; }
-test -f /tmp/claude-context-m0-sandbox/.claude/settings.local.json || { echo "✗ settings missing"; exit 1; }
-test -f /tmp/claude-context-m0-sandbox/CLAUDE.md || { echo "✗ CLAUDE.md missing"; exit 1; }
-test -f "$HOME/claude-context-m0-tilde-test.md" || { echo "✗ tilde test file missing"; exit 1; }
-test -d /tmp/claude-context-m0/pre-read || { echo "✗ dump dir missing"; exit 1; }
-test -f /tmp/claude-context-m0-baseline-hash || { echo "✗ baseline hash missing"; exit 1; }
+test -d /tmp/mneme-m0-sandbox || { echo "✗ sandbox missing"; exit 1; }
+test -f /tmp/mneme-m0-sandbox/auth.go || { echo "✗ auth.go missing"; exit 1; }
+test -f /tmp/mneme-m0-sandbox/.claude/settings.local.json || { echo "✗ settings missing"; exit 1; }
+test -f /tmp/mneme-m0-sandbox/CLAUDE.md || { echo "✗ CLAUDE.md missing"; exit 1; }
+test -f "$HOME/mneme-m0-tilde-test.md" || { echo "✗ tilde test file missing"; exit 1; }
+test -d /tmp/mneme-m0/pre-read || { echo "✗ dump dir missing"; exit 1; }
+test -f /tmp/mneme-m0-baseline-hash || { echo "✗ baseline hash missing"; exit 1; }
 echo "✓ setup-sandbox.sh produced expected structure"
 
 # Verify _managed_by field present (R4 setup)
-grep -q '"_managed_by": "claude-context"' /tmp/claude-context-m0-sandbox/.claude/settings.local.json \
+grep -q '"_managed_by": "mneme"' /tmp/mneme-m0-sandbox/.claude/settings.local.json \
     || { echo "✗ _managed_by field missing"; exit 1; }
 echo "✓ _managed_by field present"
 
 # Now smoke-test swap-hook.sh (Task 4 deferred this)
 bash scripts/m0-probe/swap-hook.sh exit-n.sh 2 "test-marker"
-grep -q "exit-n.sh 2" /tmp/claude-context-m0-sandbox/.claude/settings.local.json \
+grep -q "exit-n.sh 2" /tmp/mneme-m0-sandbox/.claude/settings.local.json \
     || { echo "✗ swap-hook didn't update settings"; exit 1; }
 echo "✓ swap-hook.sh works on real settings file"
 ```
@@ -445,12 +445,12 @@ echo "✓ swap-hook.sh works on real settings file"
 - [ ] **Step 3: Manually inspect generated settings.local.json**
 
 ```bash
-cat /tmp/claude-context-m0-sandbox/.claude/settings.local.json
+cat /tmp/mneme-m0-sandbox/.claude/settings.local.json
 ```
 
 Verify:
 - 5 hook event sections present (PreToolUse:Read, PreToolUse:Write|Edit, PostToolUse:Write|Edit, SessionStart, Stop)
-- Each hook has `_managed_by: "claude-context"` and `_version: 1`
+- Each hook has `_managed_by: "mneme"` and `_version: 1`
 - All commands point to absolute path of echo.sh under the project's `scripts/m0-probe/`
 - Note: setup must be re-run after Task 5 commit since smoke test left exit-n swapped in
 
@@ -476,15 +476,15 @@ git commit -m "feat(m0): add setup-sandbox script for building probe sandbox"
 # Removes M0 sandbox + dump dir + R5 leftovers from $HOME.
 # Self-checks:
 #   - ~/.claude/settings.json hash matches baseline (must be unchanged)
-#   - no stray claude-context-m0 references in ~/.claude/
-#   - no leftover $HOME/claude-context-m0-* files
+#   - no stray mneme-m0 references in ~/.claude/
+#   - no leftover $HOME/mneme-m0-* files
 # Exit code 1 with diagnostics if any check fails.
 set -euo pipefail
 
-SANDBOX="/tmp/claude-context-m0-sandbox"
-DUMP_BASE="/tmp/claude-context-m0"
+SANDBOX="/tmp/mneme-m0-sandbox"
+DUMP_BASE="/tmp/mneme-m0"
 USER_SETTINGS="$HOME/.claude/settings.json"
-BASELINE="/tmp/claude-context-m0-baseline-hash"
+BASELINE="/tmp/mneme-m0-baseline-hash"
 
 problems=0
 
@@ -505,12 +505,12 @@ else
 fi
 
 # Remove R5 tilde-test files (in $HOME, M0-prefixed)
-HOME_LEFTOVERS=$(ls "$HOME"/claude-context-m0-* 2>/dev/null || true)
+HOME_LEFTOVERS=$(ls "$HOME"/mneme-m0-* 2>/dev/null || true)
 if [ -n "$HOME_LEFTOVERS" ]; then
-    rm -f "$HOME"/claude-context-m0-*
-    echo "✓ removed \$HOME/claude-context-m0-* leftovers"
+    rm -f "$HOME"/mneme-m0-*
+    echo "✓ removed \$HOME/mneme-m0-* leftovers"
 else
-    echo "  no \$HOME/claude-context-m0-* leftovers"
+    echo "  no \$HOME/mneme-m0-* leftovers"
 fi
 
 # Verify user settings.json unchanged
@@ -543,15 +543,15 @@ else
     echo "  no baseline hash to verify against (setup may not have run)"
 fi
 
-# Check for stray claude-context-m0 references in ~/.claude/
+# Check for stray mneme-m0 references in ~/.claude/
 if [ -d "$HOME/.claude" ]; then
-    STRAY=$(grep -r "claude-context-m0" "$HOME/.claude/" 2>/dev/null || true)
+    STRAY=$(grep -r "mneme-m0" "$HOME/.claude/" 2>/dev/null || true)
     if [ -n "$STRAY" ]; then
-        echo "✗ stray claude-context-m0 references in ~/.claude/:"
+        echo "✗ stray mneme-m0 references in ~/.claude/:"
         echo "$STRAY"
         problems=$((problems + 1))
     else
-        echo "✓ no stray claude-context-m0 references in ~/.claude/"
+        echo "✓ no stray mneme-m0 references in ~/.claude/"
     fi
 fi
 
@@ -575,9 +575,9 @@ bash scripts/m0-probe/setup-sandbox.sh
 bash scripts/m0-probe/cleanup.sh
 
 # Should output "All clean." and exit 0
-test ! -d /tmp/claude-context-m0-sandbox || { echo "✗ sandbox not removed"; exit 1; }
-test ! -d /tmp/claude-context-m0 || { echo "✗ dump dir not removed"; exit 1; }
-test ! -f "$HOME/claude-context-m0-tilde-test.md" || { echo "✗ tilde file not removed"; exit 1; }
+test ! -d /tmp/mneme-m0-sandbox || { echo "✗ sandbox not removed"; exit 1; }
+test ! -d /tmp/mneme-m0 || { echo "✗ dump dir not removed"; exit 1; }
+test ! -f "$HOME/mneme-m0-tilde-test.md" || { echo "✗ tilde file not removed"; exit 1; }
 echo "✓ cleanup.sh works correctly"
 ```
 
@@ -600,7 +600,7 @@ git commit -m "feat(m0): add cleanup script with self-checks for M0 environment"
 ```markdown
 # M0 Probe Scripts
 
-These bash scripts validate Claude Code's hook protocol assumptions baked into the architecture spec at `docs/superpowers/specs/2026-04-27-claude-context-hook-architecture-design.md`. Designed to be run by a human against a real Claude Code session.
+These bash scripts validate Claude Code's hook protocol assumptions baked into the architecture spec at `docs/superpowers/specs/2026-04-27-mneme-hook-architecture-design.md`. Designed to be run by a human against a real Claude Code session.
 
 **This directory will be renamed to `scripts/hook-protocol-probe/` after M0 completes (see Phase 4 of the M0 plan).**
 
@@ -608,11 +608,11 @@ These bash scripts validate Claude Code's hook protocol assumptions baked into t
 
 | Script | Purpose | Used by |
 |---|---|---|
-| `echo.sh <event>` | Dump stdin to `/tmp/claude-context-m0/<event>/<ts>-stdin.json`, exit 0 | R1 (schema capture) |
+| `echo.sh <event>` | Dump stdin to `/tmp/mneme-m0/<event>/<ts>-stdin.json`, exit 0 | R1 (schema capture) |
 | `exit-n.sh <code> [msg]` | Discard stdin, write msg to stderr, exit with code | R2 (exit code semantics) |
 | `sleep-n.sh <ms>` | Discard stdin, sleep N ms, exit 0 | R3 (latency tolerance) |
 | `swap-hook.sh <probe> [args]` | Rewrite sandbox `settings.local.json` to register a different probe | Phase 2 + 3 |
-| `setup-sandbox.sh` | Build `/tmp/claude-context-m0-sandbox/` + register hooks + capture baseline | Phase 0 (setup) |
+| `setup-sandbox.sh` | Build `/tmp/mneme-m0-sandbox/` + register hooks + capture baseline | Phase 0 (setup) |
 | `cleanup.sh` | Remove sandbox + dump dir + R5 leftovers + verify env clean | Phase 4 (cleanup) |
 
 ## Usage
@@ -675,11 +675,11 @@ Step-by-step guide for executing the M0 spike against a real Claude Code session
 ## Phase 0 — Setup (1 minute)
 
 ```bash
-cd <go-claude-context project root>
+cd <go-mneme project root>
 bash scripts/m0-probe/setup-sandbox.sh
 ```
 
-**Expected output:** `✓ Sandbox at /tmp/claude-context-m0-sandbox/` and 5 other ✓ lines, ending with `NEXT STEPS:`.
+**Expected output:** `✓ Sandbox at /tmp/mneme-m0-sandbox/` and 5 other ✓ lines, ending with `NEXT STEPS:`.
 
 If anything is missing, stop and investigate.
 
@@ -691,7 +691,7 @@ This phase captures stdin payloads (R1), tests `_managed_by` field tolerance (R4
 
 ```bash
 # In a NEW terminal:
-cd /tmp/claude-context-m0-sandbox/
+cd /tmp/mneme-m0-sandbox/
 claude code
 ```
 
@@ -699,7 +699,7 @@ Starting Claude Code triggers `SessionStart`. After Claude is ready, **type thes
 
 | # | Prompt | Triggers | Expected dump location |
 |---|---|---|---|
-| 1 | `read README.md` | PreToolUse:Read | `/tmp/claude-context-m0/pre-read/` |
+| 1 | `read README.md` | PreToolUse:Read | `/tmp/mneme-m0/pre-read/` |
 | 2 | `read auth.go` | PreToolUse:Read (2nd sample) | same |
 | 3 | `create a file hello.txt with content 'hi'` | PreToolUse:Write + PostToolUse:Write | `pre-write/` + `post-write/` |
 | 4 | `edit hello.txt to say "hello world"` | PreToolUse:Edit + PostToolUse:Edit | same |
@@ -708,7 +708,7 @@ Starting Claude Code triggers `SessionStart`. After Claude is ready, **type thes
 | 7 | `/exit` | Stop | `stop/` |
 
 **For prompt #6 (R5):** record which passphrases Claude says it sees. The mapping:
-- `passphrase-tilde-abc123` ← imported via `@~/claude-context-m0-tilde-test.md`
+- `passphrase-tilde-abc123` ← imported via `@~/mneme-m0-tilde-test.md`
 - `passphrase-abs-def456` ← imported via `@/abs/path/...m0-test-abs.md`
 - `passphrase-rel-ghi789` ← imported via `@./.claude/m0-test-rel.md`
 
@@ -720,12 +720,12 @@ After `/exit`, list the dumps:
 
 ```bash
 # Back in your original terminal:
-ls -la /tmp/claude-context-m0/
-ls -la /tmp/claude-context-m0/pre-read/
-ls -la /tmp/claude-context-m0/pre-write/
-ls -la /tmp/claude-context-m0/post-write/
-ls -la /tmp/claude-context-m0/session-start/
-ls -la /tmp/claude-context-m0/stop/
+ls -la /tmp/mneme-m0/
+ls -la /tmp/mneme-m0/pre-read/
+ls -la /tmp/mneme-m0/pre-write/
+ls -la /tmp/mneme-m0/post-write/
+ls -la /tmp/mneme-m0/session-start/
+ls -la /tmp/mneme-m0/stop/
 ```
 
 **Paste the output of all 6 `ls` commands back to the conversation, plus the R5 passphrase findings, plus any R4 anomalies (Claude Code error messages, hook fire failures).**
@@ -743,7 +743,7 @@ bash scripts/m0-probe/swap-hook.sh exit-n.sh 0 "marker-zero"
 
 ```bash
 # In a NEW Claude Code session:
-cd /tmp/claude-context-m0-sandbox/
+cd /tmp/mneme-m0-sandbox/
 claude code
 > read README.md
 > /exit
@@ -887,9 +887,9 @@ If any are missing, ask user to complete that part before proceeding. Do not inf
 ### Task 10: Analyze R1 (stdin schema)
 
 **Files:**
-- Read: `/tmp/claude-context-m0/{pre-read,pre-write,post-write,session-start,stop}/*-stdin.json` (paths user provided)
+- Read: `/tmp/mneme-m0/{pre-read,pre-write,post-write,session-start,stop}/*-stdin.json` (paths user provided)
 
-**NOTE: cleanup.sh deletes `/tmp/claude-context-m0/`. If user already ran cleanup, ask them to re-run setup + Phase 1 only and skip cleanup until analysis is complete.**
+**NOTE: cleanup.sh deletes `/tmp/mneme-m0/`. If user already ran cleanup, ask them to re-run setup + Phase 1 only and skip cleanup until analysis is complete.**
 
 - [ ] **Step 1: Read all dumped payloads from Phase 1**
 
@@ -909,7 +909,7 @@ pre-read:
 
 - [ ] **Step 3: Diff against architecture spec §6**
 
-Open `docs/superpowers/specs/2026-04-27-claude-context-hook-architecture-design.md`, locate §6 Hook Protocol input schema. List every field name / type difference.
+Open `docs/superpowers/specs/2026-04-27-mneme-hook-architecture-design.md`, locate §6 Hook Protocol input schema. List every field name / type difference.
 
 - [ ] **Step 4: Decide patch action**
 
@@ -1009,7 +1009,7 @@ The two signals:
 
 - [ ] **Step 3: Decide patch action**
 
-If R4 fails, write a §8 patch proposal: alternative boundary scheme (e.g., a separate `~/.claude/settings.json.claude-context-managed` JSON file listing which entries we own).
+If R4 fails, write a §8 patch proposal: alternative boundary scheme (e.g., a separate `~/.claude/settings.json.mneme-managed` JSON file listing which entries we own).
 
 (No commit.)
 
@@ -1026,7 +1026,7 @@ Three boolean answers:
 
 - [ ] **Step 2: Decide verdict and constrain init's path generation**
 
-Per the architecture spec §8, init writes a single `@~/.claude/claude-context-rules.md` line. If `@~/path` doesn't work, init must generate `@/abs/expanded/path/...` instead.
+Per the architecture spec §8, init writes a single `@~/.claude/mneme-rules.md` line. If `@~/path` doesn't work, init must generate `@/abs/expanded/path/...` instead.
 
 Write a 1-line verdict: "init uses path form X (Y form failed)".
 
@@ -1042,7 +1042,7 @@ If only abs path works: patch §8 to mandate absolute paths in `@import` injecti
 ### Task 15: Select & sanitize canonical fixtures
 
 **Files:**
-- Read: `/tmp/claude-context-m0/{pre-read,pre-write,post-write,session-start,stop}/*-stdin.json`
+- Read: `/tmp/mneme-m0/{pre-read,pre-write,post-write,session-start,stop}/*-stdin.json`
 - Create: `tests/fixtures/hook-payloads/pre-read.json`
 - Create: `tests/fixtures/hook-payloads/pre-write.json`
 - Create: `tests/fixtures/hook-payloads/post-write.json`
@@ -1083,7 +1083,7 @@ events = ["pre-read", "pre-write", "post-write", "session-start", "stop"]
 home = str(Path.home())
 
 for evt in events:
-    src_dir = Path(f"/tmp/claude-context-m0/{evt}")
+    src_dir = Path(f"/tmp/mneme-m0/{evt}")
     if not src_dir.exists():
         print(f"⚠ no dump dir for {evt} — skipping (re-run Phase 1?)")
         continue
@@ -1230,7 +1230,7 @@ git commit -m "docs(m0): add validation report with R1-R5 findings"
 ### Task 17: Patch architecture spec (only if needed)
 
 **Files:**
-- Modify: `docs/superpowers/specs/2026-04-27-claude-context-hook-architecture-design.md` (only sections that contradict findings)
+- Modify: `docs/superpowers/specs/2026-04-27-mneme-hook-architecture-design.md` (only sections that contradict findings)
 
 - [ ] **Step 1: Review the "Architecture spec patches required" section of the M0 report**
 
@@ -1247,10 +1247,10 @@ For each entry in the patches list:
 
 ```bash
 # Quick consistency checks
-grep -n "preread.*ms" docs/superpowers/specs/2026-04-27-claude-context-hook-architecture-design.md
-grep -n "exit code" docs/superpowers/specs/2026-04-27-claude-context-hook-architecture-design.md
-grep -n "_managed_by" docs/superpowers/specs/2026-04-27-claude-context-hook-architecture-design.md
-grep -n "@import\|@~/" docs/superpowers/specs/2026-04-27-claude-context-hook-architecture-design.md
+grep -n "preread.*ms" docs/superpowers/specs/2026-04-27-mneme-hook-architecture-design.md
+grep -n "exit code" docs/superpowers/specs/2026-04-27-mneme-hook-architecture-design.md
+grep -n "_managed_by" docs/superpowers/specs/2026-04-27-mneme-hook-architecture-design.md
+grep -n "@import\|@~/" docs/superpowers/specs/2026-04-27-mneme-hook-architecture-design.md
 ```
 
 Manually verify the numbers / verdicts match the M0 report.
@@ -1259,8 +1259,8 @@ Manually verify the numbers / verdicts match the M0 report.
 
 ```bash
 # Only if changes were made:
-git diff --quiet docs/superpowers/specs/2026-04-27-claude-context-hook-architecture-design.md || {
-    git add docs/superpowers/specs/2026-04-27-claude-context-hook-architecture-design.md
+git diff --quiet docs/superpowers/specs/2026-04-27-mneme-hook-architecture-design.md || {
+    git add docs/superpowers/specs/2026-04-27-mneme-hook-architecture-design.md
     git commit -m "docs(arch): patch hook architecture spec per M0 validation findings"
 }
 ```
@@ -1290,7 +1290,7 @@ Use `Edit` to change `scripts/hook-protocol-probe/README.md`. Replace the first 
 ```markdown
 # Hook Protocol Probe Scripts
 
-> **THIS IS NOT PRODUCT CODE.** These bash scripts validate Claude Code's hook protocol assumptions baked into `claude-context`. They were originally created during the M0 spike (see `docs/superpowers/specs/2026-04-27-m0-hook-protocol-validation-design.md`) and are kept here for **re-verification when Claude Code's hook protocol changes**.
+> **THIS IS NOT PRODUCT CODE.** These bash scripts validate Claude Code's hook protocol assumptions baked into `mneme`. They were originally created during the M0 spike (see `docs/superpowers/specs/2026-04-27-m0-hook-protocol-validation-design.md`) and are kept here for **re-verification when Claude Code's hook protocol changes**.
 
 To re-validate against a new Claude Code version: follow the runbook at `docs/m0-runbook.md` and diff your findings against the M0 report at `docs/superpowers/specs/2026-04-27-m0-hook-protocol-validation-report.md`. Patch the architecture spec if the protocol has shifted.
 ```
@@ -1310,9 +1310,9 @@ If any matches in `docs/m0-runbook.md` (the runbook still says `scripts/m0-probe
 
 ```bash
 bash scripts/hook-protocol-probe/setup-sandbox.sh
-test -d /tmp/claude-context-m0-sandbox || { echo "✗ setup failed after rename"; exit 1; }
+test -d /tmp/mneme-m0-sandbox || { echo "✗ setup failed after rename"; exit 1; }
 bash scripts/hook-protocol-probe/cleanup.sh
-test ! -d /tmp/claude-context-m0-sandbox || { echo "✗ cleanup failed after rename"; exit 1; }
+test ! -d /tmp/mneme-m0-sandbox || { echo "✗ cleanup failed after rename"; exit 1; }
 echo "✓ renamed scripts still work"
 ```
 
@@ -1356,9 +1356,9 @@ echo "✓ AC3: all 7 files in scripts/hook-protocol-probe/"
 echo "✓ AC4: arch spec patches applied per Task 17 (verify manually)"
 
 # AC5: cleanup self-checks
-test ! -d /tmp/claude-context-m0-sandbox || { echo "✗ AC5: sandbox not cleaned"; exit 1; }
-test ! -d /tmp/claude-context-m0 || { echo "✗ AC5: dump dir not cleaned"; exit 1; }
-test -z "$(ls $HOME/claude-context-m0-* 2>/dev/null)" || { echo "✗ AC5: $HOME leftovers"; exit 1; }
+test ! -d /tmp/mneme-m0-sandbox || { echo "✗ AC5: sandbox not cleaned"; exit 1; }
+test ! -d /tmp/mneme-m0 || { echo "✗ AC5: dump dir not cleaned"; exit 1; }
+test -z "$(ls $HOME/mneme-m0-* 2>/dev/null)" || { echo "✗ AC5: $HOME leftovers"; exit 1; }
 echo "✓ AC5: environment fully cleaned"
 ```
 
@@ -1392,11 +1392,11 @@ Verification doesn't change files. M0 is done.
 - Report format → Task 16
 - Acceptance criteria → Task 19
 
-**Placeholder scan:** All bash code, all paths, all commit messages are concrete. No "TBD" / "TODO". The R5 file at `~/claude-context-m0-tilde-test.md` and the dump dir at `/tmp/claude-context-m0/` are referenced consistently across tasks.
+**Placeholder scan:** All bash code, all paths, all commit messages are concrete. No "TBD" / "TODO". The R5 file at `~/mneme-m0-tilde-test.md` and the dump dir at `/tmp/mneme-m0/` are referenced consistently across tasks.
 
 **Type / signature consistency:**
 - `echo.sh` is invoked as `echo.sh <event>` everywhere
 - `exit-n.sh` is invoked as `exit-n.sh <code> [msg]` everywhere
 - `sleep-n.sh` is invoked as `sleep-n.sh <ms>` everywhere
 - `swap-hook.sh` is invoked as `swap-hook.sh <probe-name> [args...]` everywhere
-- Path constants `/tmp/claude-context-m0-sandbox/`, `/tmp/claude-context-m0/`, `$HOME/claude-context-m0-*` used consistently
+- Path constants `/tmp/mneme-m0-sandbox/`, `/tmp/mneme-m0/`, `$HOME/mneme-m0-*` used consistently

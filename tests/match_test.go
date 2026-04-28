@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/match"
+	"github.com/ranwei/mneme/pkg/match"
 )
 
 func TestTokenizeStripsStopWords(t *testing.T) {

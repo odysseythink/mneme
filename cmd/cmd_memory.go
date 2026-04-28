@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ranwei/claude-context/pkg/consolidator"
+	"github.com/ranwei/mneme/pkg/consolidator"
 )
 
 func dispatchMemory(args []string) {
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "usage: claude-context memory <subcommand>")
+		fmt.Fprintln(os.Stderr, "usage: mneme memory <subcommand>")
 		fmt.Fprintln(os.Stderr, "subcommands: consolidate")
 		os.Exit(2)
 	}

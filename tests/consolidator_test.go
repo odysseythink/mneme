@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ranwei/claude-context/pkg/consolidator"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/consolidator"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func setupConsolidatorHome(t *testing.T) string {
@@ -45,7 +45,7 @@ func TestConsolidateOldRows(t *testing.T) {
 		t.Errorf("expected 3 rows consolidated, got %d", n)
 	}
 
-	data, _ := os.ReadFile(filepath.Join(home, ".claude", "claude-context-memory.md"))
+	data, _ := os.ReadFile(filepath.Join(home, ".claude", "mneme-memory.md"))
 	if !strings.Contains(string(data), "> Consolidated") {
 		t.Errorf("expected '> Consolidated' in memory.md, got:\n%s", data)
 	}

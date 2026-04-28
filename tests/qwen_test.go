@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/embedding"
+	"github.com/ranwei/mneme/pkg/embedding"
 )
 
 func TestQwenProviderInit(t *testing.T) {

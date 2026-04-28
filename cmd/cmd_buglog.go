@@ -9,12 +9,12 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func dispatchBuglog(args []string) {
 	if len(args) < 1 {
-		fmt.Fprintln(os.Stderr, "usage: claude-context buglog <add|list|clear>")
+		fmt.Fprintln(os.Stderr, "usage: mneme buglog <add|list|clear>")
 		os.Exit(2)
 	}
 	switch args[0] {
@@ -38,7 +38,7 @@ func requireProjectRoot() string {
 	}
 	root, ok := state.FindProjectRoot(cwd)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "no claude-context project found (run: claude-context init)")
+		fmt.Fprintln(os.Stderr, "no mneme project found (run: mneme init)")
 		os.Exit(1)
 	}
 	return root
@@ -101,9 +101,9 @@ func buglogAdd(args []string) {
 		os.Exit(1)
 	}
 	if entries, err := state.ReadBuglog(root); err == nil {
-		fmt.Printf("✓ Entry added (%d entries total in .claude-context/buglog.json)\n", len(entries))
+		fmt.Printf("✓ Entry added (%d entries total in .mneme/buglog.json)\n", len(entries))
 	} else {
-		fmt.Println("✓ Entry added to .claude-context/buglog.json")
+		fmt.Println("✓ Entry added to .mneme/buglog.json")
 	}
 }
 
@@ -115,7 +115,7 @@ func buglogList() {
 		os.Exit(1)
 	}
 	if len(entries) == 0 {
-		fmt.Println("No buglog entries. Run: claude-context buglog add")
+		fmt.Println("No buglog entries. Run: mneme buglog add")
 		return
 	}
 	fmt.Printf("Buglog entries (%d):\n", len(entries))

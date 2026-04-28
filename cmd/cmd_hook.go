@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ranwei/claude-context/pkg/hook"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/hook"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func dispatchHook(args []string) {
@@ -119,8 +119,8 @@ func resolveProjectFromEvent(ev *hook.Event) (string, string, bool) {
 		root = startDir
 	}
 
-	// Require .claude-context/ to exist (i.e., init was run)
-	if _, err := os.Stat(filepath.Join(root, ".claude-context")); err != nil {
+	// Require .mneme/ to exist (i.e., init was run)
+	if _, err := os.Stat(filepath.Join(root, ".mneme")); err != nil {
 		return "", "", false
 	}
 
@@ -131,13 +131,13 @@ func resolveProjectFromEvent(ev *hook.Event) (string, string, bool) {
 	return root, id, true
 }
 
-// exitHook exits 0 silently, or exits 1 with debug message when CLAUDE_CONTEXT_DEBUG>=1.
+// exitHook exits 0 silently, or exits 1 with debug message when MNEME_DEBUG>=1.
 // Level 2 also prints extra detail to stdout (visible in user terminal, not Claude transcript).
 func exitHook(eventName, projectRoot string) {
 	level := hook.DebugLevel()
 	if level >= 2 {
 		id, _ := state.ReadOrCreateLocalID(projectRoot)
-		fmt.Printf("[claude-context debug] %s fired project=%s\n", eventName, id)
+		fmt.Printf("[mneme debug] %s fired project=%s\n", eventName, id)
 	}
 	if level >= 1 {
 		id, _ := state.ReadOrCreateLocalID(projectRoot)
@@ -150,7 +150,7 @@ func exitHook(eventName, projectRoot string) {
 func recoverAndLog(hookName string) {
 	if r := recover(); r != nil {
 		home, _ := os.UserHomeDir()
-		path := filepath.Join(home, ".claude-context", "hook-errors.log")
+		path := filepath.Join(home, ".mneme", "hook-errors.log")
 		os.MkdirAll(filepath.Dir(path), 0755)
 		entry := fmt.Sprintf("%s panic in %s: %v\n", time.Now().UTC().Format(time.RFC3339), hookName, r)
 		if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
@@ -163,7 +163,7 @@ func recoverAndLog(hookName string) {
 
 func appendGlobalLog(msg string) {
 	home, _ := os.UserHomeDir()
-	path := filepath.Join(home, ".claude-context", "hook-errors.log")
+	path := filepath.Join(home, ".mneme", "hook-errors.log")
 	os.MkdirAll(filepath.Dir(path), 0755)
 	entry := fmt.Sprintf("%s %s\n", time.Now().UTC().Format(time.RFC3339), msg)
 	if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
