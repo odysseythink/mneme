@@ -12,10 +12,14 @@ type Deps struct{}
 
 // Mount registers dashboard routes on mux: /, /assets/*, /static/*.
 // The bootstrap query-token path is enforced inside daemon.AuthMW (M8).
+//
+// Asset routes intentionally do NOT use http.StripPrefix: the embedded FS
+// keeps files under their original prefix (e.g. dist/assets/foo.js), so the
+// handler resolves r.URL.Path verbatim against FS().
 func Mount(mux *http.ServeMux, _ Deps) {
 	mux.Handle("/", spaHandler())
-	mux.Handle("/assets/", http.StripPrefix("/assets/", assetHandler()))
-	mux.Handle("/static/", http.StripPrefix("/static/", assetHandler()))
+	mux.Handle("/assets/", assetHandler())
+	mux.Handle("/static/", assetHandler())
 }
 
 func spaHandler() http.Handler {

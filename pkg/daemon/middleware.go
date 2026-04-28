@@ -77,10 +77,19 @@ func AuthMW(token string) func(http.Handler) http.Handler {
 					return
 				}
 			}
-			// 3. Bootstrap-only ?token= on GET /
+			// 3. Bootstrap-only ?token= on GET /. Sets mneme_token cookie so
+			// subsequent asset requests (no query param, no bearer header) pass
+			// auth — without this, every <script>/<link> in index.html 401s.
 			if r.Method == http.MethodGet && r.URL.Path == "/" {
 				if q := r.URL.Query().Get("token"); q != "" {
 					if subtle.ConstantTimeCompare([]byte(q), []byte(token)) == 1 {
+						http.SetCookie(w, &http.Cookie{
+							Name:     "mneme_token",
+							Value:    token,
+							Path:     "/",
+							SameSite: http.SameSiteLaxMode,
+							MaxAge:   86400,
+						})
 						next.ServeHTTP(w, r)
 						return
 					}

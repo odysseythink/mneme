@@ -57,6 +57,37 @@ func TestMountServesIndexAtRoot(t *testing.T) {
 	}
 }
 
+// Regression: pre-fix the /assets/ route used http.StripPrefix, which dropped
+// the "assets/" segment before lookup — but the embedded FS keeps files at
+// assets/<name>, so every JS/CSS bundle 404'd and the dashboard rendered blank.
+func TestMountServesEmbeddedAsset(t *testing.T) {
+	var assetPath string
+	_ = fs.WalkDir(dashboard.FS(), "assets", func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || assetPath != "" {
+			return err
+		}
+		assetPath = path
+		return fs.SkipAll
+	})
+	if assetPath == "" {
+		t.Skip("no built assets present (run `make web-build` to populate dist/assets/)")
+	}
+
+	mux := http.NewServeMux()
+	dashboard.Mount(mux, dashboard.Deps{})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/" + assetPath)
+	if err != nil {
+		t.Fatalf("get /%s: %v", assetPath, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("asset %s: got %d, want 200", assetPath, resp.StatusCode)
+	}
+}
+
 func TestDevTokenSetsCookieWhenEnabled(t *testing.T) {
 	h := dashboard.DevTokenHandler("the-token", true)
 	body := strings.NewReader(`{"token":"the-token"}`)

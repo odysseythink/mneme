@@ -70,6 +70,63 @@ func TestAuthMW_TCPRequiresToken(t *testing.T) {
 	}
 }
 
+// Regression: pre-fix, ?token= on GET / authorized the HTML response but did
+// not set the session cookie, so every asset request that followed (no query
+// param, no bearer header, path != "/") 401'd and the page rendered blank.
+func TestAuthMW_BootstrapQueryTokenSetsCookie(t *testing.T) {
+	const token = "the-token"
+	h := daemon.AuthMW(token)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest("GET", "/?token="+token, nil)
+	req = req.WithContext(daemon.WithTransport(req.Context(), daemon.TransportTCP))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+	var cookie *http.Cookie
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == "mneme_token" {
+			cookie = c
+			break
+		}
+	}
+	if cookie == nil {
+		t.Fatal("mneme_token cookie not set after bootstrap query token")
+	}
+	if cookie.Value != token {
+		t.Errorf("cookie value = %q, want %q", cookie.Value, token)
+	}
+	if cookie.Path != "/" {
+		t.Errorf("cookie path = %q, want /", cookie.Path)
+	}
+}
+
+// Bootstrap query token must NOT set a cookie when the token is wrong —
+// otherwise an attacker could force-set an invalid cookie value.
+func TestAuthMW_BootstrapWrongTokenNoCookie(t *testing.T) {
+	h := daemon.AuthMW("the-token")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest("GET", "/?token=wrong", nil)
+	req = req.WithContext(daemon.WithTransport(req.Context(), daemon.TransportTCP))
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, want 401", rec.Code)
+	}
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == "mneme_token" {
+			t.Errorf("cookie should not be set on wrong token, got %+v", c)
+		}
+	}
+}
+
 func TestBodyLimitMW_413OnLargeBody(t *testing.T) {
 	h := daemon.BodyLimitMW(1024)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := io.ReadAll(r.Body)
