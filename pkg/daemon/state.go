@@ -40,6 +40,8 @@ func defaultManifest() Manifest {
 			{Name: "anatomy-rescan", Schedule: "@every 6h", Enabled: true},
 			{Name: "consolidate-memory", Schedule: "0 3 * * *", Enabled: true},
 			{Name: "prune-backups", Schedule: "30 3 * * 0", Enabled: true},
+			{Name: "weekly-waste-report", Schedule: "0 9 * * 1", Enabled: true},
+			{Name: "suggestions-refresh", Schedule: "0 4 * * *", Enabled: true},
 		},
 	}
 }

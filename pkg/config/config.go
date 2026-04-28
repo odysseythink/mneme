@@ -26,6 +26,11 @@ type Config struct {
 	DaemonDashboardPortEnabled   bool
 	DaemonShutdownTimeoutSeconds int
 	DaemonLogRetentionDays       int
+	// Intelligence loop (M9)
+	CerebrumLearningEnabled    bool
+	WasteThresholdPercent      int
+	SuggestionsDismissTTLDays  int
+	CerebrumRejectTTLDays      int
 	ConfigSource                 string // path to the config file that was loaded, or "" if none
 }
 
@@ -46,6 +51,10 @@ type fileConfig struct {
 	DaemonDashboardPortEnabled   *bool `yaml:"daemon_dashboard_port_enabled"`
 	DaemonShutdownTimeoutSeconds *int  `yaml:"daemon_shutdown_timeout_seconds"`
 	DaemonLogRetentionDays       *int  `yaml:"daemon_log_retention_days"`
+	CerebrumLearningEnabled      *bool `yaml:"cerebrum_learning_enabled"`
+	WasteThresholdPercent        *int  `yaml:"waste_threshold_percent"`
+	SuggestionsDismissTTLDays    *int  `yaml:"suggestions_dismiss_ttl_days"`
+	CerebrumRejectTTLDays        *int  `yaml:"cerebrum_reject_ttl_days"`
 }
 
 // FromEnv builds Config with priority: env var > config file > built-in default.
@@ -79,6 +88,10 @@ func FromEnv() *Config {
 		DaemonDashboardPortEnabled:   resolveBool(os.Getenv("DAEMON_DASHBOARD_PORT_ENABLED"), file.DaemonDashboardPortEnabled, false),
 		DaemonShutdownTimeoutSeconds: resolveInt(os.Getenv("DAEMON_SHUTDOWN_TIMEOUT_SECONDS"), file.DaemonShutdownTimeoutSeconds, 10),
 		DaemonLogRetentionDays:       resolveInt(os.Getenv("DAEMON_LOG_RETENTION_DAYS"), file.DaemonLogRetentionDays, 14),
+		CerebrumLearningEnabled:    resolveBool(os.Getenv("CEREBRUM_LEARNING_ENABLED"), file.CerebrumLearningEnabled, true),
+		WasteThresholdPercent:      resolveInt(os.Getenv("WASTE_THRESHOLD_PERCENT"), file.WasteThresholdPercent, 15),
+		SuggestionsDismissTTLDays:  resolveInt(os.Getenv("SUGGESTIONS_DISMISS_TTL_DAYS"), file.SuggestionsDismissTTLDays, 30),
+		CerebrumRejectTTLDays:      resolveInt(os.Getenv("CEREBRUM_REJECT_TTL_DAYS"), file.CerebrumRejectTTLDays, 90),
 		ConfigSource:                 configSource,
 	}
 }

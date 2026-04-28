@@ -6,20 +6,25 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/ranwei/mneme/pkg/consolidator"
 	"github.com/ranwei/mneme/pkg/scanner"
 	"github.com/ranwei/mneme/pkg/state"
+	"github.com/ranwei/mneme/pkg/suggestions"
+	"github.com/ranwei/mneme/pkg/waste"
 )
 
 // TaskFunc is the signature of a registered cron task.
 type TaskFunc func(ctx context.Context, log Logger) error
 
 var registry = map[string]TaskFunc{
-	"anatomy-rescan":     runAnatomyRescan,
-	"consolidate-memory": runConsolidateMemory,
-	"prune-backups":      runPruneBackups,
+	"anatomy-rescan":      runAnatomyRescan,
+	"consolidate-memory":  runConsolidateMemory,
+	"prune-backups":       runPruneBackups,
+	"weekly-waste-report": runWeeklyWasteReport,
+	"suggestions-refresh": runSuggestionsRefresh,
 }
 
 // LookupTask returns the registered task for a name, or nil if unknown.
@@ -187,6 +192,81 @@ func PruneBackupsAt(home string, clock func() time.Time, retentionDays, minKeep 
 			}
 			_ = os.RemoveAll(filepath.Join(projectDir, s.name))
 		}
+	}
+	return nil
+}
+
+func runWeeklyWasteReport(ctx context.Context, log Logger) error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	projectsDir := filepath.Join(home, ".mneme", "projects")
+	entries, err := os.ReadDir(projectsDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		originBytes, err := os.ReadFile(filepath.Join(projectsDir, e.Name(), "origin"))
+		if err != nil {
+			continue
+		}
+		root := strings.TrimSpace(string(originBytes))
+		if root == "" {
+			continue
+		}
+		if _, err := os.Stat(root); err != nil {
+			continue
+		}
+		out, err := waste.GenerateReport(waste.ReportInput{
+			ProjectRoot: root,
+			HomeDir:     home,
+			Now:         time.Now().UTC(),
+			Threshold:   0.15,
+		})
+		if err != nil {
+			log.Warn("task", fmt.Sprintf("weekly-waste-report: %s: %v", root, err))
+			continue
+		}
+		if _, err := waste.WriteReport(root, out); err != nil {
+			log.Warn("task", fmt.Sprintf("weekly-waste-report: %s: %v", root, err))
+		}
+	}
+	return nil
+}
+
+func runSuggestionsRefresh(ctx context.Context, log Logger) error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	projectsDir := filepath.Join(home, ".mneme", "projects")
+	entries, err := os.ReadDir(projectsDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		originBytes, err := os.ReadFile(filepath.Join(projectsDir, e.Name(), "origin"))
+		root := strings.TrimSpace(string(originBytes))
+		if err != nil || root == "" {
+			root = filepath.Join(projectsDir, e.Name())
+		}
+		if _, err := os.Stat(root); err != nil {
+			continue
+		}
+		_, _ = suggestions.Refresh(root, time.Now().UTC())
 	}
 	return nil
 }
