@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/ranwei/claude-context/pkg/consolidator"
 	"github.com/ranwei/claude-context/pkg/hook"
 	"github.com/ranwei/claude-context/pkg/state"
 )
@@ -28,6 +29,12 @@ func runSessionStart(stdin io.Reader) {
 			hook.WriteStderr("session-start: memory write: " + err.Error())
 		} else {
 			state.IncrementSafe(root, "memory_rows_written")
+			// Lazy consolidation: only run when memory is getting large.
+			if rows, _ := state.ReadMemory(home); len(rows) > 50 {
+				if _, cerr := consolidator.Consolidate(home); cerr != nil {
+					hook.WriteStderr("session-start: consolidate: " + cerr.Error())
+				}
+			}
 		}
 	}
 
