@@ -12,7 +12,7 @@ import (
 
 func dispatchScan(args []string) {
 	fs := flag.NewFlagSet("scan", flag.ContinueOnError)
-	force := fs.Bool("force", false, "re-scan even if anatomy.md exists (reserved for M6 incremental)")
+	force := fs.Bool("force", false, "re-scan all files (ignore mtime cache)")
 	if err := fs.Parse(args); err != nil {
 		os.Exit(2)
 	}
@@ -24,10 +24,27 @@ func dispatchScan(args []string) {
 		os.Exit(1)
 	}
 
-	_ = force
-
 	fmt.Fprintf(os.Stderr, "Scanning %s...\n", root)
-	scanEntries, err := scanner.ScanProject(root)
+
+	paths, err := scanner.Walk(root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "scan: walk:", err)
+		os.Exit(1)
+	}
+
+	var scanEntries []scanner.FileEntry
+
+	if !*force {
+		since, tsErr := state.ReadAnatomyGeneratedTime(root)
+		existing, _ := state.ReadAnatomy(root)
+		if tsErr == nil && len(existing) > 0 {
+			scanEntries, err = scanner.ScanProjectIncremental(root, paths, since, existing)
+		} else {
+			scanEntries, err = scanner.ExtractAll(root, paths)
+		}
+	} else {
+		scanEntries, err = scanner.ExtractAll(root, paths)
+	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "scan:", err)
 		os.Exit(1)
