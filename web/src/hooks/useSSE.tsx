@@ -1,10 +1,11 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Event } from '../api/types'
 
 type Subscriber = (e: Event) => void
 
 type SSEContextValue = {
   connected: boolean
+  latencyMs: number | null
   subscribe: (types: string[] | null, fn: Subscriber) => () => void
 }
 
@@ -12,6 +13,8 @@ const SSEContext = createContext<SSEContextValue | null>(null)
 
 export function SSEProvider({ children }: { children: ReactNode }): JSX.Element {
   const [connected, setConnected] = useState(false)
+  const [latencyMs, setLatencyMs] = useState<number | null>(null)
+  const lastEventTimeRef = useRef<number | null>(null)
   const subsRef = useRef<Set<{ types: string[] | null; fn: Subscriber }>>(new Set())
 
   useEffect(() => {
@@ -29,6 +32,7 @@ export function SSEProvider({ children }: { children: ReactNode }): JSX.Element 
       es.onmessage = (ev) => {
         try {
           const data = JSON.parse(ev.data) as Event
+          lastEventTimeRef.current = Date.now()
           for (const sub of subsRef.current) {
             if (sub.types === null || sub.types.includes(data.type)) {
               sub.fn(data)
@@ -47,16 +51,25 @@ export function SSEProvider({ children }: { children: ReactNode }): JSX.Element 
     }
 
     open()
-    return () => { cancelled = true; es?.close() }
+    const tick = setInterval(() => {
+      if (lastEventTimeRef.current === null) {
+        setLatencyMs(null)
+      } else {
+        setLatencyMs(Date.now() - lastEventTimeRef.current)
+      }
+    }, 1000)
+
+    return () => { cancelled = true; es?.close(); clearInterval(tick) }
   }, [])
 
   const value: SSEContextValue = {
     connected,
-    subscribe: (types, fn) => {
+    latencyMs,
+    subscribe: useCallback((types, fn) => {
       const entry = { types, fn }
       subsRef.current.add(entry)
       return () => { subsRef.current.delete(entry) }
-    },
+    }, []),
   }
   return <SSEContext.Provider value={value}>{children}</SSEContext.Provider>
 }
@@ -71,7 +84,7 @@ export function useSSE(types: string[] | null, fn: Subscriber): void {
   }, [ctx, types])
 }
 
-export function useSSEConnected(): boolean {
+export function useSSEStatus(): { connected: boolean; latencyMs: number | null } {
   const ctx = useContext(SSEContext)
-  return ctx?.connected ?? false
+  return { connected: ctx?.connected ?? false, latencyMs: ctx?.latencyMs ?? null }
 }

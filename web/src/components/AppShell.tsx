@@ -1,10 +1,10 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { useSSEConnected } from '../hooks/useSSE'
+import { useSSEStatus } from '../hooks/useSSE'
 import { useActiveProject } from '../hooks/useActiveProject'
 import { ProjectPicker } from './ProjectPicker'
 
 export function AppShell(): JSX.Element {
-  const connected = useSSEConnected()
+  const { connected } = useSSEStatus()
   const { active } = useActiveProject()
   const q = active ? `?project=${encodeURIComponent(active)}` : ''
 
