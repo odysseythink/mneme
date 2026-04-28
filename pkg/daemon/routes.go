@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -51,6 +52,11 @@ func NewMux(deps RouteDeps) http.Handler {
 	}))
 	mux.Handle("/api/activity", dashboard.ActivityHandler(deps.Bus))
 	mux.HandleFunc("/api/cron", deps.apiCron)
+	// M10b: SSE and publish endpoints (must come before dashboard.Mount to win over static files)
+	mux.Handle("/events", dashboard.SSEHandler(deps.Bus))
+	mux.Handle("/events/publish", dashboard.PublishHandler(deps.Bus, func(ctx context.Context) bool {
+		return transportFromCtx(ctx) == TransportUnix
+	}))
 	dashboard.Mount(mux, dashboard.Deps{})
 	return mux
 }
