@@ -1,6 +1,9 @@
 package events
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
 
 // Logger is the minimal sink for write errors and rotation events.
 // Implementations: pkg/daemon/log.go fileLogger.
@@ -16,22 +19,33 @@ const subscriberBuffer = 64
 // Bus is a single-process pub/sub with persistence + ring history.
 // Skeleton: in-memory only; ring + jsonl wired in later tasks.
 type Bus struct {
-	log Logger
+	log   Logger
+	clock func() time.Time
 
 	mu     sync.RWMutex
 	subs   map[chan Event]struct{}
 	closed bool
 	ring   *ring
+	jsonl  *jsonlWriter
 }
 
-// NewBus constructs a Bus rooted at home. home is unused in this task
-// (used in Task 4 for the JSONL writer).
 func NewBus(home string, log Logger) (*Bus, error) {
-	return &Bus{
-		log:  log,
-		subs: map[chan Event]struct{}{},
-		ring: newRing(),
-	}, nil
+	return NewBusWithClock(home, log, time.Now)
+}
+
+// NewBusWithClock allows test injection of the clock.
+func NewBusWithClock(home string, log Logger, clock func() time.Time) (*Bus, error) {
+	if clock == nil {
+		clock = time.Now
+	}
+	b := &Bus{
+		log:   log,
+		clock: clock,
+		subs:  map[chan Event]struct{}{},
+		ring:  newRing(),
+		jsonl: newJSONLWriter(home, clock, log),
+	}
+	return b, nil
 }
 
 // Publish fans out to all current subscribers. Non-blocking: drops on
@@ -44,6 +58,7 @@ func (b *Bus) Publish(e Event) {
 		return
 	}
 	b.ring.push(e)
+	b.jsonl.append(e)
 
 	b.mu.RLock()
 	defer b.mu.RUnlock()
@@ -91,5 +106,8 @@ func (b *Bus) Close() error {
 		close(ch)
 	}
 	b.subs = nil
+	if b.jsonl != nil {
+		_ = b.jsonl.close()
+	}
 	return nil
 }
