@@ -4,6 +4,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/ranwei/claude-context/pkg/state"
 )
 
 // FileEntry holds the result of scanning a single file.
@@ -179,4 +182,37 @@ func extractMD(data []byte) string {
 		return truncate(t, 100)
 	}
 	return "(no description)"
+}
+
+// ScanProjectIncremental re-extracts only files whose mtime is strictly after
+// `since`. Files not modified since `since` are returned from `existing`
+// unchanged. New files (not in existing) are always extracted.
+func ScanProjectIncremental(projectRoot string, paths []string, since time.Time, existing map[string]state.AnatomyEntry) ([]FileEntry, error) {
+	var entries []FileEntry
+	for _, rel := range paths {
+		abs := filepath.Join(projectRoot, rel)
+		info, err := os.Stat(abs)
+		if err != nil {
+			continue
+		}
+		cached, inCache := existing[rel]
+		if inCache && !info.ModTime().After(since) {
+			entries = append(entries, FileEntry{
+				Path:        cached.Path,
+				Description: cached.Description,
+				EstTokens:   cached.EstTokens,
+				Language:    cached.Language,
+			})
+			continue
+		}
+		data, err := os.ReadFile(abs)
+		if err != nil {
+			continue
+		}
+		e := dispatch(rel, data)
+		e.Path = rel
+		e.EstTokens = len(data) / 4
+		entries = append(entries, e)
+	}
+	return entries, nil
 }
