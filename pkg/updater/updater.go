@@ -86,6 +86,9 @@ func syncOne(projectID, projectRoot string) error {
 	if err := installer.WriteIdentity(projectRoot); err != nil {
 		return fmt.Errorf("write identity.md: %w", err)
 	}
+	if err := installer.InstallReframe(projectRoot); err != nil {
+		return fmt.Errorf("update reframe: %w", err)
+	}
 	if err := state.WriteTemplateVersion(projectRoot, state.TemplateVersion); err != nil {
 		return fmt.Errorf("pin template version: %w", err)
 	}

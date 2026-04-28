@@ -1,0 +1,92 @@
+<!-- mneme reframe v1 -->
+# Reframe — Frontend Framework Knowledge Base
+
+This is a reference for choosing or migrating between frontend frameworks. Claude reads this file to ground recommendations in concrete tradeoffs.
+
+<!-- mneme:user-section start -->
+<!-- Add project-specific notes here. Preserved across mneme update. -->
+<!-- mneme:user-section end -->
+
+## Next.js
+
+**When to suggest:** Production React apps that need SSR/SSG/ISR, file-based routing, image optimization, and a single full-stack story for API routes. Strong fit for marketing + product surfaces in the same codebase.
+**When NOT to suggest:** Pure SPA with no server-side rendering needs (overhead is real). Teams that don't want to be in the React/Vercel ecosystem.
+**Migration cost from Vite (raw React):** medium — keep components, replace router + add Next config + adapt data-fetching to RSC.
+**Docs:** https://nextjs.org/docs
+
+## Vite (raw React / Solid / Vue)
+
+**When to suggest:** Pure SPA, fast dev server, minimal config, no SSR needs. Great for internal tools, dashboards, embedded apps.
+**When NOT to suggest:** Apps that need SEO/server-rendered content; multi-page sites with content workflows.
+**Migration cost from create-react-app:** low — drop CRA, adopt Vite config, update imports.
+**Docs:** https://vitejs.dev/guide/
+
+## Astro
+
+**When to suggest:** Content-first sites (blogs, docs, marketing) where most pages are static and only some islands need interactivity. MDX + per-component framework choice (React/Solid/Svelte mixable).
+**When NOT to suggest:** Highly interactive applications (the islands model fights you). SSR-only dynamic content needing a request lifecycle.
+**Migration cost from Next.js:** medium — Astro pages replace Next pages; client components opt in via `client:*` directives.
+**Docs:** https://docs.astro.build
+
+## SvelteKit
+
+**When to suggest:** Teams that want minimal runtime, exceptional DX, and full-stack ergonomics in Svelte. Great for product apps where bundle size matters.
+**When NOT to suggest:** Teams committed to React/Vue. Ecosystems that need many React-only libraries (still possible via wrappers, but friction).
+**Migration cost from Next.js:** high — Svelte's syntax differs from JSX; component code must be rewritten.
+**Docs:** https://kit.svelte.dev/docs
+
+## Remix
+
+**When to suggest:** Apps that need progressive enhancement, web-platform-first form handling, nested routing with data, and standard Web APIs (fetch, FormData) over framework abstractions.
+**When NOT to suggest:** Static-first sites or pure SPAs (Remix's value is in the request/response loop).
+**Migration cost from Next.js:** medium — keep React components, rewrite data loading + routing to Remix's loader/action model.
+**Docs:** https://remix.run/docs
+
+## Nuxt
+
+**When to suggest:** Vue's full-stack equivalent of Next.js. Auto-imports, file-based routing, hybrid rendering. Pick when the team is on Vue 3.
+**When NOT to suggest:** React/Svelte teams. Apps that need cutting-edge React-only patterns.
+**Migration cost from Next.js:** high — components must be rewritten in Vue's SFC syntax.
+**Docs:** https://nuxt.com/docs
+
+## Solid Start
+
+**When to suggest:** Apps that want fine-grained reactivity (Solid) with full-stack capabilities. Excellent runtime performance.
+**When NOT to suggest:** Teams that need a large ecosystem of components/libraries (Solid's library set is smaller). Beta-tier stability concerns.
+**Migration cost from React:** medium-high — JSX-similar syntax but reactivity model differs (signals over hooks).
+**Docs:** https://docs.solidjs.com/solid-start
+
+## Qwik / Qwik City
+
+**When to suggest:** Apps where Time-to-Interactive matters above all (e-commerce, ads-heavy pages). Resumability eliminates hydration cost.
+**When NOT to suggest:** Apps with light interactivity where the resumability complexity is not justified. Teams unfamiliar with the model.
+**Migration cost from React:** high — JSX-like but execution model is fundamentally different.
+**Docs:** https://qwik.dev/docs/
+
+## Fresh (Deno)
+
+**When to suggest:** Deno-native shops; edge-first deployments (Deno Deploy); islands architecture without hydration overhead.
+**When NOT to suggest:** Node.js shops (operational cost of switching runtimes is high). Apps needing the Node ecosystem.
+**Migration cost from Next.js:** high — runtime + framework + module system all change.
+**Docs:** https://fresh.deno.dev/docs
+
+## Gatsby
+
+**When to suggest:** Content-heavy SSG sites with many data sources behind a unified GraphQL layer (Contentful, Sanity, markdown).
+**When NOT to suggest:** Apps that need SSR or anything dynamic at runtime. Fresh greenfield work — Astro/Next have largely caught up while being simpler.
+**Migration cost from Next.js:** medium — pages move; data fetching shifts from RSC/getStaticProps to GraphQL queries.
+**Docs:** https://www.gatsbyjs.com/docs/
+
+## Ember
+
+**When to suggest:** Long-lived enterprise apps that benefit from convention over configuration. Strong batteries-included philosophy and stable APIs across major versions.
+**When NOT to suggest:** Greenfield SPAs targeting the modern React/Svelte ecosystem. Smaller teams that don't want to learn Ember's strong opinions.
+**Migration cost from React:** very high — different component model, different routing, different data layer.
+**Docs:** https://guides.emberjs.com/
+
+## Angular
+
+**When to suggest:** Enterprise SPAs with large teams that benefit from TypeScript-first DI, opinionated module structure, RxJS integration, and Google's long-term maintenance.
+**When NOT to suggest:** Smaller teams or apps where the framework's surface area is overhead. Greenfield work where bundle size is critical.
+**Migration cost from React:** very high — completely different mental model (DI, decorators, modules).
+**Docs:** https://angular.dev/overview

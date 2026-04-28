@@ -155,8 +155,26 @@ export type TokenResponse = {
   history: LedgerSnapshot[]
 }
 
+export type DesignQCCapture = {
+  route: string
+  file: string
+  width: number
+  height: number
+  captured_at_ms: number
+  error?: string
+}
+
+export type DesignQCReport = {
+  version: number
+  captured_at: string
+  framework: string
+  base_url: string
+  captures: DesignQCCapture[]
+}
+
 export type DesignQCResponse = {
   available: boolean
-  reason: string
-  captures: unknown[]
+  reason?: string
+  report?: DesignQCReport
+  captures?: unknown[]
 }

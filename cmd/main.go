@@ -47,6 +47,8 @@ func main() {
 		dispatchSuggestions(os.Args[2:])
 	case "dashboard":
 		dispatchDashboard(os.Args[2:])
+	case "designqc":
+		dispatchDesignQC(os.Args[2:])
 	case "version":
 		printVersion()
 	case "-h", "--help", "help":

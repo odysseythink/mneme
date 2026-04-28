@@ -180,9 +180,15 @@ func runInit(projectRoot, settingsPath, claudeMDPath, rulesPath, binaryPath stri
 		fmt.Fprintln(os.Stderr, "✗ mneme.md:", err)
 		os.Exit(1)
 	}
-	fmt.Fprintf(os.Stderr, "✓ Wrote identity.md, mneme.md, origin, template-version\n")
 
-	// Step 10: auto-scan (build anatomy map)
+	// Step 10: write reframe.md
+	if err := installer.InstallReframe(projectRoot); err != nil {
+		fmt.Fprintln(os.Stderr, "✗ reframe.md:", err)
+		os.Exit(1)
+	}
+	fmt.Fprintf(os.Stderr, "✓ Wrote identity.md, mneme.md, reframe.md, origin, template-version\n")
+
+	// Step 11: auto-scan (build anatomy map)
 	if !noScan {
 		fmt.Fprintln(os.Stderr, "Running initial scan...")
 		dispatchScan(nil)
