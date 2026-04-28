@@ -5,6 +5,13 @@ import (
 	"os"
 )
 
+// Build-time variables. Override via:
+//   go build -ldflags="-X main.releaseRepo=ranwei/mneme -X main.releaseChannel=github" ./cmd
+var (
+	releaseRepo    = ""        // GitHub "owner/repo" — empty disables --binary
+	releaseChannel = "source"  // "source" | "github"
+)
+
 func main() {
 	if len(os.Args) < 2 {
 		runMCPServer()
