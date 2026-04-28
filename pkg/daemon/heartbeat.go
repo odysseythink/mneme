@@ -31,22 +31,17 @@ func WriteHeartbeat(home string, pid int, version string, clock func() time.Time
 
 // RunHeartbeat writes the heartbeat once on start, then every interval until ctx is cancelled.
 func RunHeartbeat(ctx context.Context, home string, pid int, version string, interval time.Duration) {
+	_ = WriteHeartbeat(home, pid, version, time.Now)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	tickCh := make(chan time.Time)
-	go func() {
-		defer close(tickCh)
-		tickCh <- time.Now()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case t := <-ticker.C:
-				tickCh <- t
-			}
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			_ = WriteHeartbeat(home, pid, version, time.Now)
 		}
-	}()
-	RunHeartbeatWithTicks(ctx, home, pid, version, tickCh)
+	}
 }
 
 // RunHeartbeatWithTicks consumes a tick channel (used by tests for deterministic firing).
