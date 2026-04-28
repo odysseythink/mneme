@@ -2,11 +2,16 @@ package tests
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ranwei/mneme/pkg/daemon"
 )
@@ -91,3 +96,56 @@ func TestRoutes_404(t *testing.T) {
 		t.Errorf("status = %d, want 404", rec.Code)
 	}
 }
+
+func TestServer_UnixSocketRoundTrip(t *testing.T) {
+	home := t.TempDir()
+	socketPath := filepath.Join(home, "test.sock")
+
+	srv := daemon.NewServer(daemon.ServerConfig{
+		SocketPath: socketPath,
+		TCPAddr:    "",
+		Token:      "",
+		Log:        &stubLogger{},
+		Mux: daemon.NewMux(daemon.RouteDeps{
+			Log:     &stubLogger{},
+			PID:     999,
+			Version: "test",
+		}),
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = srv.Run(ctx) }()
+
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if _, err := net.Dial("unix", socketPath); err == nil {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	client := &http.Client{Transport: &http.Transport{
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return net.Dial("unix", socketPath)
+		},
+	}}
+	resp, err := client.Get("http://unix/health")
+	if err != nil {
+		t.Fatalf("client.Get: %v", err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		t.Errorf("status = %d, body=%s", resp.StatusCode, body)
+	}
+
+	cancel()
+	srv.Wait()
+}
+
+// keep imports referenced
+var _ = httptest.NewRequest
+var _ = bytes.NewReader
+var _ = strings.Contains
+var _ = json.Marshal
