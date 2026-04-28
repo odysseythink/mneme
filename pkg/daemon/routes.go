@@ -49,6 +49,7 @@ func NewMux(deps RouteDeps) http.Handler {
 	mux.Handle("/api/projects", dashboard.ProjectsHandler(dashboard.APIDeps{
 		Home: deps.Home, PID: deps.PID, Version: deps.Version, StartedAt: deps.StartedAt,
 	}))
+	mux.Handle("/api/activity", dashboard.ActivityHandler(deps.Bus))
 	dashboard.Mount(mux, dashboard.Deps{})
 	return mux
 }

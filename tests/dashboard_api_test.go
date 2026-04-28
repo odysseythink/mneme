@@ -124,3 +124,56 @@ func TestAPI_Projects(t *testing.T) {
 		t.Errorf("got %d projects, want 2", len(body.Projects))
 	}
 }
+
+func TestAPI_Activity(t *testing.T) {
+	home := t.TempDir()
+	bus, _ := events.NewBus(home, &stubLogger{})
+	defer bus.Close()
+
+	for i := 0; i < 5; i++ {
+		bus.Publish(events.Event{
+			TS:   time.Now().UnixMilli() + int64(i),
+			Type: "hook.fired",
+		})
+	}
+
+	mux := daemon.NewMux(daemon.RouteDeps{Log: &stubLogger{}, Home: home, Bus: bus})
+	req := httptest.NewRequest("GET", "/api/activity?limit=3", nil)
+	req = req.WithContext(daemon.WithTransport(req.Context(), daemon.TransportUnix))
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != 200 {
+		t.Fatalf("status %d body=%s", rec.Code, rec.Body.String())
+	}
+	var body struct {
+		Events []map[string]interface{} `json:"events"`
+	}
+	json.Unmarshal(rec.Body.Bytes(), &body)
+	if len(body.Events) != 3 {
+		t.Errorf("got %d events, want 3", len(body.Events))
+	}
+}
+
+func TestAPI_Activity_TypeFilter(t *testing.T) {
+	home := t.TempDir()
+	bus, _ := events.NewBus(home, &stubLogger{})
+	defer bus.Close()
+	bus.Publish(events.Event{TS: 1, Type: "hook.fired"})
+	bus.Publish(events.Event{TS: 2, Type: "cron.tick"})
+	bus.Publish(events.Event{TS: 3, Type: "hook.fired"})
+
+	mux := daemon.NewMux(daemon.RouteDeps{Log: &stubLogger{}, Home: home, Bus: bus})
+	req := httptest.NewRequest("GET", "/api/activity?types=hook.fired", nil)
+	req = req.WithContext(daemon.WithTransport(req.Context(), daemon.TransportUnix))
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	var body struct {
+		Events []map[string]interface{} `json:"events"`
+	}
+	json.Unmarshal(rec.Body.Bytes(), &body)
+	if len(body.Events) != 2 {
+		t.Errorf("filter types=hook.fired: got %d, want 2", len(body.Events))
+	}
+}

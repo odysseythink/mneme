@@ -5,8 +5,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ranwei/mneme/pkg/events"
 )
 
 // APIDeps is the cross-cutting set of dependencies the API handlers need.
@@ -124,6 +127,50 @@ func ProjectsHandler(deps APIDeps) http.HandlerFunc {
 			return
 		}
 		writeJSON(w, 200, map[string]interface{}{"projects": projects})
+	}
+}
+
+// ActivityHandler serves /api/activity.
+func ActivityHandler(bus *events.Bus) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "GET only", http.StatusMethodNotAllowed)
+			return
+		}
+		if bus == nil {
+			http.Error(w, `{"error":"bus_unavailable"}`, http.StatusServiceUnavailable)
+			return
+		}
+		q := r.URL.Query()
+		limit := 100
+		if s := q.Get("limit"); s != "" {
+			if n, err := strconv.Atoi(s); err == nil && n > 0 {
+				if n > 500 {
+					n = 500
+				}
+				limit = n
+			}
+		}
+		var since int64
+		if s := q.Get("since"); s != "" {
+			if n, err := strconv.ParseInt(s, 10, 64); err == nil {
+				since = n
+			}
+		}
+		filter := events.Filter{ProjectID: q.Get("project_id")}
+		if t := q.Get("types"); t != "" {
+			filter.Types = strings.Split(t, ",")
+		}
+
+		got := bus.TailFiltered(limit, since, filter)
+		var nextCursor int64
+		if len(got) > 0 {
+			nextCursor = got[len(got)-1].TS
+		}
+		writeJSON(w, 200, map[string]interface{}{
+			"events":      got,
+			"next_cursor": nextCursor,
+		})
 	}
 }
 
