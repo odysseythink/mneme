@@ -67,6 +67,7 @@ func NewMux(deps RouteDeps) http.Handler {
 	mux.Handle("/buglog/delete", dashboard.BugLogDeleteHandler(deps.Bus))
 	mux.Handle("/api/suggestions", dashboard.SuggestionsHandler())
 	mux.Handle("/suggestions/dismiss", dashboard.SuggestionsDismissHandler(deps.Bus))
+	mux.Handle("/api/token", dashboard.TokenHandler())
 	dashboard.Mount(mux, dashboard.Deps{})
 	return mux
 }
