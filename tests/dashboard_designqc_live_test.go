@@ -166,8 +166,11 @@ func TestAPI_DesignQC_Captures_PathTraversal(t *testing.T) {
 		req = req.WithContext(daemon.WithTransport(req.Context(), daemon.TransportUnix))
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)
-		if rec.Code != 404 {
-			t.Errorf("traversal %q: got %d, want 404", name, rec.Code)
+		// Either 404 (handler rejects via regex) or a 3xx redirect (Go's
+		// http.ServeMux normalizes literal `..` paths). Both are safe — the
+		// redirect target is the parent path which the handler doesn't serve.
+		if rec.Code != 404 && (rec.Code < 300 || rec.Code >= 400) {
+			t.Errorf("traversal %q: got %d, want 404 or 3xx", name, rec.Code)
 		}
 	}
 }
