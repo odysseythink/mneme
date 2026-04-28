@@ -34,9 +34,9 @@ const VARIANT_STYLE: Record<ButtonVariant, React.CSSProperties> = {
 }
 
 const SIZE_STYLE: Record<ButtonSize, React.CSSProperties> = {
-  md: { padding: '5px 12px', fontSize: 11 },
-  sm: { padding: '2px 8px', fontSize: 10 },
-  icon: { width: 26, height: 26, padding: 0, fontSize: 13 },
+  md: { padding: '5px 12px', fontSize: 12 },
+  sm: { padding: '2px 8px', fontSize: 11 },
+  icon: { width: 26, height: 26, padding: 0, fontSize: 14 },
 }
 
 export function Button({ variant = 'default', size = 'md', style, ...rest }: Props): JSX.Element {

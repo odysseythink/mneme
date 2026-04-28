@@ -7,15 +7,15 @@ export function Empty(props: { icon?: ReactNode; title: ReactNode; hint?: ReactN
         textAlign: 'center',
         padding: '32px 16px',
         color: 'var(--text-muted)',
-        fontSize: 11,
+        fontSize: 12,
       }}
     >
       {props.icon !== undefined && (
-        <div style={{ fontSize: 24, opacity: 0.3, marginBottom: 8 }}>{props.icon}</div>
+        <div style={{ fontSize: 25, opacity: 0.3, marginBottom: 8 }}>{props.icon}</div>
       )}
       <div>{props.title}</div>
       {props.hint && (
-        <div style={{ fontSize: 10, marginTop: 6, color: 'var(--text-faint)' }}>{props.hint}</div>
+        <div style={{ fontSize: 11, marginTop: 6, color: 'var(--text-faint)' }}>{props.hint}</div>
       )}
     </div>
   )

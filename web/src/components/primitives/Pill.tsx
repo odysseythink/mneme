@@ -17,7 +17,7 @@ export function Pill(props: { variant: PillVariant; children: ReactNode }): JSX.
     padding: '1px 6px',
     borderRadius: 'var(--radius-1)',
     fontFamily: 'var(--font-mono)',
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: 500 as const,
     lineHeight: 1.4,
   }

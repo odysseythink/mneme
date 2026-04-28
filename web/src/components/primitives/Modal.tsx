@@ -36,10 +36,10 @@ export function Modal({ open, onClose, title, children, actions }: Props): JSX.E
           width: '90%',
         }}
       >
-        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-strong)', marginBottom: 8 }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-strong)', marginBottom: 8 }}>
           {title}
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.5 }}>
           {children}
         </div>
         {actions && (

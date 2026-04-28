@@ -36,7 +36,7 @@ export function Memory(): JSX.Element {
               border: '1px solid var(--border-default)',
               borderRadius: 'var(--radius-3)',
               padding: 'var(--space-3)',
-              fontSize: 11,
+              fontSize: 12,
               whiteSpace: 'pre-wrap',
               color: 'var(--text-body)',
               margin: 0,
@@ -61,7 +61,7 @@ export function Memory(): JSX.Element {
                 gap: 12,
               }}
             >
-              <div className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', width: 160, flexShrink: 0 }}>
+              <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)', width: 160, flexShrink: 0 }}>
                 {row.started_at}
               </div>
               {row.turn_count > 0 && (
@@ -69,7 +69,7 @@ export function Memory(): JSX.Element {
                   <Pill variant="neutral">{row.turn_count} turns</Pill>
                 </div>
               )}
-              <div style={{ fontSize: 11, whiteSpace: 'pre-wrap', flex: 1, color: 'var(--text-body)' }}>
+              <div style={{ fontSize: 12, whiteSpace: 'pre-wrap', flex: 1, color: 'var(--text-body)' }}>
                 {row.summary}
               </div>
             </li>

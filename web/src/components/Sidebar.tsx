@@ -55,7 +55,7 @@ export function Sidebar(): JSX.Element {
           padding: '0 14px 14px',
           fontWeight: 600,
           color: 'var(--text-strong)',
-          fontSize: 13,
+          fontSize: 14,
           display: 'flex',
           alignItems: 'center',
           gap: 8,
@@ -83,7 +83,7 @@ export function Sidebar(): JSX.Element {
         <div key={g.label}>
           <div
             style={{
-              fontSize: 9,
+              fontSize: 10,
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
               color: 'var(--text-faint)',
@@ -107,12 +107,12 @@ export function Sidebar(): JSX.Element {
                 color: isActive ? 'var(--accent)' : 'var(--text-muted)',
                 background: isActive ? 'var(--bg-selected)' : 'transparent',
                 borderLeft: isActive ? '2px solid var(--accent)' : 'none',
-                fontSize: 11,
+                fontSize: 12,
                 textDecoration: 'none',
               })}
             >
               {it.icon && (
-                <span className="mono" style={{ width: 12, opacity: 0.7, fontSize: 10 }}>
+                <span className="mono" style={{ width: 12, opacity: 0.7, fontSize: 11 }}>
                   {it.icon}
                 </span>
               )}

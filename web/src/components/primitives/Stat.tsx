@@ -22,7 +22,7 @@ export function Stat(props: {
     >
       <div
         style={{
-          fontSize: 9,
+          fontSize: 10,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
           color: 'var(--text-muted)',
@@ -35,7 +35,7 @@ export function Stat(props: {
       <div
         className="mono"
         style={{
-          fontSize: 20,
+          fontSize: 21,
           fontWeight: 500,
           color: 'var(--text-strong)',
         }}
@@ -45,7 +45,7 @@ export function Stat(props: {
           <span
             className="mono"
             style={{
-              fontSize: 10,
+              fontSize: 11,
               color: delta.direction === 'up' ? 'var(--ok)' : 'var(--err)',
               marginLeft: 6,
             }}
@@ -59,7 +59,7 @@ export function Stat(props: {
         <div
           className="mono"
           style={{
-            fontSize: 9,
+            fontSize: 10,
             color: 'var(--text-muted)',
             marginTop: 6,
           }}

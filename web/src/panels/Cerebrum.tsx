@@ -38,8 +38,8 @@ export function Cerebrum(): JSX.Element {
   }
 
   const sectionStyle = { background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-4)', padding: 'var(--space-4)' }
-  const h2Style = { fontSize: 13, fontWeight: 600 as const, color: 'var(--text-strong)', margin: '0 0 8px' }
-  const labelStyle = { fontSize: 9, textTransform: 'uppercase' as const, letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 600 as const, marginBottom: 4 }
+  const h2Style = { fontSize: 14, fontWeight: 600 as const, color: 'var(--text-strong)', margin: '0 0 8px' }
+  const labelStyle = { fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 600 as const, marginBottom: 4 }
 
   return (
     <>
@@ -57,11 +57,11 @@ export function Cerebrum(): JSX.Element {
                 style={{
                   padding: '8px 0',
                   borderBottom: i === data.rules.length - 1 ? 'none' : '1px solid color-mix(in srgb, var(--border-default) 40%, transparent)',
-                  fontSize: 11,
+                  fontSize: 12,
                 }}
               >
                 {r.comment && (
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>{r.comment}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{r.comment}</div>
                 )}
                 <div style={{ color: 'var(--text-body)' }}>
                   <Kbd>{r.pattern}</Kbd>
@@ -91,19 +91,19 @@ export function Cerebrum(): JSX.Element {
                 }}
               >
                 <div style={labelStyle}>Trigger</div>
-                <div style={{ fontStyle: 'italic', marginBottom: 8, fontSize: 11, color: 'var(--text-body)' }}>
+                <div style={{ fontStyle: 'italic', marginBottom: 8, fontSize: 12, color: 'var(--text-body)' }}>
                   "{c.trigger.phrase}"
                 </div>
                 {c.trigger.prior_asst && (
                   <>
                     <div style={labelStyle}>Context</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {c.trigger.prior_asst}
                     </div>
                   </>
                 )}
                 <div style={labelStyle}>Draft rule</div>
-                <div style={{ fontSize: 11, marginBottom: 12, color: 'var(--text-body)' }}>
+                <div style={{ fontSize: 12, marginBottom: 12, color: 'var(--text-body)' }}>
                   <Kbd>{c.draft_rule.pattern}</Kbd>
                   <span style={{ color: 'var(--text-muted)', margin: '0 6px' }}>→</span>
                   {c.draft_rule.message}

@@ -41,7 +41,7 @@ export function Token(): JSX.Element {
   const totalFires = Object.values(hookFired).reduce((a, b) => a + b, 0)
   const trend = data.history.map(h => Object.values(h.totals.hook_fired ?? {}).reduce((a, b) => a + b, 0))
   const sectionStyle = { background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-4)', padding: 'var(--space-4)' }
-  const labelStyle = { fontSize: 9, textTransform: 'uppercase' as const, letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 600 as const, marginBottom: 8 }
+  const labelStyle = { fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 600 as const, marginBottom: 8 }
 
   return (
     <>
@@ -57,7 +57,7 @@ export function Token(): JSX.Element {
       <section style={sectionStyle}>
         <div style={labelStyle}>Trend (last {trend.length} snapshots)</div>
         {trend.length < 2 ? (
-          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Not enough history yet.</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Not enough history yet.</div>
         ) : (
           <Sparkline data={trend} height={48} />
         )}
@@ -66,7 +66,7 @@ export function Token(): JSX.Element {
       <section style={sectionStyle}>
         <div style={labelStyle}>Hook fires by type</div>
         {Object.keys(hookFired).length === 0 ? (
-          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>No hook fires yet.</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>No hook fires yet.</div>
         ) : (
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {Object.entries(hookFired).map(([k, v], i, arr) => (
@@ -77,7 +77,7 @@ export function Token(): JSX.Element {
                   justifyContent: 'space-between',
                   padding: '6px 0',
                   borderBottom: i === arr.length - 1 ? 'none' : '1px solid color-mix(in srgb, var(--border-default) 40%, transparent)',
-                  fontSize: 11,
+                  fontSize: 12,
                 }}
               >
                 <span className="mono" style={{ color: 'var(--text-body)' }}>{k}</span>

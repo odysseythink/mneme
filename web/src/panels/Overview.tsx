@@ -37,7 +37,7 @@ export function Overview(): JSX.Element {
         <Stat label="Open suggestions" value={String(t.open_suggestions)} />
       </div>
       <div>
-        <h2 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-strong)', margin: '12px 0 8px' }}>
+        <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-strong)', margin: '12px 0 8px' }}>
           Projects
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>

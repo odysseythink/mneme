@@ -19,7 +19,7 @@ export function Toast(props: { tone?: ToastTone; children: ReactNode }): JSX.Ele
         background: 'var(--bg-raised)',
         border: '1px solid var(--border-default)',
         borderLeft: `3px solid ${COLOR[tone]}`,
-        fontSize: 11,
+        fontSize: 12,
         color: 'var(--text-body)',
         display: 'flex',
         alignItems: 'center',

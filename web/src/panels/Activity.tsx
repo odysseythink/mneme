@@ -53,7 +53,7 @@ export function Activity(): JSX.Element {
               header: 'Time',
               width: 90,
               render: (e: Event) => (
-                <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 10 }}>
+                <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                   {new Date(e.ts).toLocaleTimeString()}
                 </span>
               ),
@@ -68,7 +68,7 @@ export function Activity(): JSX.Element {
               key: 'data',
               header: 'Detail',
               render: (e: Event) => (
-                <span className="mono" style={{ color: 'var(--text-body)', fontSize: 11 }}>
+                <span className="mono" style={{ color: 'var(--text-body)', fontSize: 12 }}>
                   {e.project_id ? `[${e.project_id.slice(0, 8)}] ` : ''}
                   {e.data ? JSON.stringify(e.data) : ''}
                 </span>

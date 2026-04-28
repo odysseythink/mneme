@@ -22,7 +22,7 @@ export function CronTaskRow({ t, onAction }: { t: CronTask; onAction: () => void
 
   const td = (extra?: React.CSSProperties): React.CSSProperties => ({
     padding: '6px 10px',
-    fontSize: 11,
+    fontSize: 12,
     borderBottom: '1px solid color-mix(in srgb, var(--border-default) 40%, transparent)',
     ...extra,
   })
@@ -39,7 +39,7 @@ export function CronTaskRow({ t, onAction }: { t: CronTask; onAction: () => void
       <td style={td({ display: 'flex', gap: 6, alignItems: 'center' })}>
         <Button size="sm" disabled={busy} onClick={() => fire(runTask)}>Run</Button>
         {dead && <Button size="sm" variant="danger" disabled={busy} onClick={() => fire(retryTask)}>Retry</Button>}
-        {err && <span style={{ marginLeft: 4, color: 'var(--err)', fontSize: 10 }}>{err}</span>}
+        {err && <span style={{ marginLeft: 4, color: 'var(--err)', fontSize: 11 }}>{err}</span>}
       </td>
     </tr>
   )

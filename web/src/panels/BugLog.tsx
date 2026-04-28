@@ -68,7 +68,7 @@ export function BugLog(): JSX.Element {
                   key={h}
                   style={{
                     textAlign: 'left',
-                    fontSize: 9,
+                    fontSize: 10,
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
                     color: 'var(--text-muted)',
@@ -87,10 +87,10 @@ export function BugLog(): JSX.Element {
             {data.entries.map(e => (
               <Fragment key={e.id}>
                 <tr style={{ borderBottom: '1px solid color-mix(in srgb, var(--border-default) 40%, transparent)', cursor: e.bad_code ? 'pointer' : 'default' }}>
-                  <td style={{ padding: '6px 10px', fontSize: 11, color: 'var(--text-muted)' }} className="mono" onClick={() => toggle(e.id)}>{e.created_at}</td>
-                  <td style={{ padding: '6px 10px', fontSize: 11 }} onClick={() => toggle(e.id)}>{e.source}</td>
-                  <td style={{ padding: '6px 10px', fontSize: 11 }} className="mono" onClick={() => toggle(e.id)}>{e.file}</td>
-                  <td style={{ padding: '6px 10px', fontSize: 11 }} onClick={() => toggle(e.id)}>{e.description}</td>
+                  <td style={{ padding: '6px 10px', fontSize: 12, color: 'var(--text-muted)' }} className="mono" onClick={() => toggle(e.id)}>{e.created_at}</td>
+                  <td style={{ padding: '6px 10px', fontSize: 12 }} onClick={() => toggle(e.id)}>{e.source}</td>
+                  <td style={{ padding: '6px 10px', fontSize: 12 }} className="mono" onClick={() => toggle(e.id)}>{e.file}</td>
+                  <td style={{ padding: '6px 10px', fontSize: 12 }} onClick={() => toggle(e.id)}>{e.description}</td>
                   <td style={{ padding: '6px 10px' }}>
                     <ConfirmButton
                       label="Delete"
@@ -101,7 +101,7 @@ export function BugLog(): JSX.Element {
                 {expanded.has(e.id) && e.bad_code && (
                   <tr style={{ borderBottom: '1px solid color-mix(in srgb, var(--border-default) 40%, transparent)' }}>
                     <td colSpan={5} style={{ padding: '6px 10px', background: 'var(--bg-raised)' }}>
-                      <pre className="mono" style={{ fontSize: 10, overflow: 'auto', whiteSpace: 'pre', margin: 0, color: 'var(--text-body)' }}>{e.bad_code}</pre>
+                      <pre className="mono" style={{ fontSize: 11, overflow: 'auto', whiteSpace: 'pre', margin: 0, color: 'var(--text-body)' }}>{e.bad_code}</pre>
                     </td>
                   </tr>
                 )}

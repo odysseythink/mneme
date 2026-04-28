@@ -40,7 +40,7 @@ export function DesignQC(): JSX.Element {
           hint={
             <>
               Run <Kbd>mneme designqc</Kbd> in this project to generate captures.
-              {data.reason && <div style={{ marginTop: 6, fontSize: 9, color: 'var(--text-faint)' }}>reason: {data.reason}</div>}
+              {data.reason && <div style={{ marginTop: 6, fontSize: 10, color: 'var(--text-faint)' }}>reason: {data.reason}</div>}
             </>
           }
         />
@@ -85,7 +85,7 @@ export function DesignQC(): JSX.Element {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 10,
+                  fontSize: 11,
                   padding: '0 8px',
                   textAlign: 'center',
                 }}
@@ -99,9 +99,9 @@ export function DesignQC(): JSX.Element {
                 alt={c.route}
               />
             )}
-            <div className="mono" style={{ fontSize: 11, color: 'var(--text-body)' }}>{c.route}</div>
+            <div className="mono" style={{ fontSize: 12, color: 'var(--text-body)' }}>{c.route}</div>
             {!c.error && (
-              <div className="mono" style={{ fontSize: 9, color: 'var(--text-muted)' }}>{c.width}×{c.height}</div>
+              <div className="mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{c.width}×{c.height}</div>
             )}
           </button>
         ))}

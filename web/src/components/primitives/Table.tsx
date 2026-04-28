@@ -34,7 +34,7 @@ export function Table<T extends Record<string, unknown>>({
               style={{
                 width: c.width,
                 textAlign: c.align ?? 'left',
-                fontSize: 9,
+                fontSize: 10,
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
                 color: 'var(--text-muted)',
@@ -56,7 +56,7 @@ export function Table<T extends Record<string, unknown>>({
                 key={c.key}
                 style={{
                   padding: '6px 10px',
-                  fontSize: 11,
+                  fontSize: 12,
                   textAlign: c.align ?? 'left',
                   borderBottom: '1px solid color-mix(in srgb, var(--border-default) 40%, transparent)',
                 }}

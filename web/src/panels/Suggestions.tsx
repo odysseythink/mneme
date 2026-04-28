@@ -62,12 +62,12 @@ export function Suggestions(): JSX.Element {
           >
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
               <Pill variant="info">{s.type}</Pill>
-              <span className="mono" style={{ fontSize: 10, color: 'var(--text-muted)' }}>{s.generated_at}</span>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.generated_at}</span>
             </div>
-            <div style={{ fontWeight: 500, color: 'var(--text-strong)', fontSize: 12, marginBottom: 4 }}>
+            <div style={{ fontWeight: 500, color: 'var(--text-strong)', fontSize: 13, marginBottom: 4 }}>
               {s.title}
             </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'pre-wrap', marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'pre-wrap', marginBottom: 12 }}>
               {s.detail}
             </div>
             <ConfirmButton

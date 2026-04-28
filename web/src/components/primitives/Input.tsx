@@ -16,7 +16,7 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
         border: '1px solid var(--border-default)',
         background: 'var(--bg-base)',
         color: 'var(--text-body)',
-        fontSize: 11,
+        fontSize: 12,
         fontFamily: mono ? 'var(--font-mono)' : 'var(--font-sans)',
         outline: 'none',
         ...style,

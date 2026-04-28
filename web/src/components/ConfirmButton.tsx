@@ -38,7 +38,7 @@ export function ConfirmButton({ onConfirm, label, confirmLabel = 'Confirm?' }: C
       >
         {armed ? confirmLabel : label}
       </Button>
-      {err && <span style={{ fontSize: 10, color: 'var(--err)' }}>{err}</span>}
+      {err && <span style={{ fontSize: 11, color: 'var(--err)' }}>{err}</span>}
     </span>
   )
 }

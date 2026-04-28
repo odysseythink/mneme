@@ -5,7 +5,7 @@ export function Kbd({ children }: { children: ReactNode }): JSX.Element {
     <kbd
       style={{
         fontFamily: 'var(--font-mono)',
-        fontSize: 9,
+        fontSize: 10,
         padding: '1px 5px',
         borderRadius: 'var(--radius-1)',
         background: 'var(--bg-base)',

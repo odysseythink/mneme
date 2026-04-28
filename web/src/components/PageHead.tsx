@@ -5,7 +5,7 @@ export function PageHead(props: { title: ReactNode; meta?: ReactNode; actions?: 
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 4 }}>
       <h1
         style={{
-          fontSize: 22,
+          fontSize: 23,
           fontWeight: 600,
           color: 'var(--text-strong)',
           letterSpacing: '-0.01em',
@@ -15,7 +15,7 @@ export function PageHead(props: { title: ReactNode; meta?: ReactNode; actions?: 
         {props.title}
       </h1>
       {props.meta && (
-        <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+        <div className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
           {props.meta}
         </div>
       )}

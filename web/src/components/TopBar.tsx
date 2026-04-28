@@ -36,7 +36,7 @@ export function TopBar(): JSX.Element {
           borderRadius: 'var(--radius-2)',
           border: '1px solid var(--border-default)',
           background: 'var(--bg-base)',
-          fontSize: 11,
+          fontSize: 12,
           color: 'var(--text-muted)',
           display: 'flex',
           alignItems: 'center',
@@ -53,7 +53,7 @@ export function TopBar(): JSX.Element {
 
       <div style={{ flex: 1 }} />
 
-      <div className="mono" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: labelColor }}>
+      <div className="mono" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: labelColor }}>
         <Dot status={status === 'offline' ? 'offline' : status === 'err' ? 'err' : status === 'warn' ? 'warn' : 'ok'} />
         {label}
       </div>
@@ -72,7 +72,7 @@ export function TopBar(): JSX.Element {
           background: 'transparent',
           border: 'none',
           cursor: 'pointer',
-          fontSize: 13,
+          fontSize: 14,
         }}
       >
         ◐

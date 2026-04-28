@@ -49,7 +49,7 @@ export function Cron(): JSX.Element {
                   key={h}
                   style={{
                     textAlign: 'left',
-                    fontSize: 9,
+                    fontSize: 10,
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
                     color: 'var(--text-muted)',

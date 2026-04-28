@@ -93,7 +93,7 @@ export function Anatomy(): JSX.Element {
                     textAlign: 'left',
                     padding: '8px 12px',
                     fontWeight: 500,
-                    fontSize: 12,
+                    fontSize: 13,
                     background: 'var(--bg-raised)',
                     color: 'var(--text-strong)',
                     border: 'none',
@@ -104,9 +104,9 @@ export function Anatomy(): JSX.Element {
                     gap: 8,
                   }}
                 >
-                  <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>{isCollapsed ? '▶' : '▼'}</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{isCollapsed ? '▶' : '▼'}</span>
                   <span className="mono">{d.path}/</span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: 10, marginLeft: 'auto' }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 'auto' }}>
                     {d.files.length} file{d.files.length === 1 ? '' : 's'}
                   </span>
                 </button>
@@ -117,7 +117,7 @@ export function Anatomy(): JSX.Element {
                         key={f.name}
                         style={{
                           padding: '6px 12px',
-                          fontSize: 11,
+                          fontSize: 12,
                           display: 'flex',
                           gap: 12,
                           alignItems: 'center',
@@ -126,7 +126,7 @@ export function Anatomy(): JSX.Element {
                       >
                         <span className="mono" style={{ color: 'var(--text-body)' }}>{f.name}</span>
                         <Pill variant="neutral">{f.est_tokens}t</Pill>
-                        <span style={{ color: 'var(--text-muted)', flex: 1, fontSize: 11 }}>{f.description}</span>
+                        <span style={{ color: 'var(--text-muted)', flex: 1, fontSize: 12 }}>{f.description}</span>
                       </li>
                     ))}
                   </ul>
