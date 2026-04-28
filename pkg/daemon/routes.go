@@ -57,6 +57,18 @@ func NewMux(deps RouteDeps) http.Handler {
 	mux.Handle("/events/publish", dashboard.PublishHandler(deps.Bus, func(ctx context.Context) bool {
 		return transportFromCtx(ctx) == TransportUnix
 	}))
+	// M10c: Backend handlers (must come before dashboard.Mount to win over static files)
+	mux.Handle("/api/cerebrum", dashboard.CerebrumHandler())
+	mux.Handle("/cerebrum/approve", dashboard.CerebrumApproveHandler(deps.Bus))
+	mux.Handle("/cerebrum/reject", dashboard.CerebrumRejectHandler(deps.Bus))
+	mux.Handle("/api/memory", dashboard.MemoryHandler())
+	mux.Handle("/api/anatomy", dashboard.AnatomyHandler())
+	mux.Handle("/api/buglog", dashboard.BugLogHandler())
+	mux.Handle("/buglog/delete", dashboard.BugLogDeleteHandler(deps.Bus))
+	mux.Handle("/api/suggestions", dashboard.SuggestionsHandler())
+	mux.Handle("/suggestions/dismiss", dashboard.SuggestionsDismissHandler(deps.Bus))
+	mux.Handle("/api/token", dashboard.TokenHandler())
+	mux.Handle("/api/designqc", dashboard.DesignQCHandler())
 	dashboard.Mount(mux, dashboard.Deps{})
 	return mux
 }

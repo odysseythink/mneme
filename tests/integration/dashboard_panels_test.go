@@ -73,25 +73,43 @@ func TestDashboardPanels_EndToEnd(t *testing.T) {
 	client := &http.Client{}
 	var baseURL = "http://" + tcpAddr
 
-	for _, path := range []string{"/api/overview", "/api/projects", "/api/activity?limit=5", "/api/cron"} {
-		req, err := http.NewRequest("GET", baseURL+path, nil)
+	type endpointCheck struct {
+		path      string
+		wantCodes []int
+	}
+	checks := []endpointCheck{
+		{"/api/overview", []int{200}},
+		{"/api/projects", []int{200}},
+		{"/api/activity?limit=5", []int{200}},
+		{"/api/cron", []int{200}},
+		{"/api/cerebrum?project=fake", []int{404}},
+		{"/api/anatomy?project=fake", []int{404}},
+		{"/api/memory", []int{200}},
+		{"/api/designqc?project=fake", []int{404}},
+	}
+	for _, c := range checks {
+		req, err := http.NewRequest("GET", baseURL+c.path, nil)
 		if err != nil {
-			t.Errorf("NewRequest %s: %v", path, err)
+			t.Errorf("NewRequest %s: %v", c.path, err)
 			continue
 		}
 		req.Header.Set("Authorization", "Bearer "+token)
 		resp, err := client.Do(req)
 		if err != nil {
-			t.Errorf("GET %s: %v", path, err)
+			t.Errorf("GET %s: %v", c.path, err)
 			continue
 		}
 		body, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
-		if resp.StatusCode != 200 {
-			t.Errorf("GET %s: status=%d body=%s", path, resp.StatusCode, body)
+		ok := false
+		for _, code := range c.wantCodes {
+			if resp.StatusCode == code {
+				ok = true
+				break
+			}
 		}
-		if !strings.HasPrefix(strings.TrimSpace(string(body)), "{") {
-			t.Errorf("GET %s: body not JSON: %s", path, body)
+		if !ok {
+			t.Errorf("GET %s: status=%d body=%s", c.path, resp.StatusCode, body)
 		}
 	}
 

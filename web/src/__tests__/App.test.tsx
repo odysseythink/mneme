@@ -11,15 +11,22 @@ beforeEach(() => {
         projects: [],
       }), { headers: { 'Content-Type': 'application/json' } })
     }
+    if (url.includes('/api/projects')) {
+      return new Response(JSON.stringify({
+        projects: [{ id: 'p1', origin: '/work/a', anatomy_files: 0, cerebrum_pending: 0, memory_bytes: 0, last_activity_ts: 0 }],
+      }), { headers: { 'Content-Type': 'application/json' } })
+    }
     return new Response('{}', { headers: { 'Content-Type': 'application/json' } })
   }))
 })
 
 describe('App', () => {
-  test('renders the AppShell + Overview without throwing', async () => {
+  test('sidebar shows all 10 panel links', async () => {
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText('overview')).toBeInTheDocument()
+      for (const label of ['Overview', 'Activity', 'Cron', 'Cerebrum', 'Memory', 'Anatomy', 'BugLog', 'Suggestions', 'Token', 'DesignQC']) {
+        expect(screen.getByRole('link', { name: label })).toBeInTheDocument()
+      }
     })
   })
 })
