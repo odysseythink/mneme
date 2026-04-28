@@ -23,11 +23,12 @@ func runStop(stdin io.Reader) {
 	if ev.IsRecursiveStop() {
 		os.Exit(0)
 	}
-	root, _, resolved := resolveProjectFromEvent(ev)
+	root, id, resolved := resolveProjectFromEvent(ev)
 	if !resolved {
 		os.Exit(0)
 	}
 	state.IncrementSafe(root, "hook_fired.stop")
+	publishHookFired("stop", id, nil)
 
 	if err := state.AggregateTurn(root); err != nil {
 		hook.WriteStderr("stop: aggregate turn: " + err.Error())
