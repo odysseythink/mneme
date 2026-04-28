@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -19,7 +20,13 @@ type Config struct {
 	QdrantURL         string
 	QdrantCollection  string
 	ChromemPath       string
-	ConfigSource      string // path to the config file that was loaded, or "" if none
+	// Daemon (M8)
+	DaemonCronEnabled            bool
+	DaemonDashboardPort          int
+	DaemonDashboardPortEnabled   bool
+	DaemonShutdownTimeoutSeconds int
+	DaemonLogRetentionDays       int
+	ConfigSource                 string // path to the config file that was loaded, or "" if none
 }
 
 // fileConfig mirrors Config but uses yaml tags and pointer fields so we can
@@ -34,6 +41,11 @@ type fileConfig struct {
 	QdrantURL         *string `yaml:"qdrant_url"`
 	QdrantCollection  *string `yaml:"qdrant_collection"`
 	ChromemPath       *string `yaml:"chromem_path"`
+	DaemonCronEnabled            *bool `yaml:"daemon_cron_enabled"`
+	DaemonDashboardPort          *int  `yaml:"daemon_dashboard_port"`
+	DaemonDashboardPortEnabled   *bool `yaml:"daemon_dashboard_port_enabled"`
+	DaemonShutdownTimeoutSeconds *int  `yaml:"daemon_shutdown_timeout_seconds"`
+	DaemonLogRetentionDays       *int  `yaml:"daemon_log_retention_days"`
 }
 
 // FromEnv builds Config with priority: env var > config file > built-in default.
@@ -62,7 +74,12 @@ func FromEnv() *Config {
 		QdrantURL:         resolve(os.Getenv("QDRANT_URL"), file.QdrantURL, "http://localhost:6333"),
 		QdrantCollection:  resolve(os.Getenv("QDRANT_COLLECTION"), file.QdrantCollection, "mneme"),
 		ChromemPath:       expandHome(resolve(os.Getenv("CHROMEM_PATH"), file.ChromemPath, filepath.Join(homeDir, ".mneme", "chromem")), homeDir),
-		ConfigSource:      configSource,
+		DaemonCronEnabled:            resolveBool(os.Getenv("DAEMON_CRON_ENABLED"), file.DaemonCronEnabled, true),
+		DaemonDashboardPort:          resolveInt(os.Getenv("DAEMON_DASHBOARD_PORT"), file.DaemonDashboardPort, 18801),
+		DaemonDashboardPortEnabled:   resolveBool(os.Getenv("DAEMON_DASHBOARD_PORT_ENABLED"), file.DaemonDashboardPortEnabled, false),
+		DaemonShutdownTimeoutSeconds: resolveInt(os.Getenv("DAEMON_SHUTDOWN_TIMEOUT_SECONDS"), file.DaemonShutdownTimeoutSeconds, 10),
+		DaemonLogRetentionDays:       resolveInt(os.Getenv("DAEMON_LOG_RETENTION_DAYS"), file.DaemonLogRetentionDays, 14),
+		ConfigSource:                 configSource,
 	}
 }
 
@@ -109,4 +126,34 @@ func expandHome(path, homeDir string) string {
 		return homeDir
 	}
 	return path
+}
+
+// resolveBool returns env > file > default. Env values "true"/"1"/"yes"/"false"/"0"/"no"
+// are parsed; anything else falls through to file/default.
+func resolveBool(envVal string, fileVal *bool, defaultVal bool) bool {
+	if envVal != "" {
+		switch strings.ToLower(envVal) {
+		case "true", "1", "yes":
+			return true
+		case "false", "0", "no":
+			return false
+		}
+	}
+	if fileVal != nil {
+		return *fileVal
+	}
+	return defaultVal
+}
+
+// resolveInt returns env > file > default. Non-integer env values fall through.
+func resolveInt(envVal string, fileVal *int, defaultVal int) int {
+	if envVal != "" {
+		if n, err := strconv.Atoi(envVal); err == nil {
+			return n
+		}
+	}
+	if fileVal != nil {
+		return *fileVal
+	}
+	return defaultVal
 }
