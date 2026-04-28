@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { CronTask } from '../api/types'
 import { runTask, retryTask } from '../api/cron'
+import { Button } from './primitives/Button'
+import { Dot } from './primitives/Dot'
 
 export function CronTaskRow({ t, onAction }: { t: CronTask; onAction: () => void }): JSX.Element {
   const [busy, setBusy] = useState(false)
@@ -14,20 +16,30 @@ export function CronTaskRow({ t, onAction }: { t: CronTask; onAction: () => void
     finally { setBusy(false) }
   }
 
+  const status: 'ok' | 'warn' | 'err' = dead ? 'err' : t.state.consecutive_failures > 0 ? 'warn' : 'ok'
+  const label = dead ? 'dead-lettered' : t.state.consecutive_failures > 0 ? 'retrying' : 'healthy'
+  const labelColor = status === 'err' ? 'var(--err)' : status === 'warn' ? 'var(--warn)' : 'var(--ok)'
+
+  const td = (extra?: React.CSSProperties): React.CSSProperties => ({
+    padding: '6px 10px',
+    fontSize: 11,
+    borderBottom: '1px solid color-mix(in srgb, var(--border-default) 40%, transparent)',
+    ...extra,
+  })
+
   return (
-    <tr className="border-b">
-      <td className="px-3 py-2 font-medium">{t.name}</td>
-      <td className="px-3 py-2 text-sm text-gray-600">{t.schedule}</td>
-      <td className="px-3 py-2 text-sm">{t.state.last_run || '—'}</td>
-      <td className="px-3 py-2 text-sm">
-        {dead ? <span className="text-red-700">dead-lettered</span> :
-         t.state.consecutive_failures > 0 ? <span className="text-yellow-700">retrying</span> :
-         <span className="text-green-700">healthy</span>}
+    <tr>
+      <td style={td({ fontWeight: 500, color: 'var(--text-strong)' })}>{t.name}</td>
+      <td style={td({ color: 'var(--text-muted)' })} className="mono">{t.schedule}</td>
+      <td style={td({ color: 'var(--text-body)' })} className="mono">{t.state.last_run || '—'}</td>
+      <td style={td({ display: 'flex', alignItems: 'center', gap: 6 })}>
+        <Dot status={status} />
+        <span style={{ color: labelColor }}>{label}</span>
       </td>
-      <td className="px-3 py-2 text-sm">
-        <button disabled={busy} onClick={() => fire(runTask)} className="px-2 py-1 rounded border mr-2 disabled:opacity-50">Run</button>
-        {dead && <button disabled={busy} onClick={() => fire(retryTask)} className="px-2 py-1 rounded border">Retry</button>}
-        {err && <span className="ml-2 text-red-700 text-xs">{err}</span>}
+      <td style={td({ display: 'flex', gap: 6, alignItems: 'center' })}>
+        <Button size="sm" disabled={busy} onClick={() => fire(runTask)}>Run</Button>
+        {dead && <Button size="sm" variant="danger" disabled={busy} onClick={() => fire(retryTask)}>Retry</Button>}
+        {err && <span style={{ marginLeft: 4, color: 'var(--err)', fontSize: 10 }}>{err}</span>}
       </td>
     </tr>
   )
