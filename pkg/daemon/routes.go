@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ranwei/mneme/pkg/dashboard"
@@ -36,6 +39,13 @@ func NewMux(deps RouteDeps) http.Handler {
 	mux.HandleFunc("/cron/retry", deps.cronRetry)
 	// M10a: dashboard static + dev-token (must come last so specific paths win)
 	mux.Handle("/dev-token", dashboard.DevTokenHandler(deps.Token, deps.DevMode))
+	// M10b: API endpoints (must come before dashboard.Mount to win over static files)
+	mux.Handle("/api/overview", dashboard.OverviewHandler(
+		dashboard.APIDeps{
+			Home: deps.Home, PID: deps.PID, Version: deps.Version, StartedAt: deps.StartedAt,
+		},
+		func() int { return countOpenSuggestions(deps.Home) },
+	))
 	dashboard.Mount(mux, dashboard.Deps{})
 	return mux
 }
@@ -207,4 +217,19 @@ func (d *RouteDeps) cronRetry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, map[string]string{"status": "cleared"})
+}
+
+func countOpenSuggestions(home string) int {
+	dir := filepath.Join(home, ".mneme", "suggestions")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0
+	}
+	count := 0
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".json") {
+			count++
+		}
+	}
+	return count
 }
