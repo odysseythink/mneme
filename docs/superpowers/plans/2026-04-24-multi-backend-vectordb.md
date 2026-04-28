@@ -52,7 +52,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/config"
+	"github.com/ranwei/mneme/pkg/config"
 )
 
 func TestConfigBackendDefaults(t *testing.T) {
@@ -69,8 +69,8 @@ func TestConfigBackendDefaults(t *testing.T) {
 	if cfg.QdrantURL != "http://localhost:6333" {
 		t.Errorf("expected QdrantURL='http://localhost:6333', got %q", cfg.QdrantURL)
 	}
-	if cfg.QdrantCollection != "claude-context" {
-		t.Errorf("expected QdrantCollection='claude-context', got %q", cfg.QdrantCollection)
+	if cfg.QdrantCollection != "mneme" {
+		t.Errorf("expected QdrantCollection='mneme', got %q", cfg.QdrantCollection)
 	}
 }
 
@@ -139,12 +139,12 @@ func FromEnv() *Config {
 		EmbeddingAPIKey:   os.Getenv("EMBEDDING_API_KEY"),
 		EmbeddingProvider: getEnvOrDefault("EMBEDDING_PROVIDER", "siliconflow"),
 		EmbeddingModel:    getEnvOrDefault("EMBEDDING_MODEL", "BAAI/bge-large-zh-v1.5"),
-		DBPath:            getEnvOrDefault("DB_PATH", filepath.Join(homeDir, ".claude-context", "db.duckdb")),
+		DBPath:            getEnvOrDefault("DB_PATH", filepath.Join(homeDir, ".mneme", "db.duckdb")),
 		LogLevel:          getEnvOrDefault("LOG_LEVEL", "info"),
 		DBBackend:         getEnvOrDefault("DB_BACKEND", "duckdb"),
 		QdrantURL:         getEnvOrDefault("QDRANT_URL", "http://localhost:6333"),
-		QdrantCollection:  getEnvOrDefault("QDRANT_COLLECTION", "claude-context"),
-		ChromemPath:       getEnvOrDefault("CHROMEM_PATH", filepath.Join(homeDir, ".claude-context", "chromem")),
+		QdrantCollection:  getEnvOrDefault("QDRANT_COLLECTION", "mneme"),
+		ChromemPath:       getEnvOrDefault("CHROMEM_PATH", filepath.Join(homeDir, ".mneme", "chromem")),
 	}
 }
 
@@ -190,8 +190,8 @@ package tests
 import (
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/config"
-	"github.com/ranwei/claude-context/pkg/vectordb"
+	"github.com/ranwei/mneme/pkg/config"
+	"github.com/ranwei/mneme/pkg/vectordb"
 )
 
 func TestFactoryDefaultsToDuckDB(t *testing.T) {
@@ -284,8 +284,8 @@ package vectordb
 import (
 	"fmt"
 
-	"github.com/ranwei/claude-context/pkg"
-	"github.com/ranwei/claude-context/pkg/config"
+	"github.com/ranwei/mneme/pkg"
+	"github.com/ranwei/mneme/pkg/config"
 )
 
 // NewStoreFromConfig selects and constructs the vector store backend from config.
@@ -314,7 +314,7 @@ package vectordb
 import (
 	"context"
 
-	"github.com/ranwei/claude-context/pkg"
+	"github.com/ranwei/mneme/pkg"
 )
 
 type ChromemStore struct {
@@ -341,7 +341,7 @@ package vectordb
 import (
 	"context"
 
-	"github.com/ranwei/claude-context/pkg"
+	"github.com/ranwei/mneme/pkg"
 )
 
 type QdrantStore struct {
@@ -396,8 +396,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg"
-	"github.com/ranwei/claude-context/pkg/vectordb"
+	"github.com/ranwei/mneme/pkg"
+	"github.com/ranwei/mneme/pkg/vectordb"
 )
 
 func TestChromemStoreInitialize(t *testing.T) {
@@ -504,7 +504,7 @@ import (
 	"time"
 
 	chromem "github.com/philippgille/chromem-go"
-	"github.com/ranwei/claude-context/pkg"
+	"github.com/ranwei/mneme/pkg"
 )
 
 type ChromemStore struct {
@@ -634,8 +634,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg"
-	"github.com/ranwei/claude-context/pkg/vectordb"
+	"github.com/ranwei/mneme/pkg"
+	"github.com/ranwei/mneme/pkg/vectordb"
 )
 
 func qdrantURL(t *testing.T) string {
@@ -751,7 +751,7 @@ import (
 
 	"github.com/odysseythink/mlog"
 	qdrantpb "github.com/qdrant/go-client/qdrant"
-	"github.com/ranwei/claude-context/pkg"
+	"github.com/ranwei/mneme/pkg"
 )
 
 type QdrantStore struct {
@@ -1007,19 +1007,19 @@ if err := store.Initialize(cfg.DBPath); err != nil {
 Also update the startup log line from:
 
 ```go
-mlog.Infof("Claude Context MCP Server started (provider=%s, db=%s)", cfg.EmbeddingProvider, cfg.DBPath)
+mlog.Infof("Mneme MCP Server started (provider=%s, db=%s)", cfg.EmbeddingProvider, cfg.DBPath)
 ```
 
 to:
 
 ```go
-mlog.Infof("Claude Context MCP Server started (provider=%s, backend=%s)", cfg.EmbeddingProvider, cfg.DBBackend)
+mlog.Infof("Mneme MCP Server started (provider=%s, backend=%s)", cfg.EmbeddingProvider, cfg.DBBackend)
 ```
 
 - [ ] **Step 2: Build to confirm main compiles**
 
 ```bash
-go build -o ./bin/claude-context ./cmd/mcp
+go build -o ./bin/mneme ./cmd/mcp
 ```
 
 Expected: builds without error.
@@ -1031,8 +1031,8 @@ In `CLAUDE.md`, find the `## Required Environment Variables` table and add the n
 ```markdown
 | `DB_BACKEND` | `duckdb` | Vector store backend: `duckdb`, `qdrant`, `chromem` |
 | `QDRANT_URL` | `http://localhost:6333` | Qdrant service URL (HTTP port; gRPC 6334 auto-used) |
-| `QDRANT_COLLECTION` | `claude-context` | Qdrant collection name |
-| `CHROMEM_PATH` | `~/.claude-context/chromem` | chromem-go persistence directory |
+| `QDRANT_COLLECTION` | `mneme` | Qdrant collection name |
+| `CHROMEM_PATH` | `~/.mneme/chromem` | chromem-go persistence directory |
 ```
 
 - [ ] **Step 4: Run full test suite**

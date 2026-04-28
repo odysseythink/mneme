@@ -1,7 +1,7 @@
-# Claude Context Go Refactoring Design
+# Mneme Go Refactoring Design
 
 **Date:** 2026-04-23  
-**Scope:** Refactor TypeScript monorepo (claude-context v0.1.7) → Go MVP (Core + MCP Server)  
+**Scope:** Refactor TypeScript monorepo (mneme v0.1.7) → Go MVP (Core + MCP Server)  
 **Goals:** Better performance/resource efficiency, simplified deployment (single binary)
 
 ---
@@ -53,7 +53,7 @@ MCP Server (cmd/mcp)
 ## 3. Package Structure
 
 ```
-go-claude-context/
+go-mneme/
 ├── cmd/mcp/
 │   └── main.go                    # MCP server entry point
 ├── pkg/
@@ -226,7 +226,7 @@ type Store interface {
 ```
 
 **Behavior:**
-- Create DB file on first run (auto-create `~/.claude-context/db.duckdb`)
+- Create DB file on first run (auto-create `~/.mneme/db.duckdb`)
 - Use DuckDB's native vector type and cosine_similarity() function
 - Index embeddings for fast search
 - Support multi-codebase indexing (keyed by codebase hash)
@@ -262,22 +262,22 @@ type Store interface {
 | `EMBEDDING_API_KEY` | (required) | API key for embedding provider |
 | `EMBEDDING_PROVIDER` | `siliconflow` | `siliconflow` or `qwen` |
 | `EMBEDDING_MODEL` | `BAAI/bge-large-zh-v1.5` | Model ID. SiliconFlow: `BAAI/bge-large-zh-v1.5` (1536 dims). Qwen: `text-embedding-v2` (1536 dims) |
-| `DB_PATH` | `~/.claude-context/db.duckdb` | Path to DuckDB file |
+| `DB_PATH` | `~/.mneme/db.duckdb` | Path to DuckDB file |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 
 ### Build & Deployment
 
 **Build:**
 ```bash
-go build -o claude-context ./cmd/mcp
+go build -o mneme ./cmd/mcp
 ```
 
 **Register with Claude Code:**
 ```bash
-claude mcp add claude-context \
+claude mcp add mneme \
   -e EMBEDDING_API_KEY=sk-xxx \
   -e EMBEDDING_PROVIDER=siliconflow \
-  -- /path/to/claude-context
+  -- /path/to/mneme
 ```
 
 **Single Binary:** Includes Go runtime, DuckDB, tree-sitter grammars. No external dependencies except API calls to embedding provider.

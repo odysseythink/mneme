@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/config"
+	"github.com/ranwei/mneme/pkg/config"
 )
 
 func TestConfigBackendDefaults(t *testing.T) {
@@ -21,7 +21,7 @@ func TestConfigBackendDefaults(t *testing.T) {
 			}
 		})
 	}
-	// Point CONFIG_FILE at a nonexistent path so the user's ~/.claude-context/config.yaml
+	// Point CONFIG_FILE at a nonexistent path so the user's ~/.mneme/config.yaml
 	// does not interfere with built-in default assertions.
 	t.Setenv("CONFIG_FILE", "/nonexistent/config.yaml")
 
@@ -33,8 +33,8 @@ func TestConfigBackendDefaults(t *testing.T) {
 	if cfg.QdrantURL != "http://localhost:6333" {
 		t.Errorf("expected QdrantURL='http://localhost:6333', got %q", cfg.QdrantURL)
 	}
-	if cfg.QdrantCollection != "claude-context" {
-		t.Errorf("expected QdrantCollection='claude-context', got %q", cfg.QdrantCollection)
+	if cfg.QdrantCollection != "mneme" {
+		t.Errorf("expected QdrantCollection='mneme', got %q", cfg.QdrantCollection)
 	}
 	if cfg.ChromemPath == "" {
 		t.Error("expected ChromemPath to be non-empty default")

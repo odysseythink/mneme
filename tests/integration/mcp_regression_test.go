@@ -43,7 +43,7 @@ func TestMCPZeroRegressionBuildCheck(t *testing.T) {
 	if err != nil {
 		t.Fatalf("binary version failed: %v\n%s", err, out)
 	}
-	if !strings.Contains(string(out), "claude-context") {
+	if !strings.Contains(string(out), "mneme") {
 		t.Errorf("unexpected version output: %s", out)
 	}
 }

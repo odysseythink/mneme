@@ -8,7 +8,7 @@
 
 ## Problem
 
-The current DuckDB store uses a single file with an exclusive OS lock. When multiple claude-context MCP server instances point at the same database path, the second instance fails to open the file. Users running multiple Claude Code windows against the same codebase hit this limit.
+The current DuckDB store uses a single file with an exclusive OS lock. When multiple mneme MCP server instances point at the same database path, the second instance fails to open the file. Users running multiple Claude Code windows against the same codebase hit this limit.
 
 Additionally, some users want a production-grade vector database (Qdrant) with proper concurrent access and richer search capabilities.
 
@@ -58,10 +58,10 @@ New environment variables added to `pkg/config/config.go`:
 | Variable | Default | Backend | Description |
 |----------|---------|---------|-------------|
 | `DB_BACKEND` | `duckdb` | all | Backend selector: `duckdb`, `qdrant`, `chromem` |
-| `DB_PATH` | `~/.claude-context/db.duckdb` | duckdb | DuckDB file path (unchanged) |
+| `DB_PATH` | `~/.mneme/db.duckdb` | duckdb | DuckDB file path (unchanged) |
 | `QDRANT_URL` | `http://localhost:6333` | qdrant | Qdrant service address |
-| `QDRANT_COLLECTION` | `claude-context` | qdrant | Qdrant collection name |
-| `CHROMEM_PATH` | `~/.claude-context/chromem` | chromem | chromem persistence directory |
+| `QDRANT_COLLECTION` | `mneme` | qdrant | Qdrant collection name |
+| `CHROMEM_PATH` | `~/.mneme/chromem` | chromem | chromem persistence directory |
 
 Each backend has its own path/connection config. `DB_PATH` remains DuckDB-only to avoid semantic ambiguity (DuckDB uses a file; chromem uses a directory).
 
@@ -125,7 +125,7 @@ type ChromemStore struct {
 }
 ```
 
-**Initialize():** Open or create a persistent chromem DB at `path`. Load or create a collection named `"claude-context"`.
+**Initialize():** Open or create a persistent chromem DB at `path`. Load or create a collection named `"mneme"`.
 
 **InsertVector():** Convert `pkg.Vector` to a `chromem.Document`:
 - `ID`: string form of `vec.ID` (or hash of content)

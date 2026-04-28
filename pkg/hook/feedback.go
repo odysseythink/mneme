@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-const prefix = "⚡ claude-context: "
+const prefix = "⚡ mneme: "
 
 // FormatStderr returns the prefixed message string.
 func FormatStderr(msg string) string {
@@ -18,9 +18,9 @@ func WriteStderr(msg string) {
 	fmt.Fprintln(os.Stderr, FormatStderr(msg))
 }
 
-// DebugLevel reads CLAUDE_CONTEXT_DEBUG. Returns 0 if unset or invalid.
+// DebugLevel reads MNEME_DEBUG. Returns 0 if unset or invalid.
 func DebugLevel() int {
-	v := os.Getenv("CLAUDE_CONTEXT_DEBUG")
+	v := os.Getenv("MNEME_DEBUG")
 	if v == "" {
 		return 0
 	}

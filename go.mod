@@ -1,4 +1,4 @@
-module github.com/ranwei/claude-context
+module github.com/ranwei/mneme
 
 go 1.25.7
 

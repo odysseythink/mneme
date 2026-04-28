@@ -4,8 +4,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/ranwei/claude-context/pkg/hook"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/hook"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func runStop(stdin io.Reader) {

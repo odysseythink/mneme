@@ -14,7 +14,7 @@ import (
 
 	chromem "github.com/philippgille/chromem-go"
 	"github.com/odysseythink/mlog"
-	"github.com/ranwei/claude-context/pkg"
+	"github.com/ranwei/mneme/pkg"
 )
 
 type ChromemStore struct {

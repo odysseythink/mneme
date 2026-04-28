@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/classifier"
+	"github.com/ranwei/mneme/pkg/classifier"
 )
 
 func TestClassifyEdit(t *testing.T) {

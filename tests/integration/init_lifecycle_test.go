@@ -20,12 +20,12 @@ func TestMain(m *testing.M) {
 	}
 	defer os.RemoveAll(tmp)
 
-	bin := filepath.Join(tmp, "claude-context")
+	bin := filepath.Join(tmp, "mneme")
 	if runtime.GOOS == "windows" {
 		bin += ".exe"
 	}
 	out, err := exec.Command("go", "build", "-o", bin,
-		"github.com/ranwei/claude-context/cmd").CombinedOutput()
+		"github.com/ranwei/mneme/cmd").CombinedOutput()
 	if err != nil {
 		panic("build failed: " + string(out))
 	}
@@ -78,19 +78,19 @@ func TestInitFreshThenUninstall(t *testing.T) {
 	}
 
 	// Verify rules.md was created
-	rulesPath := filepath.Join(home, ".claude", "claude-context-rules.md")
+	rulesPath := filepath.Join(home, ".claude", "mneme-rules.md")
 	if _, err := os.Stat(rulesPath); err != nil {
 		t.Error("rules.md not created")
 	}
 
 	// Verify CLAUDE.md has @import
 	claudeMD, _ := os.ReadFile(filepath.Join(home, ".claude", "CLAUDE.md"))
-	if !strings.Contains(string(claudeMD), "claude-context-managed BEGIN") {
+	if !strings.Contains(string(claudeMD), "mneme-managed BEGIN") {
 		t.Error("CLAUDE.md missing boundary marker")
 	}
 
-	// Verify .claude-context/ and .local-id
-	if _, err := os.Stat(filepath.Join(project, ".claude-context", ".local-id")); err != nil {
+	// Verify .mneme/ and .local-id
+	if _, err := os.Stat(filepath.Join(project, ".mneme", ".local-id")); err != nil {
 		t.Error(".local-id not created")
 	}
 
@@ -111,7 +111,7 @@ func TestInitFreshThenUninstall(t *testing.T) {
 
 	// Verify CLAUDE.md no longer has boundary markers
 	afterMD, _ := os.ReadFile(filepath.Join(home, ".claude", "CLAUDE.md"))
-	if strings.Contains(string(afterMD), "claude-context-managed") {
+	if strings.Contains(string(afterMD), "mneme-managed") {
 		t.Errorf("CLAUDE.md still has markers after uninstall: %s", afterMD)
 	}
 

@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	_ "github.com/marcboeker/go-duckdb"
-	"github.com/ranwei/claude-context/pkg"
+	"github.com/ranwei/mneme/pkg"
 )
 
 type DuckDBStore struct {

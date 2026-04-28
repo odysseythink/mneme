@@ -5,10 +5,10 @@ import (
 	"os"
 	"testing"
 
-	ctxpkg "github.com/ranwei/claude-context/pkg/context"
-	"github.com/ranwei/claude-context/pkg/embedding"
-	"github.com/ranwei/claude-context/pkg/splitter"
-	"github.com/ranwei/claude-context/pkg/vectordb"
+	ctxpkg "github.com/ranwei/mneme/pkg/context"
+	"github.com/ranwei/mneme/pkg/embedding"
+	"github.com/ranwei/mneme/pkg/splitter"
+	"github.com/ranwei/mneme/pkg/vectordb"
 )
 
 func TestEndToEndIndexAndSearch(t *testing.T) {

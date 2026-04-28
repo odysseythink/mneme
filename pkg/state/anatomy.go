@@ -20,7 +20,7 @@ type AnatomyEntry struct {
 
 // WriteAnatomy groups entries by directory, sorts lexicographically,
 // renders anatomy.md, and writes it atomically to
-// <projectRoot>/.claude-context/anatomy.md.
+// <projectRoot>/.mneme/anatomy.md.
 func WriteAnatomy(projectRoot string, entries []AnatomyEntry) error {
 	id, err := ReadOrCreateLocalID(projectRoot)
 	if err != nil {
@@ -42,7 +42,7 @@ func WriteAnatomy(projectRoot string, entries []AnatomyEntry) error {
 	sort.Strings(dirs)
 
 	var sb strings.Builder
-	sb.WriteString("<!-- claude-context anatomy v1 -->\n")
+	sb.WriteString("<!-- mneme anatomy v1 -->\n")
 	fmt.Fprintf(&sb, "<!-- generated: %s | files: %d | project: %s -->\n",
 		time.Now().UTC().Format(time.RFC3339), len(entries), id)
 
@@ -64,7 +64,7 @@ func WriteAnatomy(projectRoot string, entries []AnatomyEntry) error {
 		}
 	}
 
-	path := filepath.Join(projectRoot, ".claude-context", "anatomy.md")
+	path := filepath.Join(projectRoot, ".mneme", "anatomy.md")
 	if err := AtomicWrite(path, []byte(sb.String())); err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func WriteAnatomy(projectRoot string, entries []AnatomyEntry) error {
 // ReadAnatomy parses anatomy.md into a map keyed by project-relative path.
 // Returns an empty map (not an error) if anatomy.md does not exist.
 func ReadAnatomy(projectRoot string) (map[string]AnatomyEntry, error) {
-	path := filepath.Join(projectRoot, ".claude-context", "anatomy.md")
+	path := filepath.Join(projectRoot, ".mneme", "anatomy.md")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -146,7 +146,7 @@ func ReadAnatomy(projectRoot string) (map[string]AnatomyEntry, error) {
 // from anatomy.md. Returns an error if the file is missing or the timestamp
 // cannot be parsed.
 func ReadAnatomyGeneratedTime(projectRoot string) (time.Time, error) {
-	path := filepath.Join(projectRoot, ".claude-context", "anatomy.md")
+	path := filepath.Join(projectRoot, ".mneme", "anatomy.md")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return time.Time{}, err

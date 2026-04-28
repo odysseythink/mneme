@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/config"
+	"github.com/ranwei/mneme/pkg/config"
 )
 
 func TestConfigFileOverridesDefaults(t *testing.T) {
