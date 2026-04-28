@@ -72,6 +72,33 @@ func TestBus_RotatesAcrossDay(t *testing.T) {
 	}
 }
 
+func TestBus_PrunesOldEventsFiles(t *testing.T) {
+	home := t.TempDir()
+	if err := os.MkdirAll(state.DaemonDir(home), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	old := state.DaemonEventsPath(home, "20260101")
+	if err := os.WriteFile(old, []byte("stale\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	oldT := time.Now().Add(-30 * 24 * time.Hour)
+	if err := os.Chtimes(old, oldT, oldT); err != nil {
+		t.Fatal(err)
+	}
+
+	bus, err := events.NewBus(home, &stubLogger{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	bus.Publish(events.Event{TS: time.Now().UnixMilli(), Type: "x"})
+	bus.Close()
+
+	if _, err := os.Stat(old); err == nil {
+		t.Errorf("old events file should have been pruned")
+	}
+}
+
 type stepClock struct {
 	t time.Time
 }

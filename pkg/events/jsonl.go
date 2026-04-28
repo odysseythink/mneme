@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -42,6 +44,31 @@ func (w *jsonlWriter) append(e Event) {
 	}
 }
 
+const retentionDays = 14
+
+func (w *jsonlWriter) pruneOldLocked() {
+	dir := state.DaemonDir(w.home)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	cutoff := w.clock().Add(-time.Duration(retentionDays) * 24 * time.Hour)
+	for _, e := range entries {
+		if e.IsDir() ||
+			!strings.HasPrefix(e.Name(), "events-") ||
+			!strings.HasSuffix(e.Name(), ".jsonl") {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		if info.ModTime().Before(cutoff) {
+			_ = os.Remove(filepath.Join(dir, e.Name()))
+		}
+	}
+}
+
 func (w *jsonlWriter) openTodayLocked() error {
 	date := w.clock().UTC().Format("20060102")
 	if w.current != nil && w.curDate == date {
@@ -61,6 +88,7 @@ func (w *jsonlWriter) openTodayLocked() error {
 	}
 	w.current = f
 	w.curDate = date
+	w.pruneOldLocked()
 	return nil
 }
 
