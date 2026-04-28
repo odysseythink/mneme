@@ -25,6 +25,7 @@ type RunOptions struct {
 	TCPAddr           string
 	ShutdownTimeout   time.Duration
 	HeartbeatInterval time.Duration
+	DevMode           bool // M10a: enables /dev-token endpoint
 }
 
 // Run is the daemon entrypoint. Blocks until ctx is cancelled.
@@ -115,6 +116,8 @@ func Run(ctx context.Context, opt RunOptions) error {
 		Version:   opt.Version,
 		StartedAt: startedAt,
 		Scheduler: sched,
+		Token:     token,
+		DevMode:   opt.DevMode,
 	})
 	srv := NewServer(ServerConfig{
 		SocketPath:      state.DaemonSocketPath(opt.Home),

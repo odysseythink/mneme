@@ -31,6 +31,8 @@ type Config struct {
 	WasteThresholdPercent      int
 	SuggestionsDismissTTLDays  int
 	CerebrumRejectTTLDays      int
+	// Dashboard dev mode (M10a)
+	DaemonDevMode              bool
 	ConfigSource                 string // path to the config file that was loaded, or "" if none
 }
 
@@ -55,6 +57,7 @@ type fileConfig struct {
 	WasteThresholdPercent        *int  `yaml:"waste_threshold_percent"`
 	SuggestionsDismissTTLDays    *int  `yaml:"suggestions_dismiss_ttl_days"`
 	CerebrumRejectTTLDays        *int  `yaml:"cerebrum_reject_ttl_days"`
+	DaemonDevMode                *bool `yaml:"daemon_dev_mode"`
 }
 
 // FromEnv builds Config with priority: env var > config file > built-in default.
@@ -92,6 +95,7 @@ func FromEnv() *Config {
 		WasteThresholdPercent:      resolveInt(os.Getenv("WASTE_THRESHOLD_PERCENT"), file.WasteThresholdPercent, 15),
 		SuggestionsDismissTTLDays:  resolveInt(os.Getenv("SUGGESTIONS_DISMISS_TTL_DAYS"), file.SuggestionsDismissTTLDays, 30),
 		CerebrumRejectTTLDays:      resolveInt(os.Getenv("CEREBRUM_REJECT_TTL_DAYS"), file.CerebrumRejectTTLDays, 90),
+		DaemonDevMode:              resolveBool(os.Getenv("DAEMON_DEV_MODE"), file.DaemonDevMode, false),
 		ConfigSource:                 configSource,
 	}
 }

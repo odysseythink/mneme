@@ -50,6 +50,12 @@ func printDaemonUsage() {
 }
 
 func runDaemonStart(args []string) {
+	dev := false
+	for _, a := range args {
+		if a == "--dev" {
+			dev = true
+		}
+	}
 	home, _ := os.UserHomeDir()
 	cfg := config.FromEnv()
 
@@ -74,6 +80,7 @@ func runDaemonStart(args []string) {
 		CronEnabled:     cfg.DaemonCronEnabled,
 		TCPAddr:         tcp,
 		ShutdownTimeout: time.Duration(cfg.DaemonShutdownTimeoutSeconds) * time.Second,
+		DevMode:         dev || cfg.DaemonDevMode,
 	})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "daemon:", err)

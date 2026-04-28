@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/ranwei/mneme/pkg/dashboard"
 )
 
 // RouteDeps wires handler dependencies.
@@ -15,6 +17,8 @@ type RouteDeps struct {
 	Version   string
 	StartedAt int64 // unix seconds
 	Scheduler *Scheduler
+	Token     string // M10a: dev_token handler
+	DevMode   bool   // M10a: enables /dev-token
 }
 
 // NewMux builds the handler tree.
@@ -28,6 +32,9 @@ func NewMux(deps RouteDeps) http.Handler {
 	mux.HandleFunc("/cron/list", deps.cronList)
 	mux.HandleFunc("/cron/run", deps.cronRun)
 	mux.HandleFunc("/cron/retry", deps.cronRetry)
+	// M10a: dashboard static + dev-token (must come last so specific paths win)
+	mux.Handle("/dev-token", dashboard.DevTokenHandler(deps.Token, deps.DevMode))
+	dashboard.Mount(mux, dashboard.Deps{})
 	return mux
 }
 
