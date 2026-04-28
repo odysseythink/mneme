@@ -19,6 +19,7 @@ Usage:
   mneme scan              scan project files and update anatomy map
   mneme cerebrum <cmd>    manage project coding rules
   mneme buglog <cmd>      manage per-project bug history
+  mneme restore           restore from backup (--list, --latest, or <timestamp>)
   mneme update            sync templates across all projects (--binary self-updates)
   mneme update --list     list initialized projects
   mneme version           print version
