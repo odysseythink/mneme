@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ranwei/mneme/pkg/cerebrum"
+	"github.com/ranwei/mneme/pkg/events"
 	"github.com/ranwei/mneme/pkg/state"
 )
 
@@ -25,12 +26,14 @@ type CerebrumLearnDeps struct {
 	RejectTTLDays      int
 	Now                func() time.Time
 	ResolveProjectRoot func(projectID string) (string, error)
+	Bus                *events.Bus // M10b: optional event bus for publishing
 }
 
 type cerebrumLearnHandler struct {
 	deps  CerebrumLearnDeps
 	queue chan CerebrumLearnRequest
 	stop  chan struct{}
+	bus   *events.Bus // M10b: reference to bus for event publishing
 
 	mu     sync.Mutex
 	inProg map[string]bool
@@ -47,6 +50,7 @@ func NewCerebrumLearnHandler(deps CerebrumLearnDeps) http.Handler {
 		deps:   deps,
 		queue:  make(chan CerebrumLearnRequest, cerebrumQueueCapacity),
 		stop:   make(chan struct{}),
+		bus:    deps.Bus,
 		inProg: map[string]bool{},
 	}
 	go h.workerLoop()
@@ -78,6 +82,15 @@ func (h *cerebrumLearnHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte(`{"queued":true}`))
+		if h.bus != nil {
+			payload, _ := json.Marshal(map[string]interface{}{"count": 1})
+			h.bus.Publish(events.Event{
+				TS:        time.Now().UnixMilli(),
+				Type:      "cerebrum.candidate",
+				ProjectID: req.ProjectID,
+				Data:      payload,
+			})
+		}
 	default:
 		http.Error(w, "queue full", http.StatusServiceUnavailable)
 	}
