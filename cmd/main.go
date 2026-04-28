@@ -24,6 +24,8 @@ func main() {
 		dispatchCerebrum(os.Args[2:])
 	case "buglog":
 		dispatchBuglog(os.Args[2:])
+	case "memory":
+		dispatchMemory(os.Args[2:])
 	case "version":
 		printVersion()
 	case "-h", "--help", "help":
