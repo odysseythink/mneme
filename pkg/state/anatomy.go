@@ -141,3 +141,25 @@ func ReadAnatomy(projectRoot string) (map[string]AnatomyEntry, error) {
 	}
 	return result, nil
 }
+
+// ReadAnatomyGeneratedTime parses the <!-- generated: RFC3339 --> timestamp
+// from anatomy.md. Returns an error if the file is missing or the timestamp
+// cannot be parsed.
+func ReadAnatomyGeneratedTime(projectRoot string) (time.Time, error) {
+	path := filepath.Join(projectRoot, ".claude-context", "anatomy.md")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return time.Time{}, err
+	}
+	for _, line := range strings.SplitN(string(data), "\n", 5) {
+		if !strings.HasPrefix(line, "<!-- generated: ") {
+			continue
+		}
+		rest := strings.TrimPrefix(line, "<!-- generated: ")
+		if i := strings.Index(rest, " "); i > 0 {
+			rest = rest[:i]
+		}
+		return time.Parse(time.RFC3339, rest)
+	}
+	return time.Time{}, fmt.Errorf("anatomy.md has no generated timestamp")
+}
