@@ -1,6 +1,7 @@
 package events
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -91,10 +92,40 @@ func (b *Bus) Subscribe() (<-chan Event, func()) {
 // Tail returns up to limit events with TS > since, newest-first.
 // limit is capped at 500.
 func (b *Bus) Tail(limit int, since int64) []Event {
+	if limit <= 0 {
+		return nil
+	}
 	if limit > 500 {
 		limit = 500
 	}
-	return b.ring.tail(limit, since)
+	out := b.ring.tail(limit, since)
+	if len(out) >= limit {
+		return out
+	}
+	// Ring under-full or older events requested: scan JSONL and merge.
+	disk := b.jsonl.tail(limit, since)
+	if len(out) == 0 {
+		return disk
+	}
+	// Merge: deduplicate by TS+Type+ProjectID (cheap key), keep ring order priority.
+	seen := make(map[string]struct{}, len(out))
+	for _, e := range out {
+		seen[mergeKey(e)] = struct{}{}
+	}
+	for _, e := range disk {
+		if _, ok := seen[mergeKey(e)]; ok {
+			continue
+		}
+		out = append(out, e)
+		if len(out) >= limit {
+			break
+		}
+	}
+	return out
+}
+
+func mergeKey(e Event) string {
+	return fmt.Sprintf("%d|%s|%s", e.TS, e.Type, e.ProjectID)
 }
 
 // Close stops new publishes and closes all subscriber channels.

@@ -2,6 +2,7 @@ package tests
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -105,3 +106,37 @@ type stepClock struct {
 
 func (c *stepClock) now() time.Time          { return c.t }
 func (c *stepClock) advance(d time.Duration) { c.t = c.t.Add(d) }
+
+func TestBus_TailFallsBackToJSONL(t *testing.T) {
+	home := t.TempDir()
+	if err := os.MkdirAll(state.DaemonDir(home), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	// Pre-seed an events file with 5 events.
+	today := time.Now().UTC().Format("20060102")
+	path := state.DaemonEventsPath(home, today)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 5; i++ {
+		fmt.Fprintf(f, `{"ts":%d,"type":"seeded"}`+"\n", i)
+	}
+	f.Close()
+
+	bus, err := events.NewBus(home, &stubLogger{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer bus.Close()
+
+	// Ring is empty (no Publish in this process). Tail should read from disk.
+	got := bus.Tail(10, -1)
+	if len(got) != 5 {
+		t.Fatalf("Tail: got %d events, want 5 (from JSONL)", len(got))
+	}
+	if got[0].TS != 4 {
+		t.Errorf("Tail order: got TS=%d, want newest-first (4)", got[0].TS)
+	}
+}

@@ -102,3 +102,58 @@ func (w *jsonlWriter) close() error {
 	}
 	return nil
 }
+
+func (w *jsonlWriter) tail(limit int, since int64) []Event {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	dir := state.DaemonDir(w.home)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	// Collect events files newest-first by name (date-sorted lexicographically).
+	names := make([]string, 0, len(entries))
+	for _, e := range entries {
+		if e.IsDir() ||
+			!strings.HasPrefix(e.Name(), "events-") ||
+			!strings.HasSuffix(e.Name(), ".jsonl") {
+			continue
+		}
+		names = append(names, e.Name())
+	}
+	// Sort descending so newest dates come first.
+	for i := 0; i < len(names); i++ {
+		for j := i + 1; j < len(names); j++ {
+			if names[j] > names[i] {
+				names[i], names[j] = names[j], names[i]
+			}
+		}
+	}
+
+	out := make([]Event, 0, limit)
+	for _, n := range names {
+		// Read the whole file (small per day at expected rates).
+		data, err := os.ReadFile(filepath.Join(dir, n))
+		if err != nil {
+			continue
+		}
+		// Parse newest-line-first by scanning end-to-start.
+		lines := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
+		for i := len(lines) - 1; i >= 0 && len(out) < limit; i-- {
+			if lines[i] == "" {
+				continue
+			}
+			var e Event
+			if err := json.Unmarshal([]byte(lines[i]), &e); err != nil {
+				continue
+			}
+			if e.TS > since {
+				out = append(out, e)
+			}
+		}
+		if len(out) >= limit {
+			break
+		}
+	}
+	return out
+}
