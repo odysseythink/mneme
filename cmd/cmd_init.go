@@ -157,7 +157,32 @@ func runInit(projectRoot, settingsPath, claudeMDPath, rulesPath, binaryPath stri
 	}
 	fmt.Fprintf(os.Stderr, "✓ Initialized %s/.mneme/ (project ID: %s)\n", projectRoot, id)
 
-	// Step 8: auto-scan (build anatomy map)
+	// Step 6: write origin (multi-project registry pointer)
+	if err := state.WriteOrigin(id, projectRoot); err != nil {
+		fmt.Fprintln(os.Stderr, "✗ origin:", err)
+		os.Exit(1)
+	}
+
+	// Step 7: pin template version
+	if err := state.WriteTemplateVersion(projectRoot, state.TemplateVersion); err != nil {
+		fmt.Fprintln(os.Stderr, "✗ template-version:", err)
+		os.Exit(1)
+	}
+
+	// Step 8: write identity.md
+	if err := installer.WriteIdentity(projectRoot); err != nil {
+		fmt.Fprintln(os.Stderr, "✗ identity.md:", err)
+		os.Exit(1)
+	}
+
+	// Step 9: write mneme.md
+	if err := installer.WriteMnemeMD(projectRoot); err != nil {
+		fmt.Fprintln(os.Stderr, "✗ mneme.md:", err)
+		os.Exit(1)
+	}
+	fmt.Fprintf(os.Stderr, "✓ Wrote identity.md, mneme.md, origin, template-version\n")
+
+	// Step 10: auto-scan (build anatomy map)
 	if !noScan {
 		fmt.Fprintln(os.Stderr, "Running initial scan...")
 		dispatchScan(nil)
