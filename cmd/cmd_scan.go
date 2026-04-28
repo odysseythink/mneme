@@ -36,8 +36,10 @@ func dispatchScan(args []string) {
 
 	if !*force {
 		since, tsErr := state.ReadAnatomyGeneratedTime(root)
-		existing, _ := state.ReadAnatomy(root)
+		existing, _ := state.ReadAnatomy(root) // error OK: missing anatomy triggers full scan below
 		if tsErr == nil && len(existing) > 0 {
+			// Incremental: only re-extract files whose mtime is after the last scan.
+			// Falls back to full scan if anatomy timestamp is absent or anatomy is empty.
 			scanEntries, err = scanner.ScanProjectIncremental(root, paths, since, existing)
 		} else {
 			scanEntries, err = scanner.ExtractAll(root, paths)

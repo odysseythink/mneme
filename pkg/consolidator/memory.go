@@ -29,9 +29,12 @@ func Consolidate(homeDir string) (int, error) {
 	for _, r := range rows {
 		ts, parseErr := time.Parse(time.RFC3339, r.StartedAt)
 		if parseErr != nil {
+			// Unparseable timestamp — keep as recent to avoid accidental data loss.
 			recentRows = append(recentRows, r)
 			continue
 		}
+		// ts.Before(cutoff): sessions exactly staleDays old are kept; only strictly
+		// older sessions are folded. This matches "rows older than 7 days" semantics.
 		if ts.Before(cutoff) {
 			oldRows = append(oldRows, r)
 		} else {
@@ -60,6 +63,8 @@ func Consolidate(homeDir string) (int, error) {
 
 	memPath := filepath.Join(homeDir, ".claude", "claude-context-memory.md")
 	lockPath := filepath.Join(homeDir, ".claude", "claude-context-memory.lock")
+	// 2s timeout: session-start hook runs serially; concurrent consolidations are
+	// prevented by the rows>50 guard in the hook, making contention extremely rare.
 	release, lockErr := state.AcquireLock(lockPath, 2*time.Second)
 	if lockErr != nil {
 		return 0, fmt.Errorf("consolidate: acquire lock: %w", lockErr)

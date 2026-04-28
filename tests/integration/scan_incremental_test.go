@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func setupScanProject(t *testing.T) string {
@@ -54,12 +55,17 @@ func TestScanIncrementalSucceeds(t *testing.T) {
 	}
 
 	// Second scan (incremental — anatomy.md exists)
+	start := time.Now()
 	out2, code2 := runScan(t, proj)
+	elapsed := time.Since(start)
 	if code2 != 0 {
 		t.Fatalf("second scan failed (code %d): %s", code2, out2)
 	}
 	if !strings.Contains(out2, "Scanned") {
 		t.Errorf("expected 'Scanned' in second scan output, got: %s", out2)
+	}
+	if elapsed > 2*time.Second {
+		t.Logf("WARNING: incremental scan took %v (acceptance target: <2s)", elapsed)
 	}
 }
 
