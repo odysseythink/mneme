@@ -3,6 +3,8 @@ import { useSSE } from '../hooks/useSSE'
 import { getCerebrum, approveCandidate, rejectCandidate } from '../api/cerebrum'
 import { useActiveProject } from '../hooks/useActiveProject'
 import { ConfirmButton } from '../components/ConfirmButton'
+import { PageHead } from '../components/PageHead'
+import { Empty, Skeleton, Kbd } from '../components/primitives'
 
 export function Cerebrum(): JSX.Element {
   const { active } = useActiveProject()
@@ -10,51 +12,103 @@ export function Cerebrum(): JSX.Element {
   const { data, error, refetch } = useFetch(fn, { intervalMs: 30_000 })
   useSSE(['cerebrum.candidate', 'cerebrum.approved', 'cerebrum.rejected'], () => refetch())
 
-  if (!active) return <NoProject />
-  if (error) return <div className="text-red-700">failed to load: {error.message}</div>
-  if (!data) return <div className="text-gray-500">loading…</div>
+  if (!active) {
+    return (
+      <>
+        <PageHead title="Cerebrum" />
+        <Empty title="No project selected" hint="Pick one in the sidebar." />
+      </>
+    )
+  }
+  if (error) {
+    return (
+      <>
+        <PageHead title="Cerebrum" />
+        <Empty title={`failed to load: ${error.message}`} />
+      </>
+    )
+  }
+  if (!data) {
+    return (
+      <>
+        <PageHead title="Cerebrum" />
+        <Skeleton rows={5} />
+      </>
+    )
+  }
+
+  const sectionStyle = { background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-4)', padding: 'var(--space-4)' }
+  const h2Style = { fontSize: 13, fontWeight: 600 as const, color: 'var(--text-strong)', margin: '0 0 8px' }
+  const labelStyle = { fontSize: 9, textTransform: 'uppercase' as const, letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 600 as const, marginBottom: 4 }
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">cerebrum</h1>
+    <>
+      <PageHead title="Cerebrum" meta={`${data.rules.length} active · ${data.pending.length} pending`} />
 
-      <section>
-        <h2 className="text-lg font-medium mb-2">active rules ({data.rules.length})</h2>
+      <section style={sectionStyle}>
+        <h2 style={h2Style}>Active rules ({data.rules.length})</h2>
         {data.rules.length === 0 ? (
-          <div className="text-sm text-gray-500">no rules yet</div>
+          <Empty title="No rules yet" hint="Cerebrum rules guide Claude Code's behavior on this project." />
         ) : (
-          <ul className="rounded border bg-white">
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {data.rules.map((r, i) => (
-              <li key={i} className="border-b last:border-b-0 px-3 py-2 text-sm">
-                <div className="text-gray-500 text-xs mb-1">{r.comment}</div>
-                <div><span className="font-mono bg-gray-100 px-1 rounded">{r.pattern}</span> → {r.message}</div>
+              <li
+                key={i}
+                style={{
+                  padding: '8px 0',
+                  borderBottom: i === data.rules.length - 1 ? 'none' : '1px solid color-mix(in srgb, var(--border-default) 40%, transparent)',
+                  fontSize: 11,
+                }}
+              >
+                {r.comment && (
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>{r.comment}</div>
+                )}
+                <div style={{ color: 'var(--text-body)' }}>
+                  <Kbd>{r.pattern}</Kbd>
+                  <span style={{ color: 'var(--text-muted)', margin: '0 6px' }}>→</span>
+                  {r.message}
+                </div>
               </li>
             ))}
           </ul>
         )}
       </section>
 
-      <section>
-        <h2 className="text-lg font-medium mb-2">pending review ({data.pending.length})</h2>
+      <section style={sectionStyle}>
+        <h2 style={h2Style}>Pending review ({data.pending.length})</h2>
         {data.pending.length === 0 ? (
-          <div className="text-sm text-gray-500">no candidates pending</div>
+          <Empty title="No candidates pending" />
         ) : (
-          <div className="flex flex-col gap-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {data.pending.map((c) => (
-              <div key={c.id} className="rounded border bg-white p-3">
-                <div className="text-xs text-gray-500 mb-1">trigger</div>
-                <div className="italic mb-2">"{c.trigger.phrase}"</div>
+              <div
+                key={c.id}
+                style={{
+                  background: 'var(--bg-raised)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--radius-3)',
+                  padding: 'var(--space-3)',
+                }}
+              >
+                <div style={labelStyle}>Trigger</div>
+                <div style={{ fontStyle: 'italic', marginBottom: 8, fontSize: 11, color: 'var(--text-body)' }}>
+                  "{c.trigger.phrase}"
+                </div>
                 {c.trigger.prior_asst && (
                   <>
-                    <div className="text-xs text-gray-500 mb-1">context</div>
-                    <div className="text-sm text-gray-700 mb-2 line-clamp-3">{c.trigger.prior_asst}</div>
+                    <div style={labelStyle}>Context</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {c.trigger.prior_asst}
+                    </div>
                   </>
                 )}
-                <div className="text-xs text-gray-500 mb-1">draft rule</div>
-                <div className="text-sm mb-3">
-                  <span className="font-mono bg-gray-100 px-1 rounded">{c.draft_rule.pattern}</span> → {c.draft_rule.message}
+                <div style={labelStyle}>Draft rule</div>
+                <div style={{ fontSize: 11, marginBottom: 12, color: 'var(--text-body)' }}>
+                  <Kbd>{c.draft_rule.pattern}</Kbd>
+                  <span style={{ color: 'var(--text-muted)', margin: '0 6px' }}>→</span>
+                  {c.draft_rule.message}
                 </div>
-                <div className="flex gap-2">
+                <div style={{ display: 'flex', gap: 8 }}>
                   <ConfirmButton
                     label="Approve"
                     onConfirm={async () => { await approveCandidate(active, c.id); refetch() }}
@@ -69,10 +123,6 @@ export function Cerebrum(): JSX.Element {
           </div>
         )}
       </section>
-    </div>
+    </>
   )
-}
-
-function NoProject(): JSX.Element {
-  return <div className="text-gray-500">No project selected. Pick one in the sidebar.</div>
 }
