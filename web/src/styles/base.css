@@ -1,0 +1,44 @@
+html {
+  color-scheme: dark light;
+  background: var(--bg-base);
+  color: var(--text-body);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-base);
+  color: var(--text-body);
+  transition: background-color 200ms ease, color 200ms ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Tabular numerics by default for any element with .tabular */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mono utility for elements that should always use the mono family */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Skeleton shimmer used by Skeleton primitive */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Breathing dot used by Dot primitive when status === "ok" */
+@keyframes breathe {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
