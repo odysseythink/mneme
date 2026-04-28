@@ -67,7 +67,11 @@ func TestAPI_Overview_OneProject(t *testing.T) {
 	if err := os.MkdirAll(pdir, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(pdir, "origin"), []byte("/work/foo\n"), 0o600); err != nil {
+	realRoot := filepath.Join(home, "work-foo")
+	if err := os.MkdirAll(realRoot, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(pdir, "origin"), []byte(realRoot+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(pdir, "anatomy.md"), []byte("# Anatomy\n## a.go\n## b.go\n"), 0o600); err != nil {
@@ -101,7 +105,11 @@ func TestAPI_Projects(t *testing.T) {
 	for _, pid := range []string{"a", "b"} {
 		dir := filepath.Join(home, ".mneme", "projects", pid)
 		os.MkdirAll(dir, 0o700)
-		os.WriteFile(filepath.Join(dir, "origin"), []byte("/x/"+pid), 0o600)
+		// origin must point at an extant path: EnumerateProjects skips
+		// projects whose origin path is missing on disk.
+		realRoot := filepath.Join(home, "work-"+pid)
+		os.MkdirAll(realRoot, 0o700)
+		os.WriteFile(filepath.Join(dir, "origin"), []byte(realRoot), 0o600)
 	}
 
 	bus, _ := events.NewBus(home, &stubLogger{})
@@ -122,6 +130,50 @@ func TestAPI_Projects(t *testing.T) {
 	json.Unmarshal(rec.Body.Bytes(), &body)
 	if len(body.Projects) != 2 {
 		t.Errorf("got %d projects, want 2", len(body.Projects))
+	}
+}
+
+// Regression: pre-fix, EnumerateProjects walked every dir under
+// ~/.mneme/projects/ regardless of origin presence or freshness, polluting
+// the picker with thousands of test-fixture stubs that 404'd on every
+// drilldown.
+func TestAPI_Projects_FiltersOriginlessStubs(t *testing.T) {
+	home := t.TempDir()
+	realRoot := t.TempDir() // exists on disk
+	pdir := func(id string) string { return filepath.Join(home, ".mneme", "projects", id) }
+	// real project: has origin pointing at an extant directory
+	os.MkdirAll(pdir("real"), 0o700)
+	os.WriteFile(filepath.Join(pdir("real"), "origin"), []byte(realRoot), 0o600)
+	// stub: no origin file
+	os.MkdirAll(pdir("stub-no-file"), 0o700)
+	// stub: empty origin file
+	os.MkdirAll(pdir("stub-empty"), 0o700)
+	os.WriteFile(filepath.Join(pdir("stub-empty"), "origin"), []byte("   \n"), 0o600)
+	// stub: origin file points at a path that doesn't exist (stale temp dir)
+	os.MkdirAll(pdir("stub-stale"), 0o700)
+	os.WriteFile(filepath.Join(pdir("stub-stale"), "origin"), []byte("/tmp/does-not-exist-xyz123"), 0o600)
+
+	bus, _ := events.NewBus(home, &stubLogger{})
+	defer bus.Close()
+	mux := daemon.NewMux(daemon.RouteDeps{Log: &stubLogger{}, Home: home, Bus: bus})
+
+	req := httptest.NewRequest("GET", "/api/projects", nil)
+	req = req.WithContext(daemon.WithTransport(req.Context(), daemon.TransportUnix))
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != 200 {
+		t.Fatalf("status %d", rec.Code)
+	}
+	var body struct {
+		Projects []map[string]interface{} `json:"projects"`
+	}
+	json.Unmarshal(rec.Body.Bytes(), &body)
+	if len(body.Projects) != 1 {
+		t.Fatalf("got %d projects, want 1 (only the real one)", len(body.Projects))
+	}
+	if body.Projects[0]["id"] != "real" {
+		t.Errorf("expected id=real, got %v", body.Projects[0]["id"])
 	}
 }
 

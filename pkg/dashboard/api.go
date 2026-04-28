@@ -65,8 +65,22 @@ func EnumerateProjects(home string) ([]ProjectSummary, error) {
 		}
 		ps := ProjectSummary{ID: e.Name()}
 		dir := filepath.Join(root, e.Name())
-		if data, err := os.ReadFile(filepath.Join(dir, "origin")); err == nil {
-			ps.Origin = strings.TrimSpace(string(data))
+		// Skip projects whose backing dir is gone or whose origin file is
+		// missing/empty/stale. Drilldown handlers (cerebrum/buglog/anatomy)
+		// fail loudly on any of these, so showing them in the picker is a
+		// trap. Hooks create project dirs eagerly during test runs and
+		// ad-hoc activity, leaving thousands of stubs (and origins pointing
+		// at deleted temp dirs) over time.
+		data, err := os.ReadFile(filepath.Join(dir, "origin"))
+		if err != nil {
+			continue
+		}
+		ps.Origin = strings.TrimSpace(string(data))
+		if ps.Origin == "" {
+			continue
+		}
+		if _, err := os.Stat(ps.Origin); err != nil {
+			continue
 		}
 		if data, err := os.ReadFile(filepath.Join(dir, "anatomy.md")); err == nil {
 			ps.AnatomyFiles = strings.Count(string(data), "\n## ")
