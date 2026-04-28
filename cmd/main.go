@@ -41,6 +41,8 @@ func main() {
 		dispatchUpdate(os.Args[2:])
 	case "daemon":
 		dispatchDaemon(os.Args[2:])
+	case "report":
+		dispatchReport(os.Args[2:])
 	case "version":
 		printVersion()
 	case "-h", "--help", "help":
