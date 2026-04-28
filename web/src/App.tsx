@@ -1,13 +1,30 @@
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { AppShell } from './components/AppShell'
+import { Overview } from './panels/Overview'
+import { Activity } from './panels/Activity'
+import { Cron } from './panels/Cron'
 import { Bootstrap } from './Bootstrap'
-import { Health } from './Health'
+import { SSEProvider } from './hooks/useSSE'
+
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <AppShell />,
+    children: [
+      { index: true, element: <Overview /> },
+      { path: 'activity', element: <Activity /> },
+      { path: 'cron', element: <Cron /> },
+    ],
+  },
+])
 
 export function App(): JSX.Element {
   return (
     <>
       <Bootstrap />
-      <h1 className="text-2xl font-semibold mb-4">mneme dashboard</h1>
-      <p className="mb-4">Backend is up. Built UI is loaded.</p>
-      <p>Daemon health: <Health /></p>
+      <SSEProvider>
+        <RouterProvider router={router} />
+      </SSEProvider>
     </>
   )
 }
