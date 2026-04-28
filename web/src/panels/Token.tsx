@@ -38,7 +38,7 @@ export function Token(): JSX.Element {
         {trend.length < 2 ? (
           <div className="text-gray-500 text-sm">Not enough history yet.</div>
         ) : (
-          <Sparkline data={trend} width={240} height={40} />
+          <Sparkline data={trend} height={40} />
         )}
       </section>
 
