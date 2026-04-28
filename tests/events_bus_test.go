@@ -37,3 +37,30 @@ func TestBus_PublishSubscribe(t *testing.T) {
 		t.Fatal("subscribe channel: timed out waiting for event")
 	}
 }
+
+func TestBus_SlowSubscriberDoesNotBlock(t *testing.T) {
+	bus, err := events.NewBus(t.TempDir(), &stubLogger{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer bus.Close()
+
+	// Subscribe but never read — fills the 64-slot buffer immediately.
+	_, unsub := bus.Subscribe()
+	defer unsub()
+
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 100; i++ {
+			bus.Publish(events.Event{TS: int64(i), Type: "spam"})
+		}
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// Publishing 100 events to a stalled sub completed quickly = non-blocking.
+	case <-time.After(time.Second):
+		t.Fatal("Publish blocked on slow subscriber")
+	}
+}
