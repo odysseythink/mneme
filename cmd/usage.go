@@ -15,6 +15,7 @@ Usage:
   mneme hook <event>      handle a Claude Code hook event
   mneme init [flags]      install hooks and scaffolding
   mneme stats             show ledger counters for current project
+  mneme status            print health snapshot (use --json for machine-readable)
   mneme scan              scan project files and update anatomy map
   mneme cerebrum <cmd>    manage project coding rules
   mneme buglog <cmd>      manage per-project bug history
