@@ -88,14 +88,16 @@ func TestRoutes_CronRun_UnknownTask(t *testing.T) {
 	}
 }
 
-func TestRoutes_404(t *testing.T) {
+func TestRoutes_SPAFallback(t *testing.T) {
+	// M10a wires dashboard.Mount which returns SPA index.html for any
+	// non-API path. Unknown asset under /assets/ still returns 404.
 	mux := daemon.NewMux(daemon.RouteDeps{Log: &stubLogger{}})
-	req := httptest.NewRequest("GET", "/no-such-path", nil)
+	req := httptest.NewRequest("GET", "/assets/no-such.js", nil)
 	req = req.WithContext(daemon.WithTransport(req.Context(), daemon.TransportUnix))
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 	if rec.Code != 404 {
-		t.Errorf("status = %d, want 404", rec.Code)
+		t.Errorf("status = %d, want 404 for unknown asset", rec.Code)
 	}
 }
 
