@@ -66,7 +66,10 @@ func dispatchStats(args []string) {
 		}
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
-		enc.Encode(report) //nolint:errcheck
+		if err := enc.Encode(report); err != nil {
+			fmt.Fprintf(os.Stderr, "stats: json encode error: %v\n", err)
+			os.Exit(1)
+		}
 		return
 	}
 
