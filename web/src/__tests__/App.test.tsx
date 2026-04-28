@@ -16,6 +16,10 @@ beforeEach(() => {
         projects: [{ id: 'p1', origin: '/work/a', anatomy_files: 0, cerebrum_pending: 0, memory_bytes: 0, last_activity_ts: 0 }],
       }), { headers: { 'Content-Type': 'application/json' } })
     }
+    if (url.includes('/api/designqc')) {
+      return new Response(JSON.stringify({ available: false, reason: 'no captures yet' }),
+        { headers: { 'Content-Type': 'application/json' } })
+    }
     return new Response('{}', { headers: { 'Content-Type': 'application/json' } })
   }))
 })
