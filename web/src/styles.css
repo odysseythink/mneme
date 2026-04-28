@@ -1,5 +1,30 @@
 @import "tailwindcss";
+@import "./styles/fonts.css";
+@import "./styles/tokens.css";
+@import "./styles/base.css";
 
-body {
-  @apply font-sans text-base leading-6 max-w-2xl mx-auto px-4 py-16;
+/* Register tokens with Tailwind 4 so utility classes (bg-base, text-muted,
+   border-default, etc.) resolve to the same CSS variables used by primitives. */
+@theme {
+  --color-base: var(--bg-base);
+  --color-surface: var(--bg-surface);
+  --color-raised: var(--bg-raised);
+  --color-selected: var(--bg-selected);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+
+  --color-strong: var(--text-strong);
+  --color-body: var(--text-body);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+
+  --color-accent: var(--accent);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-err: var(--err);
+  --color-info: var(--info);
+  --color-neutral: var(--neutral);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
