@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 
 	"golang.org/x/term"
 
+	"github.com/ranwei/mneme/pkg/match"
 	"github.com/ranwei/mneme/pkg/state"
 )
 
 func dispatchBuglog(args []string) {
 	if len(args) < 1 {
-		fmt.Fprintln(os.Stderr, "usage: mneme buglog <add|list|clear>")
+		fmt.Fprintln(os.Stderr, "usage: mneme buglog <add|list|search|clear>")
 		os.Exit(2)
 	}
 	switch args[0] {
@@ -22,6 +24,8 @@ func dispatchBuglog(args []string) {
 		buglogAdd(args[1:])
 	case "list":
 		buglogList()
+	case "search":
+		buglogSearch(args[1:])
 	case "clear":
 		buglogClear(args[1:])
 	default:
@@ -174,4 +178,61 @@ func buglogClear(args []string) {
 		os.Exit(1)
 	}
 	fmt.Println("✓ Cleared.")
+}
+
+func buglogSearch(args []string) {
+	if len(args) < 1 {
+		fmt.Fprintln(os.Stderr, "usage: mneme buglog search <term>")
+		os.Exit(2)
+	}
+	query := strings.Join(args, " ")
+	root := requireProjectRoot()
+	entries, err := state.ReadBuglog(root)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "buglog search: %v\n", err)
+		os.Exit(1)
+	}
+
+	queryTokens := match.Tokenize(query)
+	queryLower := strings.ToLower(query)
+
+	type hit struct {
+		idx   int
+		entry state.BuglogEntry
+		score int
+	}
+	var hits []hit
+	for i, e := range entries {
+		corpus := strings.ToLower(e.Description + " " + e.BadCode + " " + e.File)
+		score := 0
+		if strings.Contains(corpus, queryLower) {
+			score += 5
+		}
+		score += match.TokenOverlap(queryTokens, match.Tokenize(corpus))
+		if score > 0 {
+			hits = append(hits, hit{idx: i, entry: e, score: score})
+		}
+	}
+	if len(hits) == 0 {
+		fmt.Println("no matches")
+		return
+	}
+	sort.Slice(hits, func(i, j int) bool { return hits[i].score > hits[j].score })
+
+	fmt.Printf("%d matches for %q:\n", len(hits), query)
+	for _, h := range hits {
+		ts := h.entry.CreatedAt
+		if len(ts) > 16 {
+			ts = ts[:16] + "Z"
+		}
+		fmt.Printf("  [score=%d] [%s] %s  (%s)\n", h.score, h.entry.Source, h.entry.Description, ts)
+		if h.entry.File != "" {
+			fmt.Printf("            file: %s\n", h.entry.File)
+		}
+		firstLine := h.entry.BadCode
+		if idx := strings.Index(firstLine, "\n"); idx >= 0 {
+			firstLine = firstLine[:idx]
+		}
+		fmt.Printf("            was:  %s\n", firstLine)
+	}
 }
