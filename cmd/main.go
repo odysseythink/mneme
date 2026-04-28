@@ -27,6 +27,8 @@ func main() {
 		dispatchScan(os.Args[2:])
 	case "stats":
 		dispatchStats(os.Args[2:])
+	case "status":
+		dispatchStatus(os.Args[2:])
 	case "cerebrum":
 		dispatchCerebrum(os.Args[2:])
 	case "buglog":
