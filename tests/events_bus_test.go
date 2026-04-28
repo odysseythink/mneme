@@ -64,3 +64,45 @@ func TestBus_SlowSubscriberDoesNotBlock(t *testing.T) {
 		t.Fatal("Publish blocked on slow subscriber")
 	}
 }
+
+func TestBus_TailReturnsRecent(t *testing.T) {
+	bus, err := events.NewBus(t.TempDir(), &stubLogger{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer bus.Close()
+
+	for i := 0; i < 5; i++ {
+		bus.Publish(events.Event{TS: int64(i), Type: "x"})
+	}
+
+	got := bus.Tail(3, 0)
+	if len(got) != 3 {
+		t.Fatalf("Tail(3): got %d events, want 3", len(got))
+	}
+	// Tail returns newest-first.
+	if got[0].TS != 4 || got[2].TS != 2 {
+		t.Errorf("Tail order wrong: %+v", got)
+	}
+}
+
+func TestBus_TailRespectsSince(t *testing.T) {
+	bus, _ := events.NewBus(t.TempDir(), &stubLogger{})
+	defer bus.Close()
+	for i := 0; i < 5; i++ {
+		bus.Publish(events.Event{TS: int64(i), Type: "x"})
+	}
+	got := bus.Tail(100, 2)
+	// since=2 is exclusive: TS=3,4 only.
+	if len(got) != 2 {
+		t.Fatalf("Tail(100, since=2): got %d, want 2 (TSs %v)", len(got), tss(got))
+	}
+}
+
+func tss(es []events.Event) []int64 {
+	out := make([]int64, len(es))
+	for i, e := range es {
+		out[i] = e.TS
+	}
+	return out
+}

@@ -18,9 +18,10 @@ const subscriberBuffer = 64
 type Bus struct {
 	log Logger
 
-	mu      sync.RWMutex
-	subs    map[chan Event]struct{}
-	closed  bool
+	mu     sync.RWMutex
+	subs   map[chan Event]struct{}
+	closed bool
+	ring   *ring
 }
 
 // NewBus constructs a Bus rooted at home. home is unused in this task
@@ -29,6 +30,7 @@ func NewBus(home string, log Logger) (*Bus, error) {
 	return &Bus{
 		log:  log,
 		subs: map[chan Event]struct{}{},
+		ring: newRing(),
 	}, nil
 }
 
@@ -36,10 +38,15 @@ func NewBus(home string, log Logger) (*Bus, error) {
 // any subscriber whose buffer is full (Task 2 wires the drop counter).
 func (b *Bus) Publish(e Event) {
 	b.mu.RLock()
-	defer b.mu.RUnlock()
-	if b.closed {
+	closed := b.closed
+	b.mu.RUnlock()
+	if closed {
 		return
 	}
+	b.ring.push(e)
+
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	for ch := range b.subs {
 		select {
 		case ch <- e:
@@ -64,6 +71,15 @@ func (b *Bus) Subscribe() (<-chan Event, func()) {
 			close(ch)
 		}
 	}
+}
+
+// Tail returns up to limit events with TS > since, newest-first.
+// limit is capped at 500.
+func (b *Bus) Tail(limit int, since int64) []Event {
+	if limit > 500 {
+		limit = 500
+	}
+	return b.ring.tail(limit, since)
 }
 
 // Close stops new publishes and closes all subscriber channels.
