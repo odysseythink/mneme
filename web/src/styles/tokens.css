@@ -1,0 +1,71 @@
+/* Dark theme is the default. */
+:root {
+  /* Surfaces */
+  --bg-base: #0d1017;
+  --bg-surface: #11141b;
+  --bg-raised: #161a23;
+  --bg-selected: rgba(108, 182, 255, 0.08);
+  --border-default: #1c2230;
+  --border-strong: #232a3a;
+
+  /* Text */
+  --text-strong: #ffffff;
+  --text-body: #c5c8d6;
+  --text-muted: #6e7686;
+  --text-faint: #4a5163;
+
+  /* Accents · status */
+  --accent: #6cb6ff;
+  --ok: #6dd47e;
+  --warn: #ffaa3d;
+  --err: #f4747a;
+  --info: #b48ead;
+  --neutral: #8b95a7;
+
+  /* Spacing (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Radii */
+  --radius-0: 0;
+  --radius-1: 2px;
+  --radius-2: 4px;
+  --radius-3: 6px;
+  --radius-4: 8px;
+
+  /* Density */
+  --row-height: 28px;
+  --panel-pad: 16px;
+  --sidebar-width: 200px;
+  --header-height: 44px;
+
+  /* Type families */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* Light theme overrides — only color values change. */
+[data-theme="light"] {
+  --bg-base: #fafbfc;
+  --bg-surface: #ffffff;
+  --bg-raised: #f4f6f8;
+  --bg-selected: rgba(0, 102, 204, 0.08);
+  --border-default: #e5e8ed;
+  --border-strong: #d1d5db;
+
+  --text-strong: #0a0d12;
+  --text-body: #1a1d22;
+  --text-muted: #6e7686;
+  --text-faint: #a1a7b3;
+
+  --accent: #0066cc;
+  --ok: #2e9c47;
+  --warn: #d97706;
+  --err: #dc2626;
+  --info: #7c3aed;
+  --neutral: #4b5563;
+}
