@@ -2,15 +2,18 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/term"
 
+	"github.com/ranwei/mneme/pkg/cerebrum"
 	"github.com/ranwei/mneme/pkg/state"
 )
 
@@ -26,6 +29,8 @@ func dispatchCerebrum(args []string) {
 		cerebrumList()
 	case "remove":
 		cerebrumRemove(args[1:])
+	case "review":
+		cerebrumReview(args[1:])
 	default:
 		fmt.Fprintf(os.Stderr, "unknown cerebrum subcommand: %q\n", args[0])
 		os.Exit(2)
@@ -184,3 +189,87 @@ func cerebrumRemove(args []string) {
 	}
 	fmt.Fprintf(os.Stderr, "✓ Removed. %d rules remaining.\n", len(newRules))
 }
+
+func cerebrumReview(args []string) {
+	fs := flag.NewFlagSet("cerebrum review", flag.ContinueOnError)
+	listOnly := fs.Bool("list", false, "print pending candidates without prompting")
+	asJSON := fs.Bool("json", false, "JSON output (only with --list)")
+	if err := fs.Parse(args); err != nil {
+		os.Exit(2)
+	}
+
+	cwd, _ := os.Getwd()
+	root, ok := state.FindProjectRoot(cwd)
+	if !ok {
+		fmt.Fprintln(os.Stderr, "✗ not inside an initialized project (run: mneme init)")
+		os.Exit(1)
+	}
+
+	pending, err := cerebrum.LoadPending(root)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "✗ load pending:", err)
+		os.Exit(1)
+	}
+
+	if *listOnly {
+		if *asJSON {
+			data, _ := json.MarshalIndent(pending, "", "  ")
+			fmt.Println(string(data))
+			return
+		}
+		if len(pending) == 0 {
+			fmt.Println("No pending cerebrum candidates.")
+			return
+		}
+		for i, c := range pending {
+			fmt.Printf("%d. [%s] %s — %s\n", i+1, c.ID[:8], c.Trigger.Phrase, c.DraftRule.Message)
+		}
+		return
+	}
+
+	if len(pending) == 0 {
+		fmt.Println("No pending cerebrum candidates.")
+		return
+	}
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
+		fmt.Fprintln(os.Stderr, "✗ interactive review requires a TTY; use --list for non-interactive output")
+		os.Exit(1)
+	}
+
+	scanner := bufio.NewScanner(os.Stdin)
+	remove := make(map[string]bool)
+	for i, c := range pending {
+		fmt.Printf("\n[%d/%d] phrase=%q hits=%d\n", i+1, len(pending), c.Trigger.Phrase, c.HitCount)
+		fmt.Printf("    user: %s\n", c.Trigger.UserMsg)
+		fmt.Printf("    prior: %s\n", c.Trigger.PriorAsst)
+		fmt.Printf("    draft pattern: %s\n", c.DraftRule.Pattern)
+		fmt.Printf("    draft message: %s\n", c.DraftRule.Message)
+		fmt.Print("    [a]ccept / [r]eject / [s]kip / [q]uit: ")
+		scanner.Scan()
+		switch strings.ToLower(strings.TrimSpace(scanner.Text())) {
+		case "a", "accept":
+			if err := state.AppendCerebrumRule(root, c.DraftRule); err != nil {
+				fmt.Fprintln(os.Stderr, "✗ append rule:", err)
+				continue
+			}
+			remove[c.ID] = true
+		case "r", "reject":
+			if err := cerebrum.AppendRejected(root, c.ID, time.Now().UTC()); err != nil {
+				fmt.Fprintln(os.Stderr, "✗ record rejection:", err)
+				continue
+			}
+			remove[c.ID] = true
+		case "q", "quit":
+			break
+		}
+	}
+	if len(remove) > 0 {
+		if err := cerebrum.RemovePending(root, remove); err != nil {
+			fmt.Fprintln(os.Stderr, "✗ update pending:", err)
+		}
+	}
+}
+
+// keep regexp/strconv used
+var _ = regexp.MustCompile
+var _ = strconv.Atoi
