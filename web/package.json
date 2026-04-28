@@ -10,6 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource/inter": "^5",
+    "@fontsource/jetbrains-mono": "^5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7"
