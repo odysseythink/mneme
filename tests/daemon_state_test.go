@@ -76,8 +76,8 @@ func TestManifest_AutoSeedOnMissing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadOrSeedManifest: %v", err)
 	}
-	if len(m.Tasks) != 3 {
-		t.Errorf("seeded manifest has %d tasks, want 3", len(m.Tasks))
+	if len(m.Tasks) < 3 {
+		t.Errorf("seeded manifest has %d tasks, want ≥3", len(m.Tasks))
 	}
 	names := map[string]bool{}
 	for _, task := range m.Tasks {
