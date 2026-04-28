@@ -1,2 +1,5 @@
 .worktrees/
 bin/
+
+web/node_modules/
+web/.vite/
