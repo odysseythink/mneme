@@ -1,15 +1,34 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"sort"
 	"strings"
 
 	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/claude-context/pkg/waste"
 )
 
+type statsReport struct {
+	ProjectID     string               `json:"project_id"`
+	FirstRecorded string               `json:"first_recorded,omitempty"`
+	LastUpdated   string               `json:"last_updated,omitempty"`
+	Totals        state.LedgerTotals   `json:"totals"`
+	MemoryRows    int                  `json:"memory_rows"`
+	Waste         []waste.WastePattern `json:"waste,omitempty"`
+}
+
 func dispatchStats(args []string) {
+	fs := flag.NewFlagSet("stats", flag.ContinueOnError)
+	flagWaste := fs.Bool("waste", false, "show waste diagnostic patterns")
+	flagJSON := fs.Bool("json", false, "output stats as JSON")
+	if err := fs.Parse(args); err != nil {
+		os.Exit(2)
+	}
+
 	cwd, err := os.Getwd()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "stats: cannot get cwd:", err)
@@ -28,6 +47,30 @@ func dispatchStats(args []string) {
 		os.Exit(1)
 	}
 
+	home, _ := os.UserHomeDir()
+	rows, _ := state.ReadMemory(home)
+
+	var wastePatterns []waste.WastePattern
+	if *flagWaste {
+		wastePatterns, _ = waste.Detect(root, home)
+	}
+
+	if *flagJSON {
+		report := statsReport{
+			ProjectID:     l.ProjectID,
+			FirstRecorded: l.FirstRecorded,
+			LastUpdated:   l.LastUpdated,
+			Totals:        l.Totals,
+			MemoryRows:    len(rows),
+			Waste:         wastePatterns,
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		enc.Encode(report) //nolint:errcheck
+		return
+	}
+
+	// Text output
 	fmt.Printf("project: %s\n", l.ProjectID)
 	if l.FirstRecorded != "" {
 		fmt.Printf("first recorded: %s\n", l.FirstRecorded)
@@ -57,9 +100,7 @@ func dispatchStats(args []string) {
 		}
 	}
 
-	home, _ := os.UserHomeDir()
-	rows, err := state.ReadMemory(home)
-	if err == nil && len(rows) > 0 {
+	if len(rows) > 0 {
 		fmt.Println()
 		fmt.Println("=== Recent Sessions (last 5) ===")
 		start := 0
@@ -74,6 +115,22 @@ func dispatchStats(args []string) {
 		fmt.Println("=== Memory ===")
 		fmt.Printf("  rows written:      %d\n", l.Totals.MemoryRowsWritten)
 		fmt.Printf("  memory.md:         %s/.claude/claude-context-memory.md\n", home)
+	}
+
+	if *flagWaste {
+		fmt.Println()
+		fmt.Println("=== Waste Patterns ===")
+		for _, p := range wastePatterns {
+			tag := "[OK]  "
+			if p.Detected {
+				tag = "[WARN]"
+			}
+			if p.Details != "" {
+				fmt.Printf("  %s %s — %s\n", tag, p.Name, p.Details)
+			} else {
+				fmt.Printf("  %s %s\n", tag, p.Name)
+			}
+		}
 	}
 }
 
