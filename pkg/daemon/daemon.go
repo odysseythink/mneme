@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gofrs/flock"
+	"github.com/ranwei/mneme/pkg/events"
 	"github.com/ranwei/mneme/pkg/state"
 )
 
@@ -108,6 +109,12 @@ func Run(ctx context.Context, opt RunOptions) error {
 	}
 	defer sched.Stop()
 
+	bus, err := events.NewBus(opt.Home, log)
+	if err != nil {
+		return fmt.Errorf("event bus: %w", err)
+	}
+	defer bus.Close()
+
 	startedAt := time.Now().Unix()
 	mux := NewMux(RouteDeps{
 		Log:       log,
@@ -118,6 +125,7 @@ func Run(ctx context.Context, opt RunOptions) error {
 		Scheduler: sched,
 		Token:     token,
 		DevMode:   opt.DevMode,
+		Bus:       bus,
 	})
 	srv := NewServer(ServerConfig{
 		SocketPath:      state.DaemonSocketPath(opt.Home),

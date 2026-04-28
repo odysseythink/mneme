@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ranwei/mneme/pkg/dashboard"
+	"github.com/ranwei/mneme/pkg/events"
 )
 
 // RouteDeps wires handler dependencies.
@@ -19,6 +20,7 @@ type RouteDeps struct {
 	Scheduler *Scheduler
 	Token     string // M10a: dev_token handler
 	DevMode   bool   // M10a: enables /dev-token
+	Bus       *events.Bus // M10b
 }
 
 // NewMux builds the handler tree.
