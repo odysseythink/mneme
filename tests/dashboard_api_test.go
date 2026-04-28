@@ -177,3 +177,33 @@ func TestAPI_Activity_TypeFilter(t *testing.T) {
 		t.Errorf("filter types=hook.fired: got %d, want 2", len(body.Events))
 	}
 }
+
+func TestAPI_Cron(t *testing.T) {
+	home := t.TempDir()
+	if _, err := daemon.LoadOrSeedManifest(home); err != nil {
+		t.Fatal(err)
+	}
+
+	bus, _ := events.NewBus(home, &stubLogger{})
+	defer bus.Close()
+	mux := daemon.NewMux(daemon.RouteDeps{Log: &stubLogger{}, Home: home, Bus: bus})
+	req := httptest.NewRequest("GET", "/api/cron", nil)
+	req = req.WithContext(daemon.WithTransport(req.Context(), daemon.TransportUnix))
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != 200 {
+		t.Fatalf("status %d body=%s", rec.Code, rec.Body.String())
+	}
+	var body struct {
+		Tasks []map[string]interface{} `json:"tasks"`
+	}
+	json.Unmarshal(rec.Body.Bytes(), &body)
+	if len(body.Tasks) < 3 {
+		t.Errorf("got %d tasks, want >=3 (seed manifest)", len(body.Tasks))
+	}
+	first := body.Tasks[0]
+	if _, ok := first["state"]; !ok {
+		t.Errorf("task missing state field: %+v", first)
+	}
+}

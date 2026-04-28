@@ -50,6 +50,7 @@ func NewMux(deps RouteDeps) http.Handler {
 		Home: deps.Home, PID: deps.PID, Version: deps.Version, StartedAt: deps.StartedAt,
 	}))
 	mux.Handle("/api/activity", dashboard.ActivityHandler(deps.Bus))
+	mux.HandleFunc("/api/cron", deps.apiCron)
 	dashboard.Mount(mux, dashboard.Deps{})
 	return mux
 }
@@ -143,6 +144,37 @@ func (d *RouteDeps) restore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d *RouteDeps) cronList(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		writeError(w, http.StatusMethodNotAllowed, "method", "GET only")
+		return
+	}
+	if d.Home == "" {
+		writeError(w, http.StatusInternalServerError, "no_home", "Home not configured")
+		return
+	}
+	m, err := LoadOrSeedManifest(d.Home)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "manifest_load", err.Error())
+		return
+	}
+	st, _ := LoadCronState(d.Home)
+
+	type taskOut struct {
+		Name     string    `json:"name"`
+		Schedule string    `json:"schedule"`
+		Enabled  bool      `json:"enabled"`
+		State    TaskState `json:"state"`
+	}
+	out := make([]taskOut, 0, len(m.Tasks))
+	for _, t := range m.Tasks {
+		out = append(out, taskOut{
+			Name: t.Name, Schedule: t.Schedule, Enabled: t.Enabled, State: st.Tasks[t.Name],
+		})
+	}
+	writeJSON(w, 200, map[string]interface{}{"tasks": out})
+}
+
+func (d *RouteDeps) apiCron(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		writeError(w, http.StatusMethodNotAllowed, "method", "GET only")
 		return
