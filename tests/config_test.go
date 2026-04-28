@@ -133,3 +133,47 @@ func TestFromEnv_DaemonEnvOverride(t *testing.T) {
 		t.Errorf("DaemonLogRetentionDays = %d, want 7", cfg.DaemonLogRetentionDays)
 	}
 }
+
+func TestM9ConfigDefaults(t *testing.T) {
+	t.Setenv("CEREBRUM_LEARNING_ENABLED", "")
+	t.Setenv("WASTE_THRESHOLD_PERCENT", "")
+	t.Setenv("SUGGESTIONS_DISMISS_TTL_DAYS", "")
+	t.Setenv("CEREBRUM_REJECT_TTL_DAYS", "")
+	t.Setenv("CONFIG_FILE", filepath.Join(t.TempDir(), "missing.yaml"))
+
+	cfg := config.FromEnv()
+	if !cfg.CerebrumLearningEnabled {
+		t.Errorf("CerebrumLearningEnabled default: got false, want true")
+	}
+	if cfg.WasteThresholdPercent != 15 {
+		t.Errorf("WasteThresholdPercent default: got %d, want 15", cfg.WasteThresholdPercent)
+	}
+	if cfg.SuggestionsDismissTTLDays != 30 {
+		t.Errorf("SuggestionsDismissTTLDays default: got %d, want 30", cfg.SuggestionsDismissTTLDays)
+	}
+	if cfg.CerebrumRejectTTLDays != 90 {
+		t.Errorf("CerebrumRejectTTLDays default: got %d, want 90", cfg.CerebrumRejectTTLDays)
+	}
+}
+
+func TestM9ConfigEnvOverride(t *testing.T) {
+	t.Setenv("CEREBRUM_LEARNING_ENABLED", "false")
+	t.Setenv("WASTE_THRESHOLD_PERCENT", "25")
+	t.Setenv("SUGGESTIONS_DISMISS_TTL_DAYS", "7")
+	t.Setenv("CEREBRUM_REJECT_TTL_DAYS", "180")
+	t.Setenv("CONFIG_FILE", filepath.Join(t.TempDir(), "missing.yaml"))
+
+	cfg := config.FromEnv()
+	if cfg.CerebrumLearningEnabled {
+		t.Errorf("env override learning_enabled=false not applied")
+	}
+	if cfg.WasteThresholdPercent != 25 {
+		t.Errorf("env override threshold: got %d", cfg.WasteThresholdPercent)
+	}
+	if cfg.SuggestionsDismissTTLDays != 7 {
+		t.Errorf("env override dismiss_ttl: got %d", cfg.SuggestionsDismissTTLDays)
+	}
+	if cfg.CerebrumRejectTTLDays != 180 {
+		t.Errorf("env override reject_ttl: got %d", cfg.CerebrumRejectTTLDays)
+	}
+}
