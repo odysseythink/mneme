@@ -2,7 +2,7 @@ import { useFetch } from '../hooks/useFetch'
 import { useSSE } from '../hooks/useSSE'
 import { getToken } from '../api/token'
 import { useActiveProject } from '../hooks/useActiveProject'
-import { Sparkline } from '../components/Sparkline'
+import { Sparkline } from '../components/primitives/Sparkline'
 
 export function Token(): JSX.Element {
   const { active } = useActiveProject()
