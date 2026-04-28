@@ -39,6 +39,8 @@ func main() {
 		dispatchRestore(os.Args[2:])
 	case "update":
 		dispatchUpdate(os.Args[2:])
+	case "daemon":
+		dispatchDaemon(os.Args[2:])
 	case "version":
 		printVersion()
 	case "-h", "--help", "help":
