@@ -1,0 +1,3 @@
+{"type":"user","message":{"role":"user","content":"please add a feature"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"sure"}]}}
+{"type":"user","message":{"role":"user","content":"thanks, looks good"}}
