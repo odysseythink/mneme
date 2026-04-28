@@ -68,6 +68,7 @@ func dispatchUninstall(opts initOpts) {
 		SettingsPath: settingsPath,
 		CLAUDEMDPath: claudeMDPath,
 		RulesPath:    rulesPath,
+		ProjectRoot:  projectRoot,
 	}); err != nil {
 		fmt.Fprintln(os.Stderr, "✗ uninstall:", err)
 		os.Exit(1)
