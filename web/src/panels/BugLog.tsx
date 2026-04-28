@@ -4,6 +4,8 @@ import { useSSE } from '../hooks/useSSE'
 import { getBugLog, deleteEntry } from '../api/buglog'
 import { useActiveProject } from '../hooks/useActiveProject'
 import { ConfirmButton } from '../components/ConfirmButton'
+import { PageHead } from '../components/PageHead'
+import { Empty, Skeleton } from '../components/primitives'
 
 export function BugLog(): JSX.Element {
   const { active } = useActiveProject()
@@ -12,9 +14,30 @@ export function BugLog(): JSX.Element {
   useSSE(['buglog.deleted'], () => refetch())
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
-  if (!active) return <div className="text-gray-500">No project selected.</div>
-  if (error) return <div className="text-red-700">failed to load: {error.message}</div>
-  if (!data) return <div className="text-gray-500">loading…</div>
+  if (!active) {
+    return (
+      <>
+        <PageHead title="BugLog" />
+        <Empty title="No project selected" hint="Pick a project from the sidebar." />
+      </>
+    )
+  }
+  if (error) {
+    return (
+      <>
+        <PageHead title="BugLog" />
+        <Empty title={`failed to load: ${error.message}`} />
+      </>
+    )
+  }
+  if (!data) {
+    return (
+      <>
+        <PageHead title="BugLog" />
+        <Skeleton rows={6} />
+      </>
+    )
+  }
 
   const toggle = (id: string) => {
     setExpanded(prev => {
@@ -24,31 +47,51 @@ export function BugLog(): JSX.Element {
     })
   }
 
+  if (data.entries.length === 0) {
+    return (
+      <>
+        <PageHead title="BugLog" />
+        <Empty icon="∅" title="No bugs logged yet" hint="Run `mneme buglog add` to record one." />
+      </>
+    )
+  }
+
   return (
-    <div>
-      <h1 className="text-2xl font-semibold mb-4">buglog</h1>
-      {data.entries.length === 0 ? (
-        <div className="text-gray-500">no bug entries</div>
-      ) : (
-        <table className="w-full bg-white rounded border">
-          <thead className="text-left text-sm text-gray-600 border-b">
+    <>
+      <PageHead title="BugLog" meta={`${data.entries.length} ${data.entries.length === 1 ? 'entry' : 'entries'}`} />
+      <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-4)', padding: 'var(--space-4)' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
             <tr>
-              <th className="px-3 py-2 w-40">created</th>
-              <th className="px-3 py-2 w-20">source</th>
-              <th className="px-3 py-2">file</th>
-              <th className="px-3 py-2">description</th>
-              <th className="px-3 py-2 w-32">actions</th>
+              {['Created', 'Source', 'File', 'Description', 'Actions'].map((h, i) => (
+                <th
+                  key={h}
+                  style={{
+                    textAlign: 'left',
+                    fontSize: 9,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    color: 'var(--text-muted)',
+                    fontWeight: 600,
+                    padding: '6px 10px',
+                    borderBottom: '1px solid var(--border-default)',
+                    width: i === 0 ? 160 : i === 1 ? 80 : i === 4 ? 120 : undefined,
+                  }}
+                >
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {data.entries.map(e => (
               <Fragment key={e.id}>
-                <tr className="border-b text-sm">
-                  <td className="px-3 py-2 cursor-pointer" onClick={() => toggle(e.id)}>{e.created_at}</td>
-                  <td className="px-3 py-2 cursor-pointer" onClick={() => toggle(e.id)}>{e.source}</td>
-                  <td className="px-3 py-2 font-mono text-xs cursor-pointer" onClick={() => toggle(e.id)}>{e.file}</td>
-                  <td className="px-3 py-2 cursor-pointer" onClick={() => toggle(e.id)}>{e.description}</td>
-                  <td className="px-3 py-2">
+                <tr style={{ borderBottom: '1px solid color-mix(in srgb, var(--border-default) 40%, transparent)', cursor: e.bad_code ? 'pointer' : 'default' }}>
+                  <td style={{ padding: '6px 10px', fontSize: 11, color: 'var(--text-muted)' }} className="mono" onClick={() => toggle(e.id)}>{e.created_at}</td>
+                  <td style={{ padding: '6px 10px', fontSize: 11 }} onClick={() => toggle(e.id)}>{e.source}</td>
+                  <td style={{ padding: '6px 10px', fontSize: 11 }} className="mono" onClick={() => toggle(e.id)}>{e.file}</td>
+                  <td style={{ padding: '6px 10px', fontSize: 11 }} onClick={() => toggle(e.id)}>{e.description}</td>
+                  <td style={{ padding: '6px 10px' }}>
                     <ConfirmButton
                       label="Delete"
                       onConfirm={async () => { await deleteEntry(active, e.id); refetch() }}
@@ -56,9 +99,9 @@ export function BugLog(): JSX.Element {
                   </td>
                 </tr>
                 {expanded.has(e.id) && e.bad_code && (
-                  <tr className="border-b">
-                    <td colSpan={5} className="px-3 py-2 bg-gray-50">
-                      <pre className="text-xs overflow-auto whitespace-pre">{e.bad_code}</pre>
+                  <tr style={{ borderBottom: '1px solid color-mix(in srgb, var(--border-default) 40%, transparent)' }}>
+                    <td colSpan={5} style={{ padding: '6px 10px', background: 'var(--bg-raised)' }}>
+                      <pre className="mono" style={{ fontSize: 10, overflow: 'auto', whiteSpace: 'pre', margin: 0, color: 'var(--text-body)' }}>{e.bad_code}</pre>
                     </td>
                   </tr>
                 )}
@@ -66,7 +109,7 @@ export function BugLog(): JSX.Element {
             ))}
           </tbody>
         </table>
-      )}
-    </div>
+      </div>
+    </>
   )
 }
