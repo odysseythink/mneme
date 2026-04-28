@@ -28,9 +28,13 @@ func TestDashboardEndToEnd(t *testing.T) {
 		StartedAt: 0,
 	})
 
-	wrapped := daemon.RecoverMW(&silentLogger{})(daemon.AuthMW(token)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mux.ServeHTTP(w, r.WithContext(daemon.WithTransport(r.Context(), daemon.TransportTCP)))
-	})))
+	// Build the middleware chain like daemon.Server.Run does.
+	chain := daemon.RecoverMW(&silentLogger{})(daemon.AuthMW(token)(mux))
+	// Tag every request with TransportTCP BEFORE the chain runs so AuthMW
+	// sees it (TransportUnix=0 default would bypass auth).
+	wrapped := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		chain.ServeHTTP(w, r.WithContext(daemon.WithTransport(r.Context(), daemon.TransportTCP)))
+	})
 
 	srv := httptest.NewServer(wrapped)
 	defer srv.Close()
