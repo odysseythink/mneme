@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ranwei/mneme/pkg/consolidator"
+	"github.com/ranwei/mneme/pkg/events"
 	"github.com/ranwei/mneme/pkg/scanner"
 	"github.com/ranwei/mneme/pkg/state"
 	"github.com/ranwei/mneme/pkg/suggestions"
@@ -26,6 +28,13 @@ var registry = map[string]TaskFunc{
 	"weekly-waste-report": runWeeklyWasteReport,
 	"suggestions-refresh": runSuggestionsRefresh,
 }
+
+// taskBus is the optional event bus for tasks to publish to.
+// nil means events are dropped silently (e.g., in tests that don't need them).
+var taskBus *events.Bus
+
+// SetTaskBus is called by daemon.Run to wire the shared bus.
+func SetTaskBus(b *events.Bus) { taskBus = b }
 
 // LookupTask returns the registered task for a name, or nil if unknown.
 func LookupTask(name string) TaskFunc {
@@ -83,6 +92,17 @@ func runAnatomyRescan(ctx context.Context, log Logger) error {
 			log.Warn("task", fmt.Sprintf("anatomy-rescan: %s: %v", root, err))
 		} else {
 			log.Info("task", fmt.Sprintf("anatomy-rescan: ok %s", root))
+			if taskBus != nil {
+				payload, _ := json.Marshal(map[string]interface{}{
+					"files_changed": -1, // unknown — scanner does not surface count today
+				})
+				taskBus.Publish(events.Event{
+					TS:        time.Now().UnixMilli(),
+					Type:      "scan.complete",
+					ProjectID: e.Name(), // directory name is the project_id
+					Data:      payload,
+				})
+			}
 		}
 		release()
 	}
@@ -266,7 +286,16 @@ func runSuggestionsRefresh(ctx context.Context, log Logger) error {
 		if _, err := os.Stat(root); err != nil {
 			continue
 		}
-		_, _ = suggestions.Refresh(root, time.Now().UTC())
+		got, err := suggestions.Refresh(root, time.Now().UTC())
+		if err == nil && taskBus != nil && len(got) > 0 {
+			payload, _ := json.Marshal(map[string]interface{}{"count": len(got)})
+			taskBus.Publish(events.Event{
+				TS:        time.Now().UnixMilli(),
+				Type:      "suggestion.new",
+				ProjectID: e.Name(),
+				Data:      payload,
+			})
+		}
 	}
 	return nil
 }

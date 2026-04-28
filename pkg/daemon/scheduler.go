@@ -2,11 +2,13 @@ package daemon
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"runtime/debug"
 	"sync"
 	"time"
 
+	"github.com/ranwei/mneme/pkg/events"
 	"github.com/robfig/cron/v3"
 )
 
@@ -34,6 +36,7 @@ type Scheduler struct {
 	home string
 	log  Logger
 	deps SchedulerDeps
+	bus  *events.Bus
 
 	mu      sync.Mutex
 	cron    *cron.Cron
@@ -98,6 +101,37 @@ func (s *Scheduler) Start(ctx context.Context, m Manifest) error {
 	return nil
 }
 
+// SetBus injects the event bus. Must be called before Start/RunOnce
+// if cron.tick events are desired.
+func (s *Scheduler) SetBus(b *events.Bus) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.bus = b
+}
+
+func (s *Scheduler) publishTick(name, status string, durMS int64, errMsg string) {
+	s.mu.Lock()
+	bus := s.bus
+	s.mu.Unlock()
+	if bus == nil {
+		return
+	}
+	payload := map[string]interface{}{
+		"name":        name,
+		"status":      status,
+		"duration_ms": durMS,
+	}
+	if errMsg != "" {
+		payload["error"] = errMsg
+	}
+	data, _ := json.Marshal(payload)
+	bus.Publish(events.Event{
+		TS:   time.Now().UnixMilli(),
+		Type: "cron.tick",
+		Data: data,
+	})
+}
+
 func (s *Scheduler) Stop() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -124,6 +158,8 @@ func (s *Scheduler) RunOnce(ctx context.Context, name string) error {
 
 func (s *Scheduler) runAttempt(ctx context.Context, name string, fn TaskFunc, attempt int) {
 	s.log.Info("sched", fmt.Sprintf("task=%s status=start attempt=%d", name, attempt+1))
+	s.publishTick(name, "started", 0, "")
+	start := time.Now()
 
 	err := func() (rerr error) {
 		defer func() {
@@ -133,14 +169,17 @@ func (s *Scheduler) runAttempt(ctx context.Context, name string, fn TaskFunc, at
 		}()
 		return fn(ctx, s.log)
 	}()
+	dur := time.Since(start).Milliseconds()
 
 	if err == nil {
 		s.recordSuccess(name)
+		s.publishTick(name, "ok", dur, "")
 		s.log.Info("sched", fmt.Sprintf("task=%s status=ok attempt=%d", name, attempt+1))
 		return
 	}
 
 	s.recordFailure(name, err)
+	s.publishTick(name, "failed", dur, err.Error())
 	s.log.Warn("sched", fmt.Sprintf("task=%s status=fail attempt=%d err=%q", name, attempt+1, err.Error()))
 
 	if attempt < len(retryDelays) {

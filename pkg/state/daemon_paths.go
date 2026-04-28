@@ -20,3 +20,9 @@ func DaemonLogsDir(homeDir string) string       { return filepath.Join(DaemonDir
 func DaemonLogPath(homeDir, dateYYYYMMDD string) string {
 	return filepath.Join(DaemonLogsDir(homeDir), "daemon-"+dateYYYYMMDD+".log")
 }
+
+// DaemonEventsPath returns the path for a daily-rotated events file.
+// dateYYYYMMDD must be formatted as "20260428".
+func DaemonEventsPath(homeDir, dateYYYYMMDD string) string {
+	return filepath.Join(DaemonDir(homeDir), "events-"+dateYYYYMMDD+".jsonl")
+}

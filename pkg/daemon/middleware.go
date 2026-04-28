@@ -121,3 +121,10 @@ func (r *recordingResponseWriter) WriteHeader(code int) {
 	r.status = code
 	r.ResponseWriter.WriteHeader(code)
 }
+
+// Flush delegates to the underlying ResponseWriter's Flusher if available.
+func (r *recordingResponseWriter) Flush() {
+	if f, ok := r.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}

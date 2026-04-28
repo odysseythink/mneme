@@ -17,11 +17,12 @@ import (
 func runPostToolUse(stdin io.Reader) {
 	defer recoverAndLog("post-tool-use")
 	ev := parseOrExit(stdin, "post-tool-use")
-	root, _, resolved := resolveProjectFromEvent(ev)
+	root, id, resolved := resolveProjectFromEvent(ev)
 	if !resolved {
 		os.Exit(0)
 	}
 	state.IncrementSafe(root, "hook_fired.post-tool-use")
+	publishHookFired("post-tool-use", id, nil)
 
 	edit := extractEditInput(ev)
 	if edit.FilePath == "" {

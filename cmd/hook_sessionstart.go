@@ -15,11 +15,12 @@ import (
 func runSessionStart(stdin io.Reader) {
 	defer recoverAndLog("session-start")
 	ev := parseOrExit(stdin, "session-start")
-	root, _, resolved := resolveProjectFromEvent(ev)
+	root, id, resolved := resolveProjectFromEvent(ev)
 	if !resolved {
 		os.Exit(0)
 	}
 	state.IncrementSafe(root, "hook_fired.session-start")
+	publishHookFired("session-start", id, nil)
 
 	prev, err := state.ReadSession(root)
 	if err == nil && prev != nil {

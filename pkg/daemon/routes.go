@@ -1,12 +1,17 @@
 package daemon
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ranwei/mneme/pkg/dashboard"
+	"github.com/ranwei/mneme/pkg/events"
 )
 
 // RouteDeps wires handler dependencies.
@@ -19,6 +24,7 @@ type RouteDeps struct {
 	Scheduler *Scheduler
 	Token     string // M10a: dev_token handler
 	DevMode   bool   // M10a: enables /dev-token
+	Bus       *events.Bus // M10b
 }
 
 // NewMux builds the handler tree.
@@ -34,6 +40,23 @@ func NewMux(deps RouteDeps) http.Handler {
 	mux.HandleFunc("/cron/retry", deps.cronRetry)
 	// M10a: dashboard static + dev-token (must come last so specific paths win)
 	mux.Handle("/dev-token", dashboard.DevTokenHandler(deps.Token, deps.DevMode))
+	// M10b: API endpoints (must come before dashboard.Mount to win over static files)
+	mux.Handle("/api/overview", dashboard.OverviewHandler(
+		dashboard.APIDeps{
+			Home: deps.Home, PID: deps.PID, Version: deps.Version, StartedAt: deps.StartedAt,
+		},
+		func() int { return countOpenSuggestions(deps.Home) },
+	))
+	mux.Handle("/api/projects", dashboard.ProjectsHandler(dashboard.APIDeps{
+		Home: deps.Home, PID: deps.PID, Version: deps.Version, StartedAt: deps.StartedAt,
+	}))
+	mux.Handle("/api/activity", dashboard.ActivityHandler(deps.Bus))
+	mux.HandleFunc("/api/cron", deps.apiCron)
+	// M10b: SSE and publish endpoints (must come before dashboard.Mount to win over static files)
+	mux.Handle("/events", dashboard.SSEHandler(deps.Bus))
+	mux.Handle("/events/publish", dashboard.PublishHandler(deps.Bus, func(ctx context.Context) bool {
+		return transportFromCtx(ctx) == TransportUnix
+	}))
 	dashboard.Mount(mux, dashboard.Deps{})
 	return mux
 }
@@ -157,6 +180,37 @@ func (d *RouteDeps) cronList(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]interface{}{"tasks": out})
 }
 
+func (d *RouteDeps) apiCron(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		writeError(w, http.StatusMethodNotAllowed, "method", "GET only")
+		return
+	}
+	if d.Home == "" {
+		writeError(w, http.StatusInternalServerError, "no_home", "Home not configured")
+		return
+	}
+	m, err := LoadOrSeedManifest(d.Home)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "manifest_load", err.Error())
+		return
+	}
+	st, _ := LoadCronState(d.Home)
+
+	type taskOut struct {
+		Name     string    `json:"name"`
+		Schedule string    `json:"schedule"`
+		Enabled  bool      `json:"enabled"`
+		State    TaskState `json:"state"`
+	}
+	out := make([]taskOut, 0, len(m.Tasks))
+	for _, t := range m.Tasks {
+		out = append(out, taskOut{
+			Name: t.Name, Schedule: t.Schedule, Enabled: t.Enabled, State: st.Tasks[t.Name],
+		})
+	}
+	writeJSON(w, 200, map[string]interface{}{"tasks": out})
+}
+
 func (d *RouteDeps) cronRun(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		writeError(w, http.StatusMethodNotAllowed, "method", "POST only")
@@ -205,4 +259,19 @@ func (d *RouteDeps) cronRetry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, map[string]string{"status": "cleared"})
+}
+
+func countOpenSuggestions(home string) int {
+	dir := filepath.Join(home, ".mneme", "suggestions")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0
+	}
+	count := 0
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".json") {
+			count++
+		}
+	}
+	return count
 }
