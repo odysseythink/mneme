@@ -1,4 +1,4 @@
-<!-- claude-context anatomy v1 -->
+<!-- mneme anatomy v1 -->
 
 ## ./
 

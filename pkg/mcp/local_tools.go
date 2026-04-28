@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ranwei/claude-context/pkg/match"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/match"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 type localArgs struct {
@@ -26,7 +26,7 @@ func (s *Server) callDescribeCodebase(_ context.Context, args json.RawMessage) i
 
 	root, ok := state.FindProjectRoot(a.Cwd)
 	if !ok {
-		return toolError(fmt.Sprintf("no claude-context project found at %s (run: claude-context init)", a.Cwd))
+		return toolError(fmt.Sprintf("no mneme project found at %s (run: mneme init)", a.Cwd))
 	}
 
 	var sb strings.Builder
@@ -34,7 +34,7 @@ func (s *Server) callDescribeCodebase(_ context.Context, args json.RawMessage) i
 
 	anatomy, _ := state.ReadAnatomy(root)
 	if len(anatomy) == 0 {
-		fmt.Fprintf(&sb, "\n(No anatomy map. Run: claude-context scan)\n")
+		fmt.Fprintf(&sb, "\n(No anatomy map. Run: mneme scan)\n")
 	} else {
 		entries := make([]state.AnatomyEntry, 0, len(anatomy))
 		for _, e := range anatomy {
@@ -111,12 +111,12 @@ func (s *Server) callGetProjectRules(_ context.Context, args json.RawMessage) in
 
 	root, ok := state.FindProjectRoot(a.Cwd)
 	if !ok {
-		return toolError(fmt.Sprintf("no claude-context project found at %s (run: claude-context init)", a.Cwd))
+		return toolError(fmt.Sprintf("no mneme project found at %s (run: mneme init)", a.Cwd))
 	}
 
 	rules, _ := state.ReadCerebrum(root)
 	if len(rules) == 0 {
-		return ToolCallResult{Content: []ToolContent{{Type: "text", Text: "No cerebrum rules. Run: claude-context cerebrum add"}}}
+		return ToolCallResult{Content: []ToolContent{{Type: "text", Text: "No cerebrum rules. Run: mneme cerebrum add"}}}
 	}
 
 	var sb strings.Builder
@@ -142,12 +142,12 @@ func (s *Server) callFindSimilarBugs(_ context.Context, args json.RawMessage) in
 
 	root, ok := state.FindProjectRoot(a.Cwd)
 	if !ok {
-		return toolError(fmt.Sprintf("no claude-context project found at %s (run: claude-context init)", a.Cwd))
+		return toolError(fmt.Sprintf("no mneme project found at %s (run: mneme init)", a.Cwd))
 	}
 
 	entries, _ := state.ReadBuglog(root)
 	if len(entries) == 0 {
-		return ToolCallResult{Content: []ToolContent{{Type: "text", Text: "No buglog entries. Run: claude-context buglog add"}}}
+		return ToolCallResult{Content: []ToolContent{{Type: "text", Text: "No buglog entries. Run: mneme buglog add"}}}
 	}
 
 	queryTokens := match.Tokenize(a.Query)

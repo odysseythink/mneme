@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Build
-go build -o ./bin/claude-context ./cmd
+go build -o ./bin/mneme ./cmd
 
 # Run all tests
 go test -v ./...
@@ -15,17 +15,17 @@ go test -v ./...
 go test -v ./tests -run TestStoreInitialize
 
 # Debug logging
-LOG_LEVEL=debug ./bin/claude-context
+LOG_LEVEL=debug ./bin/mneme
 ```
 
 ## Configuration
 
 **Priority: env var > config file > built-in default**
 
-Config file is read from `~/.claude-context/config.yaml` by default.
+Config file is read from `~/.mneme/config.yaml` by default.
 Override the path with `CONFIG_FILE=/path/to/config.yaml`.
 
-Example `~/.claude-context/config.yaml`:
+Example `~/.mneme/config.yaml`:
 
 ```yaml
 embedding_api_key: sk-xxx
@@ -33,11 +33,11 @@ embedding_provider: qwen
 embedding_model: text-embedding-v4
 
 db_backend: chromem
-chromem_path: ~/.claude-context/chromem
+chromem_path: ~/.mneme/chromem
 
-# db_path: ~/.claude-context/db.duckdb   # db_backend=duckdb
+# db_path: ~/.mneme/db.duckdb   # db_backend=duckdb
 # qdrant_url: http://localhost:6333       # db_backend=qdrant
-# qdrant_collection: claude-context
+# qdrant_collection: mneme
 
 log_level: info
 ```
@@ -46,15 +46,15 @@ Environment variables (override config file):
 
 | Variable | Default | Description |
 |---|---|---|
-| `CONFIG_FILE` | `~/.claude-context/config.yaml` | Config file path |
+| `CONFIG_FILE` | `~/.mneme/config.yaml` | Config file path |
 | `EMBEDDING_API_KEY` | (required) | SiliconFlow or Qwen API key |
 | `EMBEDDING_PROVIDER` | `siliconflow` | `siliconflow` or `qwen` |
 | `EMBEDDING_MODEL` | `BAAI/bge-large-zh-v1.5` | Model ID |
-| `DB_PATH` | `~/.claude-context/db.duckdb` | DuckDB file path |
+| `DB_PATH` | `~/.mneme/db.duckdb` | DuckDB file path |
 | `DB_BACKEND` | `duckdb` | Vector store backend: `duckdb`, `qdrant`, `chromem` |
 | `QDRANT_URL` | `http://localhost:6333` | Qdrant service URL (HTTP port; gRPC 6334 auto-used) |
-| `QDRANT_COLLECTION` | `claude-context` | Qdrant collection name |
-| `CHROMEM_PATH` | `~/.claude-context/chromem` | chromem-go persistence directory |
+| `QDRANT_COLLECTION` | `mneme` | Qdrant collection name |
+| `CHROMEM_PATH` | `~/.mneme/chromem` | chromem-go persistence directory |
 
 ## Architecture
 
@@ -81,10 +81,10 @@ MCP stdio request
 ## Registering with Claude Code
 
 ```bash
-claude mcp add claude-context \
+claude mcp add mneme \
   -e EMBEDDING_API_KEY=$EMBEDDING_API_KEY \
   -e EMBEDDING_PROVIDER=$EMBEDDING_PROVIDER \
-  -- /path/to/bin/claude-context
+  -- /path/to/bin/mneme
 ```
 
 MCP resources exposed: `codebase://index` (POST with `codebase_path`) and `codebase://search` (POST with `query`, optional `top_k`).

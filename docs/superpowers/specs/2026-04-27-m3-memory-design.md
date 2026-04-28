@@ -5,7 +5,7 @@
 M3 closes the session lifecycle loop. After M1 (hook scaffold) and M2 (anatomy map), M3 adds:
 
 - **Turn-level edit classification** via `PostToolUse` hook
-- **Session memory rows** written to `~/.claude/claude-context-memory.md` on each `SessionStart`
+- **Session memory rows** written to `~/.claude/mneme-memory.md` on each `SessionStart`
 - **Full lifecycle** for `SessionStart`, `Stop`, and `PostToolUse` hook handlers
 - **Stats enhancement** showing edit patterns and recent session history
 
@@ -167,12 +167,12 @@ func AppendMemoryRow(homeDir string, row MemoryRow) error
 func ReadMemory(homeDir string) ([]MemoryRow, error)
 ```
 
-`AppendMemoryRow` uses `state.AtomicWrite` (flock-X, 50ms timeout). Memory.md path: `filepath.Join(homeDir, ".claude", "claude-context-memory.md")`.
+`AppendMemoryRow` uses `state.AtomicWrite` (flock-X, 50ms timeout). Memory.md path: `filepath.Join(homeDir, ".claude", "mneme-memory.md")`.
 
 ### memory.md format
 
 ```markdown
-<!-- claude-context memory v1 -->
+<!-- mneme memory v1 -->
 
 ## 2026-04-27T14:32 (3 turns)
 Files: pkg/state/session.go (refactor×1), cmd/hook_stop.go (new_file×1)
@@ -185,13 +185,13 @@ Patterns: bugfix×2, feature×1
 Summary: Fixed 2 bugs, added 1 feature.
 ```
 
-Header line `<!-- claude-context memory v1 -->` written once on first append; subsequent calls check for its presence before writing.
+Header line `<!-- mneme memory v1 -->` written once on first append; subsequent calls check for its presence before writing.
 
 ---
 
 ## 4. Stats Enhancement
 
-`claude-context stats` gains three new sections:
+`mneme stats` gains three new sections:
 
 ```
 === Hook Totals ===
@@ -215,7 +215,7 @@ Header line `<!-- claude-context memory v1 -->` written once on first append; su
 === Memory ===
   rows written:           3
   edits classified:      23
-  memory.md:             ~/.claude/claude-context-memory.md
+  memory.md:             ~/.claude/mneme-memory.md
 ```
 
 `ReadMemory` supplies recent sessions. Ledger supplies `MemoryRowsWritten` and `TurnEditsClassified`. `cmd/cmd_stats.go` is extended to call both.
@@ -232,15 +232,15 @@ Header line `<!-- claude-context memory v1 -->` written once on first append; su
     "hooks": [
       {
         "type": "command",
-        "command": "/path/to/claude-context hook post-tool-use"
+        "command": "/path/to/mneme hook post-tool-use"
       }
     ],
-    "_managed_by": "claude-context"
+    "_managed_by": "mneme"
   }
 ]
 ```
 
-The existing uninstall logic already removes all entries with `_managed_by: claude-context` — no additional changes needed.
+The existing uninstall logic already removes all entries with `_managed_by: mneme` — no additional changes needed.
 
 `tests/integration/init_lifecycle_test.go` `TestInitFreshThenUninstall` must be updated to assert `PostToolUse` is present in the installed hooks (currently asserts 3 hooks: `PreToolUse`, `SessionStart`, `Stop`; M3 brings the total to 4).
 

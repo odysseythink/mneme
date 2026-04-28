@@ -7,8 +7,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg"
-	"github.com/ranwei/claude-context/pkg/vectordb"
+	"github.com/ranwei/mneme/pkg"
+	"github.com/ranwei/mneme/pkg/vectordb"
 )
 
 func qdrantURL(t *testing.T) string {

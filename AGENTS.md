@@ -1,4 +1,4 @@
-# Claude Context Go - Agent Instructions
+# Mneme Go - Agent Instructions
 
 ## Project
 
@@ -7,7 +7,7 @@ Go implementation of a semantic code search MCP server for Claude Code. Single b
 ## Build & Run
 
 ```bash
-go build -o ./bin/claude-context ./cmd/mcp
+go build -o ./bin/mneme ./cmd/mcp
 go test -v ./...
 ```
 
@@ -17,7 +17,7 @@ Required at runtime:
 - `EMBEDDING_API_KEY` - SiliconFlow or Qwen API key
 - `EMBEDDING_PROVIDER` - `siliconflow` or `qwen` (default: siliconflow)
 - `EMBEDDING_MODEL` - Model ID (default: `BAAI/bge-large-zh-v1.5`)
-- `DB_PATH` - DuckDB file path (default: `~/.claude-context/db.duckdb`)
+- `DB_PATH` - DuckDB file path (default: `~/.mneme/db.duckdb`)
 
 ## Architecture
 

@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/splitter"
+	"github.com/ranwei/mneme/pkg/splitter"
 )
 
 func TestSplitGoCode(t *testing.T) {

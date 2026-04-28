@@ -11,8 +11,8 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/ranwei/claude-context/pkg/installer"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/installer"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 type initOpts struct {
@@ -48,7 +48,7 @@ func dispatchInit(args []string) {
 	projectRoot, _ := resolveInitProjectRoot(cwd)
 	settingsPath := resolveSettingsPath(projectRoot, opts)
 	claudeMDPath := filepath.Join(os.Getenv("HOME"), ".claude", "CLAUDE.md")
-	rulesPath := filepath.Join(os.Getenv("HOME"), ".claude", "claude-context-rules.md")
+	rulesPath := filepath.Join(os.Getenv("HOME"), ".claude", "mneme-rules.md")
 
 	binaryPath, _ := os.Executable()
 
@@ -115,7 +115,7 @@ func printInitPlan(projectRoot, settingsPath, claudeMDPath, rulesPath string) {
 	fmt.Fprintln(os.Stderr, "│   + add 5 hook entries (PreToolUse:Read, Write; PostTool... │")
 	fmt.Fprintf(os.Stderr, "│ Will write %-49s│\n", rulesPath)
 	fmt.Fprintf(os.Stderr, "│ Will append @import block to %-31s│\n", claudeMDPath)
-	fmt.Fprintf(os.Stderr, "│ Will init %-50s│\n", projectRoot+"/.claude-context/")
+	fmt.Fprintf(os.Stderr, "│ Will init %-50s│\n", projectRoot+"/.mneme/")
 	fmt.Fprintln(os.Stderr, "│ Backups: <each-path>.bak.<timestamp>                       │")
 	fmt.Fprintln(os.Stderr, "╰────────────────────────────────────────────────────────────╯")
 }
@@ -155,7 +155,7 @@ func runInit(projectRoot, settingsPath, claudeMDPath, rulesPath, binaryPath stri
 		fmt.Fprintln(os.Stderr, "✗ project scaffold:", err)
 		os.Exit(1)
 	}
-	fmt.Fprintf(os.Stderr, "✓ Initialized %s/.claude-context/ (project ID: %s)\n", projectRoot, id)
+	fmt.Fprintf(os.Stderr, "✓ Initialized %s/.mneme/ (project ID: %s)\n", projectRoot, id)
 
 	// Step 8: auto-scan (build anatomy map)
 	if !noScan {
@@ -164,8 +164,8 @@ func runInit(projectRoot, settingsPath, claudeMDPath, rulesPath, binaryPath stri
 	}
 
 	fmt.Fprintln(os.Stderr, "\nBackups stored at *.bak."+ts)
-	fmt.Fprintln(os.Stderr, "To verify: start a new Claude Code session and run `claude-context stats` after.")
-	fmt.Fprintln(os.Stderr, "To uninstall: claude-context init --uninstall")
+	fmt.Fprintln(os.Stderr, "To verify: start a new Claude Code session and run `mneme stats` after.")
+	fmt.Fprintln(os.Stderr, "To uninstall: mneme init --uninstall")
 }
 
 func backupFile(path, ts string) {

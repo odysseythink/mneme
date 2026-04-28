@@ -2,15 +2,15 @@
 # Removes M0 sandbox + dump dir + R5 leftovers from $HOME.
 # Self-checks:
 #   - ~/.claude/settings.json hash matches baseline (must be unchanged)
-#   - no stray claude-context-m0 references in ~/.claude/
-#   - no leftover $HOME/claude-context-m0-* files
+#   - no stray mneme-m0 references in ~/.claude/
+#   - no leftover $HOME/mneme-m0-* files
 # Exit code 1 with diagnostics if any check fails.
 set -euo pipefail
 
-SANDBOX="/tmp/claude-context-m0-sandbox"
-DUMP_BASE="/tmp/claude-context-m0"
+SANDBOX="/tmp/mneme-m0-sandbox"
+DUMP_BASE="/tmp/mneme-m0"
 USER_SETTINGS="$HOME/.claude/settings.json"
-BASELINE="/tmp/claude-context-m0-baseline-hash"
+BASELINE="/tmp/mneme-m0-baseline-hash"
 
 problems=0
 
@@ -31,12 +31,12 @@ else
 fi
 
 # Remove R5 tilde-test files (in $HOME, M0-prefixed)
-HOME_LEFTOVERS=$(ls "$HOME"/claude-context-m0-* 2>/dev/null || true)
+HOME_LEFTOVERS=$(ls "$HOME"/mneme-m0-* 2>/dev/null || true)
 if [ -n "$HOME_LEFTOVERS" ]; then
-    rm -f "$HOME"/claude-context-m0-*
-    echo "✓ removed \$HOME/claude-context-m0-* leftovers"
+    rm -f "$HOME"/mneme-m0-*
+    echo "✓ removed \$HOME/mneme-m0-* leftovers"
 else
-    echo "  no \$HOME/claude-context-m0-* leftovers"
+    echo "  no \$HOME/mneme-m0-* leftovers"
 fi
 
 # Verify user settings.json unchanged
@@ -69,15 +69,15 @@ else
     echo "  no baseline hash to verify against (setup may not have run)"
 fi
 
-# Check for stray claude-context-m0 references in ~/.claude/
+# Check for stray mneme-m0 references in ~/.claude/
 if [ -d "$HOME/.claude" ]; then
-    STRAY=$(grep -r "claude-context-m0" "$HOME/.claude/" 2>/dev/null || true)
+    STRAY=$(grep -r "mneme-m0" "$HOME/.claude/" 2>/dev/null || true)
     if [ -n "$STRAY" ]; then
-        echo "✗ stray claude-context-m0 references in ~/.claude/:"
+        echo "✗ stray mneme-m0 references in ~/.claude/:"
         echo "$STRAY"
         problems=$((problems + 1))
     else
-        echo "✓ no stray claude-context-m0 references in ~/.claude/"
+        echo "✓ no stray mneme-m0 references in ~/.claude/"
     fi
 fi
 

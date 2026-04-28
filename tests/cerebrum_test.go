@@ -6,13 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/hook"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/hook"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func TestReadCerebrumEmpty(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 	rules, err := state.ReadCerebrum(dir)
 	if err != nil {
 		t.Fatalf("ReadCerebrum on missing file: %v", err)
@@ -24,7 +24,7 @@ func TestReadCerebrumEmpty(t *testing.T) {
 
 func TestAppendAndReadRules(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	r1 := state.CerebrumRule{Comment: "no var", Pattern: `\bvar\s+\w+\s*=`, Message: "prefer :="}
 	r2 := state.CerebrumRule{Pattern: `fmt\.Println\(`, Message: "use structured logger"}
@@ -59,7 +59,7 @@ func TestAppendAndReadRules(t *testing.T) {
 
 func TestWriteCerebrumRoundtrip(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	rules := []state.CerebrumRule{
 		{Comment: "a", Pattern: "pat1", Message: "msg1"},
@@ -88,14 +88,14 @@ func TestWriteCerebrumRoundtrip(t *testing.T) {
 
 func TestHeaderWrittenOnce(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
 
 	r := state.CerebrumRule{Pattern: "x", Message: "y"}
 	state.AppendCerebrumRule(dir, r)
 	state.AppendCerebrumRule(dir, r)
 
-	data, _ := os.ReadFile(filepath.Join(dir, ".claude-context", "cerebrum.md"))
-	count := strings.Count(string(data), "<!-- claude-context cerebrum v1 -->")
+	data, _ := os.ReadFile(filepath.Join(dir, ".mneme", "cerebrum.md"))
+	count := strings.Count(string(data), "<!-- mneme cerebrum v1 -->")
 	if count != 1 {
 		t.Errorf("header appears %d times, want 1", count)
 	}

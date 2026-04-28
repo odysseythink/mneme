@@ -106,7 +106,7 @@ func AppendBuglogEntry(projectRoot string, e BuglogEntry) error
 func WriteBuglog(projectRoot string, entries []BuglogEntry) error
 ```
 
-**Storage path:** `<project>/.claude-context/buglog.json`
+**Storage path:** `<project>/.mneme/buglog.json`
 
 **File format:**
 ```json
@@ -169,7 +169,7 @@ pass 2 (buglog, M4b):
 **Combined warning block format:**
 
 ```
-⚡ claude-context: ⚠️ N rule(s)/match(es):
+⚡ mneme: ⚠️ N rule(s)/match(es):
   • [cerebrum] prefer := for short variable declarations (line 3)
   • [buglog] possible re-introduction of bugfix in session.go (line 7)
     was: var x = someFunc()
@@ -182,9 +182,9 @@ Each buglog match line includes `was: <bad_code first line>` to give Claude the 
 ## 4. `buglog` CLI
 
 ```
-claude-context buglog add [--description D] [--code C] [--file F]
-claude-context buglog list
-claude-context buglog clear [--yes]
+mneme buglog add [--description D] [--code C] [--file F]
+mneme buglog list
+mneme buglog clear [--yes]
 ```
 
 ### `buglog add`
@@ -192,12 +192,12 @@ claude-context buglog clear [--yes]
 Flags take priority; missing flags prompt interactively:
 
 ```
-$ claude-context buglog add
+$ mneme buglog add
 Description: possible nil deref when session is uninitialized
 Bad code snippet (paste, then Ctrl-D):
 session.StopCount++
 ^D
-✓ Entry added (4 entries total in .claude-context/buglog.json)
+✓ Entry added (4 entries total in .mneme/buglog.json)
 ```
 
 If `--description` and `--code` are both provided, no prompts. `--file` is optional. Exits 1 with `"description and code are required"` if either is empty after prompting.
@@ -213,12 +213,12 @@ Buglog entries (2):
      was: session.StopCount++
 ```
 
-Exits 0 with `"No buglog entries. Run: claude-context buglog add"` if file is empty or absent.
+Exits 0 with `"No buglog entries. Run: mneme buglog add"` if file is empty or absent.
 
 ### `buglog clear`
 
 ```
-$ claude-context buglog clear
+$ mneme buglog clear
 Remove all 2 buglog entries? [y/N]: y
 ✓ Cleared.
 ```

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/embedding"
+	"github.com/ranwei/mneme/pkg/embedding"
 )
 
 type MockEmbeddingProvider struct {

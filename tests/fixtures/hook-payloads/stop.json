@@ -1,9 +1,9 @@
 {
   "session_id": "<SESSION_ID>",
   "transcript_path": "<TRANSCRIPT_PATH>",
-  "cwd": "/private/tmp/claude-context-m0-sandbox",
+  "cwd": "/private/tmp/mneme-m0-sandbox",
   "permission_mode": "bypassPermissions",
   "hook_event_name": "Stop",
   "stop_hook_active": false,
-  "last_assistant_message": "Yes, all three are visible to me — they were loaded into my context via the `@` imports in `CLAUDE.md`:\n\n- `passphrase-tilde-abc123` — from `~/claude-context-m0-tilde-test.md` (tilde path import)\n- `passphrase-abs-def456` — from `/tmp/claude-context-m0-sandbox/.claude/m0-test-abs.md` (absolute path import)\n- `passphrase-rel-ghi789` — from `./.claude/m0-test-rel.md` (relative path import)"
+  "last_assistant_message": "Yes, all three are visible to me — they were loaded into my context via the `@` imports in `CLAUDE.md`:\n\n- `passphrase-tilde-abc123` — from `~/mneme-m0-tilde-test.md` (tilde path import)\n- `passphrase-abs-def456` — from `/tmp/mneme-m0-sandbox/.claude/m0-test-abs.md` (absolute path import)\n- `passphrase-rel-ghi789` — from `./.claude/m0-test-rel.md` (relative path import)"
 }

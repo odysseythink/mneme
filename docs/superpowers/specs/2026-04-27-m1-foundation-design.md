@@ -2,13 +2,13 @@
 
 **Date:** 2026-04-27
 **Status:** Draft
-**Scope:** Build the harness for the openwolf-port project (Claude Code hooks integrated into the existing `claude-context` Go binary): subcommand dispatcher, minimum state layer, hook protocol parsing, init/uninstall lifecycle, and 5 hook handler stubs. M1 ships no token-saving features — it is the foundation that M2-M6 stand on.
+**Scope:** Build the harness for the openwolf-port project (Claude Code hooks integrated into the existing `mneme` Go binary): subcommand dispatcher, minimum state layer, hook protocol parsing, init/uninstall lifecycle, and 5 hook handler stubs. M1 ships no token-saving features — it is the foundation that M2-M6 stand on.
 
 ---
 
 ## Problem
 
-The architecture spec (`2026-04-27-claude-context-hook-architecture-design.md`) describes 6 milestones (M1-M6). M1 is the entry point: the binary must learn to dispatch subcommands, the install/uninstall lifecycle must work end-to-end, hook subcommands must be callable by Claude Code without ever blocking it, and the existing MCP server behavior must be preserved with zero regression.
+The architecture spec (`2026-04-27-mneme-hook-architecture-design.md`) describes 6 milestones (M1-M6). M1 is the entry point: the binary must learn to dispatch subcommands, the install/uninstall lifecycle must work end-to-end, hook subcommands must be callable by Claude Code without ever blocking it, and the existing MCP server behavior must be preserved with zero regression.
 
 M0 (`2026-04-27-m0-hook-protocol-validation-report.md`) validated the hook protocol assumptions empirically. M1 grounds its design on those findings — particularly: use **exit 1** (not exit 0) for informational hooks, the stdin schema includes more fields than originally assumed (e.g., `cwd`, `hook_event_name`, `tool_use_id`), and `Stop` fires per assistant turn (the M3 problem).
 
@@ -18,9 +18,9 @@ M0 (`2026-04-27-m0-hook-protocol-validation-report.md`) validated the hook proto
 
 - Subcommand dispatcher in `cmd/main.go`: no-arg → MCP server (zero regression); `hook <event>` / `init` / `stats` route to subcommand handlers
 - Minimum `pkg/state` layer: project root + per-machine UUID, file lock, atomic write, ledger CRUD, session-file occupancy
-- `pkg/hook/{protocol, feedback}`: parse stdin per M0-validated schema; format stderr with `⚡ claude-context: ...` prefix
+- `pkg/hook/{protocol, feedback}`: parse stdin per M0-validated schema; format stderr with `⚡ mneme: ...` prefix
 - `pkg/installer/{settings, rules, project, uninstall}`: full init / uninstall lifecycle with dry-run preview, y/N confirmation, automatic backups, idempotent re-runs, boundary-marked entries
-- 5 hook handler stubs (`pre-read`, `pre-write`, `post-write`, `session-start`, `stop`): parse stdin, locate project, increment ledger counter, exit 0. Default silent. Verbose mode behind `CLAUDE_CONTEXT_DEBUG` env var.
+- 5 hook handler stubs (`pre-read`, `pre-write`, `post-write`, `session-start`, `stop`): parse stdin, locate project, increment ledger counter, exit 0. Default silent. Verbose mode behind `MNEME_DEBUG` env var.
 - Tests: unit + integration + a manual smoke checklist
 - MCP server zero behavioral regression (golden snapshot of `search_codebase` response)
 
@@ -65,13 +65,13 @@ Each subcommand uses `flag.NewFlagSet("subcommand", flag.ContinueOnError)` for i
 | # | Question | Decision |
 |---|---|---|
 | CD3a | CLI commands (init/scan/stats) — find project root how? | `git rev-parse --show-toplevel`; fallback to cwd |
-| CD3b | Hook subcommands — find project root how? | PreToolUse / PostToolUse: walk up from `tool_input.file_path` (stdin) to find git root or `.claude-context/` marker. SessionStart / Stop: use stdin's `cwd`. |
+| CD3b | Hook subcommands — find project root how? | PreToolUse / PostToolUse: walk up from `tool_input.file_path` (stdin) to find git root or `.mneme/` marker. SessionStart / Stop: use stdin's `cwd`. |
 | CD3c | File outside any project — what to do? | Silent no-op (`ledger.outside_project_skipped++`, exit 0) |
-| CD3d | Project moves on disk (path changes → state lost) — how to keep state correlated? | **Per-machine UUID** at `<project>/.claude-context/.local-id` (gitignored). Generated on first `init`. Used as the lookup key for `~/.claude-context/projects/<id>/` instead of path hash. UUID travels with the directory; team members each have their own UUID; multi-machine state stays separate. |
+| CD3d | Project moves on disk (path changes → state lost) — how to keep state correlated? | **Per-machine UUID** at `<project>/.mneme/.local-id` (gitignored). Generated on first `init`. Used as the lookup key for `~/.mneme/projects/<id>/` instead of path hash. UUID travels with the directory; team members each have their own UUID; multi-machine state stays separate. |
 
 ### CD4. Init non-TTY behavior — refuse + helpful error
 
-When `claude-context init` is invoked without a TTY (CI, scripts) AND without `--yes`/`--dry-run`/`--print`:
+When `mneme init` is invoked without a TTY (CI, scripts) AND without `--yes`/`--dry-run`/`--print`:
 
 ```
 ✗ stdin is not a TTY; refusing to apply changes.
@@ -88,7 +88,7 @@ Merge algorithm (per hook event):
 3. Find or create the event key (e.g., `PreToolUse`)
 4. Find or create the matcher object (e.g., `{"matcher": "Read"}`)
 5. In that matcher's `hooks` array:
-   - Delete all entries with `_managed_by == "claude-context"` (idempotent upgrade)
+   - Delete all entries with `_managed_by == "mneme"` (idempotent upgrade)
    - Append our new entry with `_managed_by`, `_version`, `_installed_at` fields
 6. Atomic-write back
 
@@ -119,12 +119,12 @@ pkg/state/
 
 pkg/hook/
 ├── protocol.go                 ~80 LOC   stdin JSON parsing + Event type
-└── feedback.go                 ~30 LOC   stderr formatter ("⚡ claude-context: ...") + exit code helpers
+└── feedback.go                 ~30 LOC   stderr formatter ("⚡ mneme: ...") + exit code helpers
 
 pkg/installer/
 ├── settings.go                 ~180 LOC  ~/.claude/settings.json merge + uninstall reverse
-├── rules.go                    ~120 LOC  claude-context-rules.md write + CLAUDE.md @import injection/removal
-├── project.go                  ~70 LOC   <project>/.claude-context/ scaffolding + .gitignore + .local-id
+├── rules.go                    ~120 LOC  mneme-rules.md write + CLAUDE.md @import injection/removal
+├── project.go                  ~70 LOC   <project>/.mneme/ scaffolding + .gitignore + .local-id
 ├── uninstall.go                ~40 LOC   uninstall orchestrator (calls reverse of above three)
 └── templates/
     └── rules.md                ~50 LOC   embedded rules template
@@ -135,7 +135,7 @@ pkg/installer/
 ```
 cmd/mcp/main.go                 → renamed to cmd/mcp_server.go OR have its body extracted to a function
                                   callable from cmd/main.go's runMCPServer().
-                                  Existing `claude mcp add ... -- claude-context` registrations
+                                  Existing `claude mcp add ... -- mneme` registrations
                                   must continue to work without modification.
 go.mod                          → +1 dep github.com/gofrs/flock
                                   (golang.org/x/term is in standard ecosystem, marginal cost)
@@ -271,7 +271,7 @@ func main() {
 
 **Hard constraints:**
 
-- Anything other than the listed subcommands or no-args → exit 2 + usage (do **not** fall through to MCP server). Including `claude-context --foo` (starts with `-`) which would be misuse.
+- Anything other than the listed subcommands or no-args → exit 2 + usage (do **not** fall through to MCP server). Including `mneme --foo` (starts with `-`) which would be misuse.
 - The only path to MCP server is no-args. This preserves zero regression for `claude mcp add` registrations which spawn the binary with no args.
 
 ### `dispatchHook` — `cmd/cmd_hook.go`
@@ -297,7 +297,7 @@ Forward-compat note: future Claude Code might add `SessionEnd` or `PreCompact` e
 
 ## Init Lifecycle
 
-### `claude-context init` flow
+### `mneme init` flow
 
 ```
 1. Parse flags
@@ -316,12 +316,12 @@ Forward-compat note: future Claude Code might add `SessionEnd` or `PreCompact` e
        --project:  <project>/.claude/settings.json
        --local:    <project>/.claude/settings.local.json
    - CLAUDE.md target: ~/.claude/CLAUDE.md  (fixed)
-   - rules.md target:  ~/.claude/claude-context-rules.md  (fixed)
-   - Project local dir: <project>/.claude-context/
+   - rules.md target:  ~/.claude/mneme-rules.md  (fixed)
+   - Project local dir: <project>/.mneme/
 
 3. Detect existing install (idempotency check)
-   - Read settings.json, look for entries with _managed_by:"claude-context"
-   - Read CLAUDE.md, look for <!-- claude-context-managed BEGIN --> marker
+   - Read settings.json, look for entries with _managed_by:"mneme"
+   - Read CLAUDE.md, look for <!-- mneme-managed BEGIN --> marker
    - Existing → upgrade mode (delete old entries, write new — clean replacement)
    - Not existing → fresh install
 
@@ -335,12 +335,12 @@ Forward-compat note: future Claude Code might add `SessionEnd` or `PreCompact` e
    ╭─ Plan ────────────────────────────────────────────────────╮
    │ Will modify ~/.claude/settings.json:                       │
    │   + add 5 hook entries (PreToolUse:Read, ...)              │
-   │ Will create ~/.claude/claude-context-rules.md (~50 lines)  │
+   │ Will create ~/.claude/mneme-rules.md (~50 lines)  │
    │ Will append 3 lines to ~/.claude/CLAUDE.md:                │
-   │   <!-- claude-context-managed BEGIN -->                    │
-   │   @~/.claude/claude-context-rules.md                       │
-   │   <!-- claude-context-managed END -->                      │
-   │ Will create <project>/.claude-context/                     │
+   │   <!-- mneme-managed BEGIN -->                    │
+   │   @~/.claude/mneme-rules.md                       │
+   │   <!-- mneme-managed END -->                      │
+   │ Will create <project>/.mneme/                     │
    │   ├── .gitignore                                            │
    │   └── .local-id  (UUID for state correlation)              │
    │ Backups: <each-target-path>.bak.<timestamp>                │
@@ -358,44 +358,44 @@ Forward-compat note: future Claude Code might add `SessionEnd` or `PreCompact` e
    step 2: settings.json: load → merge hooks (per CD5) → atomic write
    step 3: rules.md: write (overwrite from embedded template)
    step 4: CLAUDE.md: if no boundary marker present → append 3-line block
-   step 5: project: mkdir <project>/.claude-context/
+   step 5: project: mkdir <project>/.mneme/
    step 6: project: write .gitignore (content: "_session.json\n*.bak.*\n")
    step 7: project: if .local-id missing → generate UUIDv4 + write
 
 7. Print summary
    ✓ Registered 5 hooks in ~/.claude/settings.json
-   ✓ Wrote rules to ~/.claude/claude-context-rules.md
+   ✓ Wrote rules to ~/.claude/mneme-rules.md
    ✓ Added @import to ~/.claude/CLAUDE.md
-   ✓ Initialized <project>/.claude-context/ (project ID: <uuid>)
+   ✓ Initialized <project>/.mneme/ (project ID: <uuid>)
 
    Backups stored at *.bak.<timestamp>
 
-   To verify: start a new Claude Code session and run `claude-context stats` after.
-   To uninstall: claude-context init --uninstall
+   To verify: start a new Claude Code session and run `mneme stats` after.
+   To uninstall: mneme init --uninstall
 ```
 
-### `claude-context init --uninstall` flow
+### `mneme init --uninstall` flow
 
 ```
 1. Parse same flags (--yes / --dry-run / --print / --project / --local)
 2. Detect installed targets (by boundary markers)
-   - None found → exit 0 with "no claude-context installation found"
+   - None found → exit 0 with "no mneme installation found"
 3. Show plan (same UI as init)
 4. Execute
    step 1: backup each target
-   step 2: settings.json: filter out entries where _managed_by == "claude-context"; atomic write
+   step 2: settings.json: filter out entries where _managed_by == "mneme"; atomic write
        - If matcher's hooks array becomes empty → delete the matcher object
        - If event's matcher array becomes empty → delete the event key
        - If hooks top-level becomes empty → delete the hooks key (preserve other settings.json content)
-   step 3: CLAUDE.md: locate <!-- claude-context-managed BEGIN/END --> block; remove (3 lines)
+   step 3: CLAUDE.md: locate <!-- mneme-managed BEGIN/END --> block; remove (3 lines)
    step 4: delete rules.md file
-   step 5: leave <project>/.claude-context/ directory alone (user data); print cleanup hint
+   step 5: leave <project>/.mneme/ directory alone (user data); print cleanup hint
 5. Print reverse summary
    ✓ Removed 5 hook entries from settings.json
    ✓ Removed @import from CLAUDE.md
-   ✓ Deleted ~/.claude/claude-context-rules.md
-   ! Project state at <project>/.claude-context/ kept intact.
-     To remove: rm -rf <project>/.claude-context/
+   ✓ Deleted ~/.claude/mneme-rules.md
+   ! Project state at <project>/.mneme/ kept intact.
+     To remove: rm -rf <project>/.mneme/
 ```
 
 ---
@@ -407,8 +407,8 @@ Forward-compat note: future Claude Code might add `SessionEnd` or `PreCompact` e
 ```json
 {
   "type": "command",
-  "command": "claude-context hook pre-read",
-  "_managed_by": "claude-context",
+  "command": "mneme hook pre-read",
+  "_managed_by": "mneme",
   "_version": 1,
   "_installed_at": "2026-04-27T16:30:00Z"
 }
@@ -423,9 +423,9 @@ M0 R4 validated that Claude Code 2.1.119 tolerates these extra fields.
 ### CLAUDE.md — HTML comment boundary
 
 ```markdown
-<!-- claude-context-managed BEGIN -->
-@~/.claude/claude-context-rules.md
-<!-- claude-context-managed END -->
+<!-- mneme-managed BEGIN -->
+@~/.claude/mneme-rules.md
+<!-- mneme-managed END -->
 ```
 
 Fixed 3-line block. BEGIN/END comments are detection + removal anchors. The `@import` uses tilde form (`@~/...`) per M0 R5 — most portable across user homes.
@@ -457,7 +457,7 @@ func runPreRead(stdin io.Reader) {
     ledger.IncrementSafe("hook_fired.pre-read")
 
     // Default: silent (exit 0, no stderr)
-    // Diagnostic visibility via $CLAUDE_CONTEXT_DEBUG
+    // Diagnostic visibility via $MNEME_DEBUG
     if debugEnabled() {
         feedback.WriteStderr("M1 stub: pre-read fired (project=" + projectID + ")")
         os.Exit(1)  // exit 1 makes Claude actually see the stderr per M0 R2
@@ -480,7 +480,7 @@ func runPreRead(stdin io.Reader) {
 ### Exit code rationale (per M0 R2)
 
 - M1 stubs have no message for Claude → exit 0 + no stderr is the silent + correct combo.
-- M2+ real hooks WILL have messages → those will use exit 1 + `⚡ claude-context: ...` stderr (per M0 R2 finding that exit 1 is the informational channel; exit 0 stderr is silent to Claude).
+- M2+ real hooks WILL have messages → those will use exit 1 + `⚡ mneme: ...` stderr (per M0 R2 finding that exit 1 is the informational channel; exit 0 stderr is silent to Claude).
 - Stubs do NOT use exit 1 by default to avoid spamming Claude transcripts during M1 deployment.
 
 ### Debug visibility — three levels
@@ -488,16 +488,16 @@ func runPreRead(stdin io.Reader) {
 | Env | Behavior |
 |---|---|
 | (default) | Silent: ledger only. User sees nothing in their Claude Code session. |
-| `CLAUDE_CONTEXT_DEBUG=1` | Stderr feedback via exit 1: each stub fires `⚡ claude-context: M1 stub: <event> fired (project=<uuid>)` so the user can verify in Claude transcripts that hooks actually triggered. |
-| `CLAUDE_CONTEXT_DEBUG=2` | Above + extra detail to stdout (only user terminal sees, not Claude). Used during local debugging. |
+| `MNEME_DEBUG=1` | Stderr feedback via exit 1: each stub fires `⚡ mneme: M1 stub: <event> fired (project=<uuid>)` so the user can verify in Claude transcripts that hooks actually triggered. |
+| `MNEME_DEBUG=2` | Above + extra detail to stdout (only user terminal sees, not Claude). Used during local debugging. |
 
-M1 acceptance + manual smoke test both run with `CLAUDE_CONTEXT_DEBUG=1`. Production users keep it unset.
+M1 acceptance + manual smoke test both run with `MNEME_DEBUG=1`. Production users keep it unset.
 
 ---
 
 ## Concurrency & Locking (M1 minimum viable)
 
-Reuses arch spec §7 design: single `runtime.lock` per project at `~/.claude-context/projects/<project_id>/runtime.lock`.
+Reuses arch spec §7 design: single `runtime.lock` per project at `~/.mneme/projects/<project_id>/runtime.lock`.
 
 M1 only writes to:
 - `_session.json` (SessionStart stub)
@@ -510,7 +510,7 @@ Both use:
 4. Atomic write (temp + fsync + rename)
 5. Release lock
 
-If lock timeout exceeded → log to `~/.claude-context/projects/<project_id>/hook-errors.log` (best-effort append, no lock — tolerate races on this log file since rotation is per-line and lossy is acceptable) and exit 0. The skip is **not** recorded in `ledger.write_skipped` (we can't take the lock to write it); accept that under high contention the counter under-reports. M3 with proper session-keyed state files will largely eliminate the contention scenario.
+If lock timeout exceeded → log to `~/.mneme/projects/<project_id>/hook-errors.log` (best-effort append, no lock — tolerate races on this log file since rotation is per-line and lossy is acceptable) and exit 0. The skip is **not** recorded in `ledger.write_skipped` (we can't take the lock to write it); accept that under high contention the counter under-reports. M3 with proper session-keyed state files will largely eliminate the contention scenario.
 
 `pkg/state/atomic.go`:
 ```go
@@ -549,7 +549,7 @@ tests/hook_test.go
 ├── TestParseEvent_SessionStart     (same)
 ├── TestParseEvent_Stop             (same)
 ├── TestParseEvent_BadJSON          (truncated/non-JSON → ParseEvent returns error, no panic)
-└── TestFeedbackFormat              (formatStderr("foo") → "⚡ claude-context: foo")
+└── TestFeedbackFormat              (formatStderr("foo") → "⚡ mneme: foo")
 
 tests/installer_test.go
 ├── TestMergeEmptySettings          (empty file → adds 5 entries)
@@ -590,16 +590,16 @@ tests/integration/
 Not in CI. Validates real Claude Code integration:
 
 ```
-1. claude-context init --yes
-2. CLAUDE_CONTEXT_DEBUG=1 claude  (in some throwaway git repo)
+1. mneme init --yes
+2. MNEME_DEBUG=1 claude  (in some throwaway git repo)
 3. Issue a few prompts: "read README.md" / "create hello.txt" / "edit hello.txt"
 4. Each command should produce in Claude's transcript:
-   "Failed with non-blocking status code: ⚡ claude-context: M1 stub: pre-read fired (project=<uuid>)"
+   "Failed with non-blocking status code: ⚡ mneme: M1 stub: pre-read fired (project=<uuid>)"
    (one line per fired hook event)
 5. /exit
-6. cd <repo> && claude-context stats
+6. cd <repo> && mneme stats
    - Should show non-zero counts for pre-read, pre-write/post-write, session-start, stop
-7. claude-context init --uninstall --yes
+7. mneme init --uninstall --yes
 8. git status ~/.claude/  (or diff against .bak files)
    - Should be identical to pre-init state
 ```
@@ -623,10 +623,10 @@ If `BenchmarkHookStubE2E` exceeds 80ms p95, M1 is **not** done — must profile 
 | # | Risk / TODO | Mitigation |
 |---|---|---|
 | RM1 | Init failure mid-flow does not auto-rollback | `.bak` files exist for every modified target; user runs `init --yes` again (upgrade mode is idempotent) or restores manually. Documented in init's failure messages. |
-| RM2 | User's settings.json schema validator (some 3rd-party tool) might reject `_managed_by` extra field on hook entries despite Claude Code accepting it (M0 R4) | Backup-first + atomic-write tolerates corruption. If reported by users → revisit boundary scheme in a future M2 or M3 sub-spec; could fall back to a parallel `~/.claude/settings.json.claude-context-managed` file listing managed entry IDs. |
+| RM2 | User's settings.json schema validator (some 3rd-party tool) might reject `_managed_by` extra field on hook entries despite Claude Code accepting it (M0 R4) | Backup-first + atomic-write tolerates corruption. If reported by users → revisit boundary scheme in a future M2 or M3 sub-spec; could fall back to a parallel `~/.claude/settings.json.mneme-managed` file listing managed entry IDs. |
 | RM3 | `gofrs/flock` cross-platform behavior differences | Unit tests cover macOS + Linux on CI; Windows is best-effort, no CI guarantee. |
 | RM4 | `_session.json` race when two concurrent Claude Code sessions touch the same project | M1 stub is harmless (occupancy only). M3 will switch to `_session_<id>.json` when implementing real session tracking. M1 spec flags this explicitly. |
-| RM5 | Stop hook's per-turn fires inflate ledger counts beyond user expectation | `claude-context stats` output adds a one-line note: "stop counts include per-turn fires (per M0 finding); session-end semantics deferred to M3". |
+| RM5 | Stop hook's per-turn fires inflate ledger counts beyond user expectation | `mneme stats` output adds a one-line note: "stop counts include per-turn fires (per M0 finding); session-end semantics deferred to M3". |
 | RM6 | `_installed_at` ISO timestamp string in settings.json could trip strict validators | Risk low (JSON allows extra fields by default); if reported, M2 changes to unix timestamp number or removes the field. |
 
 ### Explicit TODOs left for M2-M3 (called out in M1 spec for traceability)
@@ -643,13 +643,13 @@ If `BenchmarkHookStubE2E` exceeds 80ms p95, M1 is **not** done — must profile 
 
 M1 is **done** when ALL of these hold:
 
-1. ✅ `claude-context` (no args) → MCP server starts; `tests/integration/mcp_regression_test.go` passes (golden snapshot match)
-2. ✅ `claude-context init --yes` runs end-to-end against a temp HOME; produces the 5 expected file changes
-3. ✅ `claude-context init --uninstall --yes` reverses cleanly: settings.json + CLAUDE.md diffs against pre-init state are empty
-4. ✅ All 5 hook stubs callable via `claude-context hook <event>`, parse the corresponding M0 fixture stdin, never panic, increment ledger correctly
-5. ✅ `claude-context stats` prints meaningful ledger output (M1 minimal version: counter table)
+1. ✅ `mneme` (no args) → MCP server starts; `tests/integration/mcp_regression_test.go` passes (golden snapshot match)
+2. ✅ `mneme init --yes` runs end-to-end against a temp HOME; produces the 5 expected file changes
+3. ✅ `mneme init --uninstall --yes` reverses cleanly: settings.json + CLAUDE.md diffs against pre-init state are empty
+4. ✅ All 5 hook stubs callable via `mneme hook <event>`, parse the corresponding M0 fixture stdin, never panic, increment ledger correctly
+5. ✅ `mneme stats` prints meaningful ledger output (M1 minimal version: counter table)
 6. ✅ Three benchmarks (§Performance Budget) pass within budget
-7. ✅ Manual smoke checklist (`docs/m1-smoke-checklist.md`) executed against a real Claude Code session and produces the expected `⚡ claude-context: M1 stub: ...` feedback in Claude transcripts (with `CLAUDE_CONTEXT_DEBUG=1`)
+7. ✅ Manual smoke checklist (`docs/m1-smoke-checklist.md`) executed against a real Claude Code session and produces the expected `⚡ mneme: M1 stub: ...` feedback in Claude transcripts (with `MNEME_DEBUG=1`)
 8. ✅ All M1 unit + integration tests pass on macOS and Linux CI
 
 ---

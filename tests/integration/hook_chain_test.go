@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func setupInitializedProject(t *testing.T) (projectDir string, homeDir string) {
@@ -94,7 +94,7 @@ func TestPreReadIncrementsCounter(t *testing.T) {
 	f, _ := os.Open(filepath.Join("..", "fixtures", "hook-payloads", "pre-read.json"))
 	defer f.Close()
 
-	// The pre-read fixture has file_path = /private/tmp/claude-context-m0-sandbox/auth.go
+	// The pre-read fixture has file_path = /private/tmp/mneme-m0-sandbox/auth.go
 	// which is NOT inside our project. So we need a fixture that IS inside our project,
 	// or we accept that outside_project_skipped is incremented instead.
 	// For M1, we just verify the hook doesn't crash.
@@ -165,7 +165,7 @@ func BenchmarkHookStubE2E(b *testing.B) {
 	home := b.TempDir()
 	project := b.TempDir()
 
-	// init a git repo + run claude-context init
+	// init a git repo + run mneme init
 	exec.Command("git", "-C", project, "init").Run()
 	exec.Command("git", "-C", project, "config", "user.email", "b@b.com").Run()
 	exec.Command("git", "-C", project, "config", "user.name", "B").Run()
@@ -206,7 +206,7 @@ func TestPreReadAnatomy(t *testing.T) {
 		t.Fatalf("init: %v\n%s", err, out)
 	}
 
-	anatomyPath := filepath.Join(project, ".claude-context", "anatomy.md")
+	anatomyPath := filepath.Join(project, ".mneme", "anatomy.md")
 	if _, err := os.Stat(anatomyPath); err != nil {
 		t.Fatalf("anatomy.md not created after init: %v", err)
 	}
@@ -397,12 +397,12 @@ func TestSessionStartWritesMemoryRow(t *testing.T) {
 	fireSessionStart("sess-A")
 	fireSessionStart("sess-B")
 
-	memPath := filepath.Join(home, ".claude", "claude-context-memory.md")
+	memPath := filepath.Join(home, ".claude", "mneme-memory.md")
 	data, err := os.ReadFile(memPath)
 	if err != nil {
 		t.Fatalf("memory.md not created: %v", err)
 	}
-	if !strings.Contains(string(data), "<!-- claude-context memory v1 -->") {
+	if !strings.Contains(string(data), "<!-- mneme memory v1 -->") {
 		t.Errorf("memory.md missing header: %s", data)
 	}
 	if !strings.Contains(string(data), "(0 turns)") {

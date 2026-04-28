@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 const staleDays = 7
 
-// Consolidate reads claude-context-memory.md, folds rows older than staleDays
+// Consolidate reads mneme-memory.md, folds rows older than staleDays
 // into a single blockquote, and writes the result back atomically.
 // Returns the number of rows folded.
 func Consolidate(homeDir string) (int, error) {
@@ -52,7 +52,7 @@ func Consolidate(homeDir string) (int, error) {
 	}
 
 	var sb strings.Builder
-	sb.WriteString("<!-- claude-context memory v1 -->\n")
+	sb.WriteString("<!-- mneme memory v1 -->\n")
 	fmt.Fprintf(&sb, "\n> Consolidated session (%d actions from %d sessions before %s)\n",
 		totalActions, len(oldRows), cutoff.UTC().Format("2006-01-02"))
 
@@ -61,8 +61,8 @@ func Consolidate(homeDir string) (int, error) {
 		sb.WriteString(formatRow(r))
 	}
 
-	memPath := filepath.Join(homeDir, ".claude", "claude-context-memory.md")
-	lockPath := filepath.Join(homeDir, ".claude", "claude-context-memory.lock")
+	memPath := filepath.Join(homeDir, ".claude", "mneme-memory.md")
+	lockPath := filepath.Join(homeDir, ".claude", "mneme-memory.lock")
 	// 2s timeout: session-start hook runs serially; concurrent consolidations are
 	// prevented by the rows>50 guard in the hook, making contention extremely rare.
 	release, lockErr := state.AcquireLock(lockPath, 2*time.Second)

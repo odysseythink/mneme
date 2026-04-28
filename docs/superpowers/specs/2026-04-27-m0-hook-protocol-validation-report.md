@@ -15,7 +15,7 @@
 | **R1** | §6 stdin schema: only `session_id`, `transcript_path`, `tool_name`, `tool_input`, `tool_response` | Real schema has 6+ additional fields per event (`cwd`, `hook_event_name`, `permission_mode`, `tool_use_id`, `duration_ms`, plus event-specific: `source`+`model` for SessionStart, `stop_hook_active`+`last_assistant_message` for Stop). `tool_name` is NOT present in SessionStart or Stop. | **PATCH §6** — expand schema documentation per-event |
 | **R2** | "exit ≥1 only used when hook crashed; exit 0 + stderr is the informational channel" | exit 0 stderr is **silent to Claude** (terminal only). exit 1 + stderr is "non-blocking error" wrapped as `Failed with non-blocking status code: <stderr>` and IS visible to Claude. exit 2 makes Claude perceive blocking. exit 127 = same as exit 1. | **PATCH §6 + §9** — informational hooks must use **exit 1**, not exit 0 |
 | **R3** | preread 80ms / prewrite-postwrite 200ms / stop 500ms total budgets | Subjective grades not collected (objective inference only). All 6 latencies (50ms→3000ms) completed without Claude Code timing out the hook. No enforced upper bound observed under 3000ms. | **KEEP** budgets as designed; defer subjective re-validation to M2-M4 with real workloads |
-| **R4** | `_managed_by` extra field tolerated by settings.json schema | Claude Code 2.1.119 accepted `_managed_by: "claude-context"` and `_version: 1` extra fields on every hook entry; all hooks fired normally | **NO PATCH** — boundary scheme stands as designed |
+| **R4** | `_managed_by` extra field tolerated by settings.json schema | Claude Code 2.1.119 accepted `_managed_by: "mneme"` and `_version: 1` extra fields on every hook entry; all hooks fired normally | **NO PATCH** — boundary scheme stands as designed |
 | **R5** | All 3 `@import` path forms (`@~/`, `@/abs`, `@./rel`) work | All three forms loaded their target files; Claude saw all 3 passphrases | **NO PATCH** — init can use any form; tilde form preferred for portability |
 
 **Bonus finding (not a numbered risk)**: Stop hook fires after **every assistant turn**, not just session exit. This invalidates arch spec §5 Flow F's design and requires patching M3's session-end handling.
@@ -148,9 +148,9 @@ Modern Claude Code may support **JSON stdout** from hooks for structured feedbac
 **Result: ✅ PASS — `_managed_by` field is tolerated.**
 
 Evidence:
-- `setup-sandbox.sh` injected `"_managed_by": "claude-context", "_version": 1` on every hook entry (5 entries total) in `<sandbox>/.claude/settings.local.json`
+- `setup-sandbox.sh` injected `"_managed_by": "mneme", "_version": 1` on every hook entry (5 entries total) in `<sandbox>/.claude/settings.local.json`
 - Claude Code 2.1.119 started without any error message
-- All 5 hook events fired and produced dump files (verified via `ls /tmp/claude-context-m0/<event>/`)
+- All 5 hook events fired and produced dump files (verified via `ls /tmp/mneme-m0/<event>/`)
 
 **Verdict on arch spec §8 boundary scheme**: NO PATCH NEEDED. The `_managed_by` field-based boundary marker for `--uninstall` filtering works as designed.
 
@@ -162,8 +162,8 @@ Evidence:
 
 CLAUDE.md contained:
 ```
-@~/claude-context-m0-tilde-test.md
-@/tmp/claude-context-m0-sandbox/.claude/m0-test-abs.md
+@~/mneme-m0-tilde-test.md
+@/tmp/mneme-m0-sandbox/.claude/m0-test-abs.md
 @./.claude/m0-test-rel.md
 ```
 
@@ -172,7 +172,7 @@ Each target file held a unique passphrase. Asked Claude "do you see any of these
 - `passphrase-abs-def456` ← `@/abs/path` form ✓
 - `passphrase-rel-ghi789` ← `@./rel/path` form ✓
 
-**Verdict on arch spec §8 init's `@import` line**: NO PATCH NEEDED. Init can use the planned `@~/.claude/claude-context-rules.md` form.
+**Verdict on arch spec §8 init's `@import` line**: NO PATCH NEEDED. Init can use the planned `@~/.claude/mneme-rules.md` form.
 
 ---
 
@@ -180,7 +180,7 @@ Each target file held a unique passphrase. Asked Claude "do you see any of these
 
 Not in the original R1-R7 list, but discovered during R1 sample collection. **Critical for M3.**
 
-**Evidence**: one Claude Code session containing ~7 user prompts produced **6 dumps** in `/tmp/claude-context-m0/stop/` (one per assistant response, plus follow-ups).
+**Evidence**: one Claude Code session containing ~7 user prompts produced **6 dumps** in `/tmp/mneme-m0/stop/` (one per assistant response, plus follow-ups).
 
 **Implication for arch spec §5 Flow F**: the planned design treats Stop as session-final ("compute session totals → append session row to memory.md → delete `_session.json`"). With per-turn semantics, this would:
 - Append 6+ session-summary rows per session
@@ -197,7 +197,7 @@ Not in the original R1-R7 list, but discovered during R1 sample collection. **Cr
 
 ## Architecture spec patches required
 
-Five patches to `docs/superpowers/specs/2026-04-27-claude-context-hook-architecture-design.md`:
+Five patches to `docs/superpowers/specs/2026-04-27-mneme-hook-architecture-design.md`:
 
 1. **§6 Hook Protocol → Input section** — replace the abbreviated stdin schema example with the complete real schema (all 4 common fields + per-event variations from R1 above).
 
@@ -221,17 +221,17 @@ These patches will be applied in Task 17 (next step after this report).
 5 canonical fixtures committed at `tests/fixtures/hook-payloads/`. Selection criteria + sanitization:
 
 ### `pre-read.json` (447 bytes raw)
-- **Source**: `/tmp/claude-context-m0/pre-read/1777278755-755-27192-stdin.json` (`auth.go` Read)
+- **Source**: `/tmp/mneme-m0/pre-read/1777278755-755-27192-stdin.json` (`auth.go` Read)
 - **Why chosen**: Picked Read of `auth.go` over README.md — auth.go is more representative of "production code being read" than a single-line README. Three pre-read samples all had identical schemas; size choice was secondary.
 - **Sanitized**: `session_id` → `<SESSION_ID>`; `transcript_path` → `<TRANSCRIPT_PATH>`. Other paths kept verbatim (sandbox `/private/tmp/...` paths are reproducible, no PII).
 
 ### `pre-write.json` (512 bytes raw)
-- **Source**: `/tmp/claude-context-m0/pre-write/1777278799-926-10180-stdin.json` (Edit of hello.txt)
+- **Source**: `/tmp/mneme-m0/pre-write/1777278799-926-10180-stdin.json` (Edit of hello.txt)
 - **Why chosen**: Edit selected over Write because Edit's `tool_input` contains more interesting fields (`old_string`, `new_string`, `replace_all`) — exercises more of the schema for parsing tests.
 - **Sanitized**: same as above.
 
 ### `post-write.json` (879 bytes raw)
-- **Source**: `/tmp/claude-context-m0/post-write/1777278799-934-13814-stdin.json` (PostToolUse:Edit)
+- **Source**: `/tmp/mneme-m0/post-write/1777278799-934-13814-stdin.json` (PostToolUse:Edit)
 - **Why chosen**: Largest sample; includes full `structuredPatch` array — important for M3's edit-summary classifier which will parse the diff structure.
 - **Sanitized**: same.
 
@@ -241,7 +241,7 @@ These patches will be applied in Task 17 (next step after this report).
 - **Sanitized**: same.
 
 ### `stop.json` (752 bytes raw)
-- **Source**: `/tmp/claude-context-m0/stop/1777278825-1114-9097-stdin.json` (after passphrase-recall response)
+- **Source**: `/tmp/mneme-m0/stop/1777278825-1114-9097-stdin.json` (after passphrase-recall response)
 - **Why chosen**: Largest sample; demonstrates the `last_assistant_message` field with realistic multiline content (passphrases + Markdown formatting). M3 will likely consume this field.
 - **Sanitized**: same.
 

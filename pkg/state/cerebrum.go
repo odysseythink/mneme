@@ -13,10 +13,10 @@ type CerebrumRule struct {
 	Message string
 }
 
-const cerebrumHeader = "<!-- claude-context cerebrum v1 -->"
+const cerebrumHeader = "<!-- mneme cerebrum v1 -->"
 
 func ReadCerebrum(projectRoot string) ([]CerebrumRule, error) {
-	path := filepath.Join(projectRoot, ".claude-context", "cerebrum.md")
+	path := filepath.Join(projectRoot, ".mneme", "cerebrum.md")
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		return nil, nil
@@ -28,7 +28,7 @@ func ReadCerebrum(projectRoot string) ([]CerebrumRule, error) {
 }
 
 func AppendCerebrumRule(projectRoot string, rule CerebrumRule) error {
-	dir := filepath.Join(projectRoot, ".claude-context")
+	dir := filepath.Join(projectRoot, ".mneme")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func AppendCerebrumRule(projectRoot string, rule CerebrumRule) error {
 }
 
 func WriteCerebrum(projectRoot string, rules []CerebrumRule) error {
-	dir := filepath.Join(projectRoot, ".claude-context")
+	dir := filepath.Join(projectRoot, ".mneme")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}

@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ranwei/claude-context/pkg/scanner"
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/scanner"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func TestScanProjectIncrementalSkipsUnchanged(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
-	os.WriteFile(filepath.Join(dir, ".claude-context", ".local-id"), []byte("test-inc-uuid"), 0644)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
+	os.WriteFile(filepath.Join(dir, ".mneme", ".local-id"), []byte("test-inc-uuid"), 0644)
 
 	// Write the file BEFORE the since timestamp
 	goFile := filepath.Join(dir, "main.go")
@@ -41,8 +41,8 @@ func TestScanProjectIncrementalSkipsUnchanged(t *testing.T) {
 
 func TestScanProjectIncrementalRescansChanged(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".claude-context"), 0755)
-	os.WriteFile(filepath.Join(dir, ".claude-context", ".local-id"), []byte("test-inc-uuid2"), 0644)
+	os.MkdirAll(filepath.Join(dir, ".mneme"), 0755)
+	os.WriteFile(filepath.Join(dir, ".mneme", ".local-id"), []byte("test-inc-uuid2"), 0644)
 
 	// since is in the past
 	since := time.Now().Add(-10 * time.Second)

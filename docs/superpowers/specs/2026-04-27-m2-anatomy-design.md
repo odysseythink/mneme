@@ -38,18 +38,18 @@ Give Claude a per-file description index (anatomy) so it can decide whether to r
 ## Architecture
 
 ```
-claude-context scan [--force]
+mneme scan [--force]
   → scanner.Walk(projectRoot)            // git ls-files --cached --others --exclude-standard
   → filter: >1MB, binary (null byte in first 512B)
   → scanner.ExtractAll(root, paths)      // dispatch by extension
-  → state.WriteAnatomy(root, entries)   // atomic write .claude-context/anatomy.md
+  → state.WriteAnatomy(root, entries)   // atomic write .mneme/anatomy.md
   → state.IncrementSafe("scan_count")
 
-claude-context init --yes
+mneme init --yes
   → [existing M1 steps]
   → dispatchScan(nil)                    // unless --no-scan
 
-claude-context hook pre-read (stdin: PreToolUse Read event)
+mneme hook pre-read (stdin: PreToolUse Read event)
   → parseOrExit(stdin)
   → resolveProjectFromEvent             // exit 0 if outside project
   → state.IncrementSafe("hook_fired.pre-read")
@@ -177,11 +177,11 @@ func WriteAnatomy(projectRoot string, entries []AnatomyEntry) error
 func ReadAnatomy(projectRoot string) (map[string]AnatomyEntry, error)
 ```
 
-**anatomy.md path:** `<projectRoot>/.claude-context/anatomy.md`
+**anatomy.md path:** `<projectRoot>/.mneme/anatomy.md`
 
 **Format:**
 ```markdown
-<!-- claude-context anatomy v1 -->
+<!-- mneme anatomy v1 -->
 <!-- generated: 2026-04-27T10:00:00Z | files: 42 | project: abc-uuid -->
 
 ## cmd/
@@ -249,8 +249,8 @@ func dispatchScan(args []string) {
 
     cwd, _ := os.Getwd()
     root, _ := resolveInitProjectRoot(cwd) // ok ignored; falls back to cwd
-    if _, err := os.Stat(filepath.Join(root, ".claude-context")); err != nil {
-        fmt.Fprintln(os.Stderr, "scan: project not initialized (run: claude-context init)")
+    if _, err := os.Stat(filepath.Join(root, ".mneme")); err != nil {
+        fmt.Fprintln(os.Stderr, "scan: project not initialized (run: mneme init)")
         os.Exit(1)
     }
 
@@ -258,7 +258,7 @@ func dispatchScan(args []string) {
     // in M2 we always do a full regeneration regardless.
     _ = force
 
-    anatomyPath := filepath.Join(root, ".claude-context", "anatomy.md")
+    anatomyPath := filepath.Join(root, ".mneme", "anatomy.md")
     fmt.Fprintf(os.Stderr, "Scanning %s...\n", root)
     scanEntries, err := scanner.ScanProject(root)
     if err != nil {
@@ -375,14 +375,14 @@ Add a new section after "## MCP tools available":
 ```markdown
 ## Anatomy map
 
-Before reading a file, check if claude-context has already described it:
+Before reading a file, check if mneme has already described it:
 
-- If the pre-read hook fires with `⚡ claude-context: <path> — <description> (~N tok)`,
+- If the pre-read hook fires with `⚡ mneme: <path> — <description> (~N tok)`,
   that description is from the anatomy map. Use it to decide whether to read the full file.
 - If the hook says `<path> already read this session`, the file content is already in your
   context window. Do not re-read it unless the content may have changed.
 
-To regenerate the anatomy map after large refactors: `claude-context scan`
+To regenerate the anatomy map after large refactors: `mneme scan`
 ```
 
 ---
@@ -460,11 +460,11 @@ Checked in expected anatomy output for a fixture directory with 4 files (one per
 
 ## Acceptance Criteria
 
-- [ ] `claude-context scan` produces sensible `anatomy.md` for this repo
-- [ ] `claude-context init --yes` in a git repo runs scan automatically
+- [ ] `mneme scan` produces sensible `anatomy.md` for this repo
+- [ ] `mneme init --yes` in a git repo runs scan automatically
 - [ ] Pre-read hook emits anatomy description to Claude transcript when file is in anatomy map
 - [ ] Pre-read hook emits repeat-read warning when same file read twice in one session
-- [ ] `claude-context stats` shows `anatomy_hits`, `repeat_reads`, `scan_count`
+- [ ] `mneme stats` shows `anatomy_hits`, `repeat_reads`, `scan_count`
 - [ ] `go test ./...` passes (all unit + integration tests)
 - [ ] `BenchmarkScanProject` < 2s/op on this repo
-- [ ] Manual smoke: `CLAUDE_CONTEXT_DEBUG=1 claude` in initialized project → read a file → see `⚡ claude-context:` message in transcript
+- [ ] Manual smoke: `MNEME_DEBUG=1 claude` in initialized project → read a file → see `⚡ mneme:` message in transcript

@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
-# Builds /tmp/claude-context-m0-sandbox/ for M0 probing.
+# Builds /tmp/mneme-m0-sandbox/ for M0 probing.
 # Creates:
 #   - 4 realistic source files (Go + Python + README + package.json)
 #   - .claude/settings.local.json with all 5 hooks → echo.sh, including _managed_by field for R4
 #   - CLAUDE.md with 3 @import lines (one per path form for R5)
 #   - 3 R5 test files (one in $HOME with M0 prefix for safe cleanup, two in sandbox)
-#   - dump dirs at /tmp/claude-context-m0/{pre-read,pre-write,post-write,session-start,stop}/
+#   - dump dirs at /tmp/mneme-m0/{pre-read,pre-write,post-write,session-start,stop}/
 #   - baseline hash of ~/.claude/settings.json for cleanup verification
 set -euo pipefail
 
-SANDBOX="/tmp/claude-context-m0-sandbox"
-DUMP_BASE="/tmp/claude-context-m0"
+SANDBOX="/tmp/mneme-m0-sandbox"
+DUMP_BASE="/tmp/mneme-m0"
 PROBE_DIR="$(cd "$(dirname "$0")" && pwd)"
-TILDE_FILE="$HOME/claude-context-m0-tilde-test.md"
+TILDE_FILE="$HOME/mneme-m0-tilde-test.md"
 USER_SETTINGS="$HOME/.claude/settings.json"
-BASELINE="/tmp/claude-context-m0-baseline-hash"
+BASELINE="/tmp/mneme-m0-baseline-hash"
 
 # Wipe any prior state
 rm -rf "$SANDBOX" "$DUMP_BASE"
-rm -f "$HOME"/claude-context-m0-* "$BASELINE"
+rm -f "$HOME"/mneme-m0-* "$BASELINE"
 
 # Create sandbox + dump dirs
 mkdir -p "$SANDBOX/.claude"
@@ -45,7 +45,7 @@ EOF
 
 cat > "$SANDBOX/README.md" <<'EOF'
 # Sandbox Project
-This is an M0 probe sandbox for claude-context. See docs/m0-runbook.md for instructions.
+This is an M0 probe sandbox for mneme. See docs/m0-runbook.md for instructions.
 EOF
 
 cat > "$SANDBOX/package.json" <<'EOF'
@@ -68,7 +68,7 @@ echo "passphrase-rel-ghi789" > "$REL_TARGET"
 cat > "$SANDBOX/CLAUDE.md" <<EOF
 # Sandbox Project Instructions
 
-@~/claude-context-m0-tilde-test.md
+@~/mneme-m0-tilde-test.md
 @$ABS_FILE
 @./.claude/m0-test-rel.md
 
@@ -85,7 +85,7 @@ cat > "$SANDBOX/.claude/settings.local.json" <<EOF
         "hooks": [{
           "type": "command",
           "command": "$PROBE_DIR/echo.sh pre-read",
-          "_managed_by": "claude-context",
+          "_managed_by": "mneme",
           "_version": 1
         }]
       },
@@ -94,7 +94,7 @@ cat > "$SANDBOX/.claude/settings.local.json" <<EOF
         "hooks": [{
           "type": "command",
           "command": "$PROBE_DIR/echo.sh pre-write",
-          "_managed_by": "claude-context",
+          "_managed_by": "mneme",
           "_version": 1
         }]
       }
@@ -105,7 +105,7 @@ cat > "$SANDBOX/.claude/settings.local.json" <<EOF
         "hooks": [{
           "type": "command",
           "command": "$PROBE_DIR/echo.sh post-write",
-          "_managed_by": "claude-context",
+          "_managed_by": "mneme",
           "_version": 1
         }]
       }
@@ -114,7 +114,7 @@ cat > "$SANDBOX/.claude/settings.local.json" <<EOF
       "hooks": [{
         "type": "command",
         "command": "$PROBE_DIR/echo.sh session-start",
-        "_managed_by": "claude-context",
+        "_managed_by": "mneme",
         "_version": 1
       }]
     }],
@@ -122,7 +122,7 @@ cat > "$SANDBOX/.claude/settings.local.json" <<EOF
       "hooks": [{
         "type": "command",
         "command": "$PROBE_DIR/echo.sh stop",
-        "_managed_by": "claude-context",
+        "_managed_by": "mneme",
         "_version": 1
       }]
     }]

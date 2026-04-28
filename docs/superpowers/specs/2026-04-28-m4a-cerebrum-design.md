@@ -22,7 +22,7 @@ PreToolUse (Write|Edit|MultiEdit) fires
   → extractAddedLines(ev) → map[lineNo]string  (diff old vs new)
   → for each rule: regexp match against added lines
   → if matches:
-      stderr block: "⚡ claude-context: ⚠️ N cerebrum rule(s) matched:\n  • msg (line N)"
+      stderr block: "⚡ mneme: ⚠️ N cerebrum rule(s) matched:\n  • msg (line N)"
       exit 1  (informational — content delivered to Claude)
   → if no matches: exit 0
 
@@ -63,12 +63,12 @@ cerebrum remove <N>
 
 ## 2. cerebrum.md Format & State API
 
-**Location:** `<project>/.claude-context/cerebrum.md`
+**Location:** `<project>/.mneme/cerebrum.md`
 
 **Format:**
 
 ```markdown
-<!-- claude-context cerebrum v1 -->
+<!-- mneme cerebrum v1 -->
 
 # prefer := over var declarations
 pattern: \bvar\s+\w+\s*=
@@ -112,16 +112,16 @@ func AppendCerebrumRule(projectRoot string, rule CerebrumRule) error
 func WriteCerebrum(projectRoot string, rules []CerebrumRule) error
 ```
 
-Header `<!-- claude-context cerebrum v1 -->` is written once on first `AppendCerebrumRule`. Subsequent calls check for its presence before writing.
+Header `<!-- mneme cerebrum v1 -->` is written once on first `AppendCerebrumRule`. Subsequent calls check for its presence before writing.
 
 ---
 
 ## 3. `cerebrum` CLI
 
 ```
-claude-context cerebrum add [--pattern P] [--message M] [--comment C]
-claude-context cerebrum list
-claude-context cerebrum remove <N> [--yes]
+mneme cerebrum add [--pattern P] [--message M] [--comment C]
+mneme cerebrum list
+mneme cerebrum remove <N> [--yes]
 ```
 
 ### `cerebrum add`
@@ -129,11 +129,11 @@ claude-context cerebrum remove <N> [--yes]
 Flags take priority; missing flags prompt interactively:
 
 ```
-$ claude-context cerebrum add
+$ mneme cerebrum add
 Comment (optional, press Enter to skip): prefer := over var
 Pattern (regex): \bvar\s+\w+\s*=
 Warning message: prefer := for short variable declarations
-✓ Rule added (3 rules total in .claude-context/cerebrum.md)
+✓ Rule added (3 rules total in .mneme/cerebrum.md)
 ```
 
 If `--pattern` and `--message` are both provided, no prompts. Validates regex compiles — exits 1 with an error message if invalid.
@@ -150,12 +150,12 @@ Cerebrum rules (3):
      pattern: (?i)(password|secret|api_key)\s*[:=]\s*["'][^"']{4,}
 ```
 
-Exits 0 with "No cerebrum rules. Run: claude-context cerebrum add" if file is empty or absent.
+Exits 0 with "No cerebrum rules. Run: mneme cerebrum add" if file is empty or absent.
 
 ### `cerebrum remove <N>`
 
 ```
-$ claude-context cerebrum remove 2
+$ mneme cerebrum remove 2
 Remove rule 2: "use a structured logger instead of fmt.Println"? [y/N]: y
 ✓ Removed. 2 rules remaining.
 ```

@@ -12,7 +12,7 @@ import (
 
 	"github.com/odysseythink/mlog"
 	"github.com/qdrant/go-client/qdrant"
-	"github.com/ranwei/claude-context/pkg"
+	"github.com/ranwei/mneme/pkg"
 )
 
 type QdrantStore struct {

@@ -8,15 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ranwei/claude-context/pkg/state"
+	"github.com/ranwei/mneme/pkg/state"
 )
 
 func setupMemoryProject(t *testing.T) (projDir, homeDir string) {
 	t.Helper()
 	proj := t.TempDir()
 	home := t.TempDir()
-	os.MkdirAll(filepath.Join(proj, ".claude-context"), 0755)
-	os.WriteFile(filepath.Join(proj, ".claude-context", ".local-id"), []byte("test-mem-uuid-9876"), 0644)
+	os.MkdirAll(filepath.Join(proj, ".mneme"), 0755)
+	os.WriteFile(filepath.Join(proj, ".mneme", ".local-id"), []byte("test-mem-uuid-9876"), 0644)
 	return proj, home
 }
 
