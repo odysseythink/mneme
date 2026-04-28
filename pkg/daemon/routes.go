@@ -46,6 +46,9 @@ func NewMux(deps RouteDeps) http.Handler {
 		},
 		func() int { return countOpenSuggestions(deps.Home) },
 	))
+	mux.Handle("/api/projects", dashboard.ProjectsHandler(dashboard.APIDeps{
+		Home: deps.Home, PID: deps.PID, Version: deps.Version, StartedAt: deps.StartedAt,
+	}))
 	dashboard.Mount(mux, dashboard.Deps{})
 	return mux
 }

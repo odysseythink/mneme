@@ -111,6 +111,22 @@ func OverviewHandler(deps APIDeps, openSuggestionsCount func() int) http.Handler
 	}
 }
 
+// ProjectsHandler serves /api/projects.
+func ProjectsHandler(deps APIDeps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "GET only", http.StatusMethodNotAllowed)
+			return
+		}
+		projects, err := EnumerateProjects(deps.Home)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, 200, map[string]interface{}{"projects": projects})
+	}
+}
+
 func writeJSON(w http.ResponseWriter, code int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)

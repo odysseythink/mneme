@@ -95,3 +95,32 @@ func TestAPI_Overview_OneProject(t *testing.T) {
 		t.Errorf("totals.projects = %v, want 1", totals["projects"])
 	}
 }
+
+func TestAPI_Projects(t *testing.T) {
+	home := t.TempDir()
+	for _, pid := range []string{"a", "b"} {
+		dir := filepath.Join(home, ".mneme", "projects", pid)
+		os.MkdirAll(dir, 0o700)
+		os.WriteFile(filepath.Join(dir, "origin"), []byte("/x/"+pid), 0o600)
+	}
+
+	bus, _ := events.NewBus(home, &stubLogger{})
+	defer bus.Close()
+	mux := daemon.NewMux(daemon.RouteDeps{Log: &stubLogger{}, Home: home, Bus: bus})
+
+	req := httptest.NewRequest("GET", "/api/projects", nil)
+	req = req.WithContext(daemon.WithTransport(req.Context(), daemon.TransportUnix))
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != 200 {
+		t.Fatalf("status %d", rec.Code)
+	}
+	var body struct {
+		Projects []map[string]interface{} `json:"projects"`
+	}
+	json.Unmarshal(rec.Body.Bytes(), &body)
+	if len(body.Projects) != 2 {
+		t.Errorf("got %d projects, want 2", len(body.Projects))
+	}
+}
