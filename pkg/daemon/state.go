@@ -38,6 +38,7 @@ func defaultManifest() Manifest {
 		Version: 1,
 		Tasks: []ManifestTask{
 			{Name: "anatomy-rescan", Schedule: "@every 6h", Enabled: true},
+			{Name: "gc-stale-projects", Schedule: "30 2 * * *", Enabled: true},
 			{Name: "consolidate-memory", Schedule: "0 3 * * *", Enabled: true},
 			{Name: "prune-backups", Schedule: "30 3 * * 0", Enabled: true},
 			{Name: "weekly-waste-report", Schedule: "0 9 * * 1", Enabled: true},

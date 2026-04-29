@@ -46,6 +46,51 @@ func GlobalProjectDir(projectID string) string {
 	return filepath.Join(home, ".mneme", "projects", projectID)
 }
 
+// GarbageCollectProjects removes project directories under ~/.mneme/projects/
+// whose origin file is missing, empty, or points to a non-existent directory.
+// Returns the number of directories removed.
+func GarbageCollectProjects() (int, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return 0, err
+	}
+	root := filepath.Join(home, ".mneme", "projects")
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	removed := 0
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		originPath := filepath.Join(root, e.Name(), "origin")
+		data, err := os.ReadFile(originPath)
+		if err != nil {
+			// no origin file → stale
+			_ = os.RemoveAll(filepath.Join(root, e.Name()))
+			removed++
+			continue
+		}
+		origin := strings.TrimSpace(string(data))
+		if origin == "" {
+			_ = os.RemoveAll(filepath.Join(root, e.Name()))
+			removed++
+			continue
+		}
+		if _, err := os.Stat(origin); err != nil {
+			// origin path doesn't exist → stale
+			_ = os.RemoveAll(filepath.Join(root, e.Name()))
+			removed++
+			continue
+		}
+	}
+	return removed, nil
+}
+
 // ReadOrCreateLocalID reads the per-project UUID from
 // <projectRoot>/.mneme/.local-id, creating it on first call.
 func ReadOrCreateLocalID(projectRoot string) (string, error) {

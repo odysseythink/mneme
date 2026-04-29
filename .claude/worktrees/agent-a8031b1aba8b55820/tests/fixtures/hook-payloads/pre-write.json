@@ -1,0 +1,15 @@
+{
+  "session_id": "<SESSION_ID>",
+  "transcript_path": "<TRANSCRIPT_PATH>",
+  "cwd": "/private/tmp/claude-context-m0-sandbox",
+  "permission_mode": "bypassPermissions",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/private/tmp/claude-context-m0-sandbox/hello.txt",
+    "old_string": "hi",
+    "new_string": "hello world",
+    "replace_all": false
+  },
+  "tool_use_id": "toolu_01WLgAzUcQX6zv7GLMAyZgKa"
+}

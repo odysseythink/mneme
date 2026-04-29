@@ -24,6 +24,7 @@ type TaskFunc func(ctx context.Context, log Logger) error
 var registry = map[string]TaskFunc{
 	"anatomy-rescan":      runAnatomyRescan,
 	"consolidate-memory":  runConsolidateMemory,
+	"gc-stale-projects":   runGCStaleProjects,
 	"prune-backups":       runPruneBackups,
 	"weekly-waste-report": runWeeklyWasteReport,
 	"suggestions-refresh": runSuggestionsRefresh,
@@ -151,6 +152,19 @@ func runConsolidateMemory(ctx context.Context, log Logger) error {
 		return err
 	}
 	log.Info("task", fmt.Sprintf("consolidate-memory: folded %d rows", folded))
+	return nil
+}
+
+func runGCStaleProjects(ctx context.Context, log Logger) error {
+	n, err := state.GarbageCollectProjects()
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		log.Info("task", fmt.Sprintf("gc-stale-projects: removed %d stale directories", n))
+	} else {
+		log.Debug("task", "gc-stale-projects: no stale directories found")
+	}
 	return nil
 }
 

@@ -1,43 +1,23 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>mneme dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="referrer" content="no-referrer">
-  <script>
-    (function () {
-      var p = new URLSearchParams(location.search);
-      var t = p.get('token');
-      if (t) {
-        document.cookie = 'mneme_token=' + encodeURIComponent(t)
-          + '; SameSite=Strict; Path=/; Max-Age=86400';
-        history.replaceState(null, '', '/');
-      }
-    })();
-  </script>
-  <style>
-    body { font-family: system-ui, -apple-system, sans-serif; max-width: 40rem;
-           margin: 4rem auto; padding: 0 1rem; line-height: 1.5; }
-    code { background: #f4f4f4; padding: 0.1em 0.3em; border-radius: 3px; }
-    #health { font-family: monospace; }
-  </style>
-</head>
-<body>
-  <h1>mneme dashboard</h1>
-  <p>Backend is up. The web UI has not been built yet.</p>
-  <p>Run <code>make web-build</code> from the repo root, then refresh.</p>
-  <p>Daemon health: <span id="health">checking…</span></p>
-  <script>
-    fetch('/health', { credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
-      .then(function (j) {
-        document.getElementById('health').textContent =
-          'pid=' + j.pid + ' uptime=' + j.uptime_s + 's version=' + j.version;
-      })
-      .catch(function (e) {
-        document.getElementById('health').textContent = 'error: ' + e;
-      });
-  </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mneme dashboard</title>
+    <script>
+      (function () {
+        var s = localStorage.getItem('mneme.theme') || 'system';
+        var t = s === 'system'
+          ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : s;
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-CldKFa7P.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Ciq5rspf.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
 </html>

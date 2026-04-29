@@ -145,6 +145,12 @@ func Run(ctx context.Context, opt RunOptions) error {
 		RunHeartbeat(ctx, opt.Home, opt.PID, opt.Version, opt.HeartbeatInterval)
 	}()
 
+	if n, err := state.GarbageCollectProjects(); err != nil {
+		log.Warn("daemon", "project GC failed: "+err.Error())
+	} else if n > 0 {
+		log.Info("daemon", fmt.Sprintf("project GC: removed %d stale directories", n))
+	}
+
 	go runReloadHandler(ctx,
 		func() {
 			log.Info("daemon", "SIGHUP received: reloading manifest")
