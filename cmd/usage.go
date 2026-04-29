@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const version = "0.1.0-m4b"
+var version = "0.1.0-m4b"
 
 func printTopUsage() {
 	fmt.Fprintln(os.Stderr, `mneme — Claude Code context management

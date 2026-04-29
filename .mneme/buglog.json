@@ -568,6 +568,22 @@
       "file": "/Users/ranwei/workspace/go_work/claude-context-research/mneme/.gitignore",
       "description": "possible re-introduction of bugfix in .gitignore",
       "bad_code": "web/node_modules/\nweb/.vite/"
+    },
+    {
+      "id": "fdfe8039-395b-43d9-9e1a-ce11c03863a9",
+      "created_at": "2026-04-29T12:58:39Z",
+      "source": "auto",
+      "file": "/Users/ranwei/workspace/go_work/claude-context-research/mneme/Makefile",
+      "description": "possible re-introduction of bugfix in Makefile",
+      "bad_code": "snapshot:\n\tCGO_ENABLED=0 go build -trimpath -ldflags \"$(LDFLAGS) -s -w\" -o bin/mneme ./cmd"
+    },
+    {
+      "id": "509f0175-f62f-4846-a631-00c04d3b28d5",
+      "created_at": "2026-04-29T13:10:36Z",
+      "source": "auto",
+      "file": "/Users/ranwei/workspace/go_work/claude-context-research/mneme/Makefile",
+      "description": "possible re-introduction of bugfix in Makefile",
+      "bad_code": ".PHONY: build web-build web-dev web-clean go-build snapshot\n\nVERSION  ?= $(shell git describe --tags --always --dirty 2\u003e/dev/null || echo \"dev\")\nCOMMIT   := $(shell git rev-parse --short HEAD 2\u003e/dev/null || echo \"unknown\")\nBUILDTIME := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)\nLDFLAGS  := -X main.version=$(VERSION) \\\n            -X main.releaseRepo=ranwei/mneme \\\n            -X main.releaseChannel=github\n\nbuild: web-build go-build\n\nsnapshot:\n\tgo build -trimpath -ldflags \"$(LDFLAGS) -s -w\" -o bin/mneme ./cmd"
     }
   ]
 }

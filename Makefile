@@ -1,6 +1,19 @@
-.PHONY: build web-build web-dev web-clean go-build
+.PHONY: build web-build web-dev web-clean go-build snapshot release
+
+VERSION  ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+COMMIT   := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILDTIME := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+LDFLAGS  := -X main.version=$(VERSION) \
+            -X main.releaseRepo=ranwei/mneme \
+            -X main.releaseChannel=github
 
 build: web-build go-build
+
+snapshot:
+	goreleaser release --snapshot --clean
+
+release:
+	goreleaser release --clean
 
 web-build:
 	cd web && pnpm install --frozen-lockfile && pnpm build
