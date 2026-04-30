@@ -3,6 +3,8 @@ bin/
 dist/
 .claude/
 .claude/*
+.qoder/
+.mneme/
 web/node_modules/
 web/.vite/
 

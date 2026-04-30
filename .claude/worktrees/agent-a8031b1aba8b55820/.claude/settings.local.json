@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(rm -rf ~/.claude/projects ~/.claude/file-history ~/.claude/paste-cache ~/.claude/session-env)",
-      "Bash(bash scripts/m0-probe/setup-sandbox.sh)",
-      "Bash(bash scripts/m0-probe/cleanup.sh)"
-    ]
-  }
-}
