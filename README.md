@@ -1,5 +1,7 @@
 # Mneme - Go Edition
 
+[中文文档](README-chs.md)
+
 High-performance semantic code search for Claude Code, powered by Go with pluggable vector storage backends.
 
 ## Features

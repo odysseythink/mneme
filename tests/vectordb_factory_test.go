@@ -7,31 +7,6 @@ import (
 	"github.com/ranwei/mneme/pkg/vectordb"
 )
 
-func TestFactoryDefaultsToDuckDB(t *testing.T) {
-	cfg := &config.Config{DBBackend: ""}
-	store, err := vectordb.NewStoreFromConfig(cfg)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if store == nil {
-		t.Fatal("expected non-nil store")
-	}
-	if _, ok := store.(*vectordb.DuckDBStore); !ok {
-		t.Errorf("expected *vectordb.DuckDBStore, got %T", store)
-	}
-}
-
-func TestFactoryExplicitDuckDB(t *testing.T) {
-	cfg := &config.Config{DBBackend: "duckdb"}
-	store, err := vectordb.NewStoreFromConfig(cfg)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if _, ok := store.(*vectordb.DuckDBStore); !ok {
-		t.Errorf("expected *vectordb.DuckDBStore, got %T", store)
-	}
-}
-
 func TestFactoryChromemBackend(t *testing.T) {
 	cfg := &config.Config{DBBackend: "chromem", ChromemPath: t.TempDir()}
 	store, err := vectordb.NewStoreFromConfig(cfg)
@@ -63,5 +38,16 @@ func TestFactoryUnknownBackendReturnsError(t *testing.T) {
 	_, err := vectordb.NewStoreFromConfig(cfg)
 	if err == nil {
 		t.Fatal("expected error for unknown backend, got nil")
+	}
+}
+
+func TestFactoryDefaultChromemWithoutDuckDB(t *testing.T) {
+	cfg := &config.Config{DBBackend: "", ChromemPath: t.TempDir()}
+	store, err := vectordb.NewStoreFromConfig(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := store.(*vectordb.ChromemStore); !ok {
+		t.Errorf("expected *vectordb.ChromemStore, got %T", store)
 	}
 }

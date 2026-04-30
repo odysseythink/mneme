@@ -27,8 +27,8 @@ func TestConfigBackendDefaults(t *testing.T) {
 
 	cfg := config.FromEnv()
 
-	if cfg.DBBackend != "duckdb" {
-		t.Errorf("expected DBBackend='duckdb', got %q", cfg.DBBackend)
+	if cfg.DBBackend != "chromem" {
+		t.Errorf("expected DBBackend='chromem', got %q", cfg.DBBackend)
 	}
 	if cfg.QdrantURL != "http://localhost:6333" {
 		t.Errorf("expected QdrantURL='http://localhost:6333', got %q", cfg.QdrantURL)

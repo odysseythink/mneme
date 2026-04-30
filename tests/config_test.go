@@ -75,8 +75,8 @@ func TestMissingConfigFileUsesDefaults(t *testing.T) {
 	if cfg.EmbeddingProvider != "siliconflow" {
 		t.Errorf("EmbeddingProvider: got %q, want %q (built-in default)", cfg.EmbeddingProvider, "siliconflow")
 	}
-	if cfg.DBBackend != "duckdb" {
-		t.Errorf("DBBackend: got %q, want %q (built-in default)", cfg.DBBackend, "duckdb")
+	if cfg.DBBackend != "chromem" {
+		t.Errorf("DBBackend: got %q, want %q (built-in default)", cfg.DBBackend, "chromem")
 	}
 }
 

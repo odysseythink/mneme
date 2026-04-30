@@ -82,7 +82,7 @@ func FromEnv() *Config {
 		EmbeddingModel:    resolve(os.Getenv("EMBEDDING_MODEL"), file.EmbeddingModel, "BAAI/bge-large-zh-v1.5"),
 		DBPath:            expandHome(resolve(os.Getenv("DB_PATH"), file.DBPath, filepath.Join(homeDir, ".mneme", "db.duckdb")), homeDir),
 		LogLevel:          resolve(os.Getenv("LOG_LEVEL"), file.LogLevel, "info"),
-		DBBackend:         resolve(os.Getenv("DB_BACKEND"), file.DBBackend, "duckdb"),
+		DBBackend:         resolve(os.Getenv("DB_BACKEND"), file.DBBackend, "chromem"),
 		QdrantURL:         resolve(os.Getenv("QDRANT_URL"), file.QdrantURL, "http://localhost:6333"),
 		QdrantCollection:  resolve(os.Getenv("QDRANT_COLLECTION"), file.QdrantCollection, "mneme"),
 		ChromemPath:       expandHome(resolve(os.Getenv("CHROMEM_PATH"), file.ChromemPath, filepath.Join(homeDir, ".mneme", "chromem")), homeDir),

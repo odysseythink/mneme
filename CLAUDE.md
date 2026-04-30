@@ -5,11 +5,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Build
+# Build (default: chromem backend, no CGO required)
 go build -o ./bin/mneme ./cmd
 
-# Run all tests
+# Build with DuckDB backend (requires CGO)
+CGO_ENABLED=1 go build -tags duckdb -o ./bin/mneme ./cmd
+
+# Run all tests (without DuckDB)
 go test -v ./...
+
+# Run tests with DuckDB
+CGO_ENABLED=1 go test -v -tags duckdb ./...
 
 # Run a single test
 go test -v ./tests -run TestStoreInitialize
@@ -51,7 +57,7 @@ Environment variables (override config file):
 | `EMBEDDING_PROVIDER` | `siliconflow` | `siliconflow` or `qwen` |
 | `EMBEDDING_MODEL` | `BAAI/bge-large-zh-v1.5` | Model ID |
 | `DB_PATH` | `~/.mneme/db.duckdb` | DuckDB file path |
-| `DB_BACKEND` | `duckdb` | Vector store backend: `duckdb`, `qdrant`, `chromem` |
+| `DB_BACKEND` | `chromem` | Vector store backend: `chromem` (default), `qdrant`, `duckdb` (requires `-tags duckdb`) |
 | `QDRANT_URL` | `http://localhost:6333` | Qdrant service URL (HTTP port; gRPC 6334 auto-used) |
 | `QDRANT_COLLECTION` | `mneme` | Qdrant collection name |
 | `CHROMEM_PATH` | `~/.mneme/chromem` | chromem-go persistence directory |
