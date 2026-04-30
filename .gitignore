@@ -1,6 +1,8 @@
 .worktrees/
 bin/
-
+dist/
+.claude/
+.claude/*
 web/node_modules/
 web/.vite/
 
